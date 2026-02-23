@@ -2,9 +2,10 @@ package com.library.ui;
 
 import com.library.dao.StudentDAO;
 import com.library.model.Student;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.pdf.PdfWriter;
-
+import com.library.service.CurrentUserContext;
+import com.library.service.StudentLogic;
+import com.library.service.StudentPdfService;
+import com.library.service.ValidationException;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -12,12 +13,14 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;   // <--- ADDED THIS
-import java.io.IOException;  // <--- ADDED THIS
 import javax.imageio.ImageIO;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -41,11 +44,11 @@ public class StudentController {
 
     private StudentView view;
     private StudentDAO dao;
-    
+
     // State
     private boolean isEditMode = false;
     private String editingCardId = null;
-    private static final String CURRENT_USER = "ADMIN"; 
+    private final StudentPdfService pdfService = new StudentPdfService();
 
     // Colors for the Card Design
     private static final Color CARD_BLUE_DARK = new Color(31, 62, 109);
@@ -58,7 +61,8 @@ public class StudentController {
         this.view = view;
         this.dao = new StudentDAO();
         initController();
-        
+        configureTableColumns();
+
         // Default View: Show List
         refreshTable();
         view.showCard("LIST");
@@ -73,10 +77,8 @@ public class StudentController {
         view.getBtnSaveForm().addActionListener(e -> handleSaveOrUpdate());
 
         // --- 3. VIEW ACTIONS ---
-        view.getBtnPrint().addActionListener(e -> printTable());
-        view.getBtnExport().addActionListener(e -> exportToCSV());
         view.getBtnPdf().addActionListener(e -> exportToPDF());
-        
+
         view.getBtnEdit().addActionListener(e -> {
             int row = view.getTable().getSelectedRow();
             if(row == -1) JOptionPane.showMessageDialog(view, "Please select a student to edit.");
@@ -86,8 +88,43 @@ public class StudentController {
         // --- 4. FILTERS ---
         setupFilters();
         view.getBtnResetFilters().addActionListener(e -> resetFilters());
-        
+
         setupFormKeyNavigation();  // Add this line
+
+        // --- 5. FORM DYNAMICS ---
+        view.getInputCourseCombo().addActionListener(e -> updateSessionsForSelectedCourse());
+        view.getInputBookLimitCombo().addActionListener(e -> updateDerivedFields());
+
+        // --- 6. ROW DOUBLE-CLICK PREVIEW ---
+        view.getTable().addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() != 2) return;
+                int viewRow = view.getTable().rowAtPoint(e.getPoint());
+                if (viewRow < 0) return;
+                int modelRow = view.getTable().convertRowIndexToModel(viewRow);
+                String cardId = String.valueOf(view.getTableModel().getValueAt(modelRow, 1));
+                openStudentPreview(cardId);
+            }
+        });
+    }
+
+    private void configureTableColumns() {
+        JTable t = view.getTable();
+        // Hide extra columns (keep only: S.No, Card ID, Name, Course, Roll No)
+        for (int c = 5; c < t.getColumnCount(); c++) {
+            javax.swing.table.TableColumn col = t.getColumnModel().getColumn(c);
+            col.setMinWidth(0);
+            col.setMaxWidth(0);
+            col.setPreferredWidth(0);
+            col.setResizable(false);
+        }
+        // Friendly widths for visible columns
+        t.getColumnModel().getColumn(0).setPreferredWidth(50);
+        t.getColumnModel().getColumn(1).setPreferredWidth(120);
+        t.getColumnModel().getColumn(2).setPreferredWidth(220);
+        t.getColumnModel().getColumn(3).setPreferredWidth(80);
+        t.getColumnModel().getColumn(4).setPreferredWidth(80);
     }
 
     // ==========================================
@@ -99,14 +136,17 @@ public class StudentController {
         view.setFormTitle("NEW STUDENT REGISTRATION");
         view.setSaveButtonText("REGISTER STUDENT");
         view.clearForm();
-        view.setStatusEnabled(false); 
+        view.setStatusEnabled(false);
+        view.setInputStatus("ACTIVE");
+        updateSessionsForSelectedCourse();
+        updateDerivedFields();
         view.showCard("FORM");
     }
 
     private void prepareUpdate(int row) {
         isEditMode = true;
-        editingCardId = view.getTable().getValueAt(row, 0).toString();
-        
+        editingCardId = view.getTableModel().getValueAt(row, 1).toString();
+
         Student s = dao.getStudentByCardId(editingCardId);
         if (s != null) {
             view.setInputName(s.getName());
@@ -114,10 +154,14 @@ public class StudentController {
             view.setInputPhone(String.valueOf(s.getPhone()));
             view.setInputAddr(s.getAddress());
             view.setInputCourse(s.getCourse());
+            updateSessionsForSelectedCourse();
             view.setInputSession(s.getSession());
             view.setInputBookLimit(String.valueOf(s.getBookLimit()));
             view.setInputStatus(s.getStatus());
-            
+            view.setIssuedByText(s.getIssuedBy());
+            view.setIssueDateText(formatDate(s.getIssueDate()));
+            view.setFeeText(String.valueOf(s.getFee()));
+
             view.setStatusEnabled(true);
             view.setFormTitle("UPDATE STUDENT DETAILS");
             view.setSaveButtonText("UPDATE RECORD");
@@ -125,109 +169,192 @@ public class StudentController {
         }
     }
 
+    private void prepareUpdateByCardId(String cardId) {
+        // Select the row if it's visible in table (best-effort), but always load from DB.
+        this.isEditMode = true;
+        this.editingCardId = cardId;
+
+        Student s = dao.getStudentByCardId(cardId);
+        if (s == null) {
+            JOptionPane.showMessageDialog(view, "Student not found.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        view.setInputName(s.getName());
+        view.setInputRoll(String.valueOf(s.getRoll()));
+        view.setInputPhone(String.valueOf(s.getPhone()));
+        view.setInputAddr(s.getAddress());
+        view.setInputCourse(s.getCourse());
+        updateSessionsForSelectedCourse();
+        view.setInputSession(s.getSession());
+        view.setInputBookLimit(String.valueOf(s.getBookLimit()));
+        view.setInputStatus(s.getStatus());
+        view.setIssuedByText(s.getIssuedBy());
+        view.setIssueDateText(formatDate(s.getIssueDate()));
+        view.setFeeText(String.valueOf(s.getFee()));
+
+        view.setStatusEnabled(true);
+        view.setFormTitle("UPDATE STUDENT DETAILS");
+        view.setSaveButtonText("UPDATE RECORD");
+        view.showCard("FORM");
+    }
+
+    private void openStudentPreview(String cardId) {
+        Student s = dao.getStudentByCardId(cardId);
+        if (s == null) {
+            JOptionPane.showMessageDialog(view, "Student not found.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        StudentPreviewDialog dlg = new StudentPreviewDialog(
+            SwingUtilities.getWindowAncestor(view),
+            s,
+            dao.getBorrowHistory(cardId),
+            pdfService,
+            () -> prepareUpdateByCardId(cardId)
+        );
+        dlg.setVisible(true);
+    }
+
     private void handleSaveOrUpdate() {
-        // 1. VALIDATION
-        String name = view.getInputName().trim();
-        String rollStr = view.getInputRoll().trim();
+        String rawName = view.getInputName();
+        String rollStr = view.getInputRoll();
         String phoneStr = view.getInputPhone();
         String addr = view.getInputAddr();
-
-        if (name.isEmpty() || rollStr.isEmpty() || phoneStr.isEmpty() || addr.isEmpty()) {
-            JOptionPane.showMessageDialog(view, "All fields are required.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        
-        // Validate and convert name to Title Case
-        if (!name.matches("[a-zA-Z\\s]+")) {
-            JOptionPane.showMessageDialog(view, "Name must contain only letters and spaces.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        name = toTitleCase(name);
-        
-        // Validate Roll Number
-        String session = view.getInputSession();
-        if (!validateRollNumber(rollStr, session)) {
-            JOptionPane.showMessageDialog(view, 
-                "Roll No must:\n" +
-                "- Start with session year (e.g., 24 for 2024-2027)\n" +
-                "- Be exactly 5 digits\n" +
-                "- Format: YY###", 
-                "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        
-        if (phoneStr.length() != 10) {
-            JOptionPane.showMessageDialog(view, "Phone must be 10 digits.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        int roll = Integer.parseInt(rollStr);
-        long phone = Long.parseLong(phoneStr);
-        int limit = view.getInputBookLimit();
-        double fee = (limit == 1) ? 500.00 : 800.00;
         String course = view.getInputCourse();
+        String session = view.getInputSession();
 
-        // 2. EXECUTION
-        if (isEditMode) {
-            // --- UPDATE EXISTING ---
-            Student s = new Student(editingCardId, roll, name, phone, addr, course, session, "EXISTING", CURRENT_USER, null, limit, fee, view.getInputStatus());
+        if (addr == null || addr.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(view, "Address is required.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-            if (dao.updateStudent(s)) {
-                JOptionPane.showMessageDialog(view, "Updated Successfully!");
-                refreshTable();
-                view.showCard("LIST");
-            } else {
-                JOptionPane.showMessageDialog(view, "Update Failed.");
+        try {
+            String name = StudentLogic.toTitleCaseName(rawName);
+            StudentLogic.validateRollNumber(rollStr, session);
+            long phone = StudentLogic.parseAndValidateContact(phoneStr);
+
+            int limit = view.getInputBookLimit();
+            double fee = StudentLogic.feeForBookLimit(limit);
+
+            if (isEditMode) {
+                Student existing = dao.getStudentByCardId(editingCardId);
+                if (existing == null) {
+                    JOptionPane.showMessageDialog(view, "Student not found.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                Student updated = new Student(
+                    existing.getCardId(),
+                    Integer.parseInt(rollStr),
+                    name,
+                    phone,
+                    addr.trim(),
+                    course,
+                    session,
+                    existing.getReceiptNo(),
+                    existing.getIssuedBy(),
+                    existing.getIssueDate(),
+                    limit,
+                    fee,
+                    view.getInputStatus()
+                );
+
+                if (dao.updateStudent(updated)) {
+                    JOptionPane.showMessageDialog(view, "Updated Successfully!");
+                    refreshTable();
+                    view.showCard("LIST");
+                } else {
+                    JOptionPane.showMessageDialog(view, "Update Failed.");
+                }
+                return;
             }
-        } else {
-            // --- NEW REGISTRATION ---
-            String cardId = dao.generateCardId();
-            String receipt = dao.generateReceiptNo();
-            java.sql.Date regDate = new java.sql.Date(System.currentTimeMillis());
-            
-            Student s = new Student(cardId, roll, name, phone, addr, course, session, receipt, CURRENT_USER, regDate, limit, fee, "ACTIVE");
 
-            if (dao.addStudent(s)) {
-                view.clearForm();
-                refreshTable();
-                // Show the "Digital Card" dialog
-                showLibraryCardPreview(s);
-                view.showCard("LIST");
-            } else {
-                JOptionPane.showMessageDialog(view, "Registration Failed (Database Error).");
-            }
+            Student created = dao.registerStudent(
+                Integer.parseInt(rollStr),
+                name,
+                phone,
+                addr.trim(),
+                course,
+                session,
+                CurrentUserContext.getUserId(),
+                limit,
+                fee,
+                "ACTIVE"
+            );
+
+            view.clearForm();
+            refreshTable();
+            showRegistrationSuccessDialog(created);
+            view.showCard("LIST");
+
+        } catch (ValidationException ve) {
+            JOptionPane.showMessageDialog(view, ve.getMessage(), "Validation Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(view, "Registration failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
     // ==========================================
     // LOGIC: LIBRARY CARD PREVIEW & IMAGE GENERATION
     // ==========================================
-    private void showLibraryCardPreview(Student s) {
-        String htmlCard = String.format(
-            "<html><body style='width: 250px; font-family: sans-serif;'>" +
-            "<div style='border: 2px solid #1F3E6D; padding: 10px; background-color: #f5f8fa;'>" +
-            "<h3 style='text-align: center; color: #1F3E6D; margin: 0;'>DIGITAL CARD GENERATED</h3>" +
-            "<hr>" +
-            "<b>ID:</b> <font color='red'>%s</font><br>" +
-            "<b>Name:</b> %s<br>" +
-            "<b>Course:</b> %s" +
-            "</div></body></html>",
-            s.getCardId(), s.getName(), s.getCourse()
-        );
+    private void showRegistrationSuccessDialog(Student s) {
+        String msg =
+            "<html><body style='width: 320px; font-family: sans-serif;'>" +
+            "<h2 style='margin:0 0 10px 0;'>Registration Successful</h2>" +
+            "<b>Card ID:</b> <span style='color:#1F3E6D;'>" + s.getCardId() + "</span><br>" +
+            "<b>Receipt No:</b> <span style='color:#1F3E6D;'>" + s.getReceiptNo() + "</span><br><br>" +
+            "Download PDFs now?" +
+            "</body></html>";
 
-        Object[] options = {"Download Card Image (PNG)", "Close"};
+        Object[] options = {"Download Receipt (PDF)", "Download Library Card (PDF)", "Close"};
+        while (true) {
+            int choice = JOptionPane.showOptionDialog(
+                view,
+                msg,
+                "Saved",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                options,
+                options[0]
+            );
 
-        int choice = JOptionPane.showOptionDialog(view,
-            htmlCard,
-            "Registration Successful!",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.PLAIN_MESSAGE,
-            null,
-            options,
-            options[0]);
+            if (choice == 0) {
+                downloadReceiptPdf(s);
+            } else if (choice == 1) {
+                downloadLibraryCardPdf(s);
+            } else {
+                break;
+            }
+        }
+    }
 
-        if (choice == 0) {
-            exportLibraryCardImage(s);
+    private void downloadReceiptPdf(Student s) {
+        JFileChooser fc = new JFileChooser();
+        fc.setSelectedFile(new File(s.getReceiptNo() + "_Receipt.pdf"));
+        if (fc.showSaveDialog(view) == JFileChooser.APPROVE_OPTION) {
+            try {
+                pdfService.generateReceiptPdf(s, fc.getSelectedFile().toPath());
+                JOptionPane.showMessageDialog(view, "Receipt PDF saved.");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(view, "Error saving receipt PDF: " + ex.getMessage());
+            }
+        }
+    }
+
+    private void downloadLibraryCardPdf(Student s) {
+        JFileChooser fc = new JFileChooser();
+        fc.setSelectedFile(new File(s.getCardId() + "_LibraryCard.pdf"));
+        if (fc.showSaveDialog(view) == JFileChooser.APPROVE_OPTION) {
+            try {
+                pdfService.generateLibraryCardPdf(s, fc.getSelectedFile().toPath());
+                JOptionPane.showMessageDialog(view, "Library Card PDF saved.");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(view, "Error saving library card PDF: " + ex.getMessage());
+            }
         }
     }
 
@@ -259,8 +386,8 @@ public class StudentController {
 
                 // 3. Draw Header (Blue curved area)
                 g2.setColor(CARD_BLUE_DARK);
-                g2.fillRect(0, 0, width, 60); 
-                
+                g2.fillRect(0, 0, width, 60);
+
                 // 4. Add Logo & Title to Header
                 try {
                     ImageIcon icon = new ImageIcon("lib/icons/clglogo.png");
@@ -282,7 +409,7 @@ public class StudentController {
                 // g2.drawRect(photoX, photoY, photoW, photoH);
                 // g2.setFont(new Font("Segoe UI", Font.BOLD, 14));
                 // g2.drawString("PHOTO", photoX + 25, photoY + 65);
-                
+
                 // Card ID below photo
                 g2.setColor(CARD_BLUE_DARK);
                 g2.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
@@ -290,7 +417,7 @@ public class StudentController {
 
                 // 6. Student Details (Right Side)
                 int textX = 150; int textY = 100; int lineHeight = 30;
-                
+
                 drawCardField(g2, "Name:", s.getName(), textX, textY);
                 drawCardField(g2, "Roll No:", String.valueOf(s.getRoll()), textX, textY + lineHeight);
                 drawCardField(g2, "Receipt No:", String.valueOf(s.getReceiptNo()), textX, textY + lineHeight*2);
@@ -298,7 +425,7 @@ public class StudentController {
                 drawCardField(g2, "Session:", s.getSession(), textX, textY + lineHeight*4);
                 drawCardField(g2, "Phone:", String.valueOf(s.getPhone()), textX, textY + lineHeight*5);
                 drawCardField(g2, "Book Limit:", String.valueOf(s.getBookLimit()), textX, textY + lineHeight*6);
-                
+
                 SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy");
                 String dateStr = (s.getIssueDate() != null) ? sdf.format(s.getIssueDate()) : sdf.format(new Date());
                 drawCardField(g2, "Issued:", dateStr, textX, textY + lineHeight*7);
@@ -310,7 +437,7 @@ public class StudentController {
                 g2.drawLine(width - 180, footerY, width - 30, footerY); // Signature line
                 g2.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 10));
                 g2.drawString("Authorized Signature", width - 150, footerY + 15);
-                
+
                 // Subtle bottom accent
                 g2.setColor(CARD_BLUE_LIGHT);
                 g2.fillRect(0, height - 5, width, 5);
@@ -326,16 +453,16 @@ public class StudentController {
             }
         }
     }
-    
+
     // Helper to draw label and value pairs
     private void drawCardField(Graphics2D g2, String label, String value, int x, int y) {
         g2.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
         g2.setColor(CARD_BLUE_DARK);
         g2.drawString(label, x, y);
-        
+
         g2.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14));
         g2.setColor(Color.BLACK);
-        g2.drawString(value, x + 80, y); 
+        g2.drawString(value, x + 80, y);
     }
 
     // ==========================================
@@ -343,14 +470,23 @@ public class StudentController {
     // ==========================================
     private void refreshTable() {
         view.getTableModel().setRowCount(0);
-        List<Student> list = dao.getAllStudents();
+        List<Student> list = dao.getActiveStudents();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        
+
+        int sno = 1;
         for(Student s : list) {
-            view.getTableModel().addRow(new Object[]{ 
-                s.getCardId(), s.getName(), s.getRoll(), s.getCourse(), s.getSession(), 
-                (s.getIssueDate() != null ? sdf.format(s.getIssueDate()) : ""), 
-                s.getIssuedBy(), s.getBookLimit(), s.getFee(), s.getStatus() 
+            view.getTableModel().addRow(new Object[]{
+                sno++,
+                s.getCardId(),
+                s.getName(),
+                s.getCourse(),
+                s.getRoll(),
+                s.getSession(),
+                (s.getIssueDate() != null ? sdf.format(s.getIssueDate()) : ""),
+                s.getIssuedBy(),
+                s.getBookLimit(),
+                s.getFee(),
+                s.getStatus()
             });
         }
         view.updateTotalCount(list.size());
@@ -362,119 +498,146 @@ public class StudentController {
             public void removeUpdate(DocumentEvent e) { applyFilters(); }
             public void changedUpdate(DocumentEvent e) { applyFilters(); }
         };
+        view.getFltCardId().getDocument().addDocumentListener(dl);
         view.getFltName().getDocument().addDocumentListener(dl);
         view.getFltRoll().getDocument().addDocumentListener(dl);
         view.getFltIssueBy().getDocument().addDocumentListener(dl);
-        view.getFltIssueDate().getDocument().addDocumentListener(dl);
-        
+
         view.getFltCourse().addActionListener(e -> applyFilters());
         view.getFltSession().addActionListener(e -> applyFilters());
         view.getFltBookLimit().addActionListener(e -> applyFilters());
+        view.getFltFromDate().addChangeListener(e -> applyFilters());
+        view.getFltToDate().addChangeListener(e -> applyFilters());
     }
-    
+
     private void applyFilters() {
         List<RowFilter<Object, Object>> filters = new ArrayList<>();
-        addTextFilter(filters, view.getFltName(), 1);
-        addTextFilter(filters, view.getFltRoll(), 2);
+        addTextFilter(filters, view.getFltCardId(), 1);
+        addTextFilter(filters, view.getFltName(), 2);
+        addTextFilter(filters, view.getFltRoll(), 4);
         addComboFilter(filters, view.getFltCourse(), 3);
-        addComboFilter(filters, view.getFltSession(), 4);
-        addTextFilter(filters, view.getFltIssueDate(), 5);
-        addTextFilter(filters, view.getFltIssueBy(), 6);
-        addComboFilter(filters, view.getFltBookLimit(), 7);
-        view.getSorter().setRowFilter(RowFilter.andFilter(filters));
+        addComboFilter(filters, view.getFltSession(), 5);
+        addTextFilter(filters, view.getFltIssueBy(), 7);
+        addComboFilter(filters, view.getFltBookLimit(), 8);
+
+        RowFilter<Object, Object> dateRange = buildIssueDateRangeFilter();
+        if (dateRange != null) filters.add(dateRange);
+
+        view.getSorter().setRowFilter(filters.isEmpty() ? null : RowFilter.andFilter(filters));
         view.updateTotalCount(view.getTable().getRowCount());
     }
-    
+
     private void addTextFilter(List<RowFilter<Object, Object>> filters, JTextField field, int col) {
         String txt = field.getText().trim();
         if(!txt.isEmpty()) filters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(txt), col));
     }
-    
+
     private void addComboFilter(List<RowFilter<Object, Object>> filters, JComboBox<String> box, int col) {
         String val = (String) box.getSelectedItem();
         if(val != null && !val.equals("All")) filters.add(RowFilter.regexFilter("^" + Pattern.quote(val) + "$", col));
     }
-    
-    private void resetFilters() {
-        view.getFltName().setText(""); view.getFltRoll().setText(""); 
-        view.getFltIssueBy().setText(""); view.getFltIssueDate().setText("");
-        view.getFltCourse().setSelectedIndex(0); view.getFltBookLimit().setSelectedIndex(0);
-        if(view.getFltSession().getItemCount()>1) view.getFltSession().setSelectedIndex(1);
+
+    private RowFilter<Object, Object> buildIssueDateRangeFilter() {
+        java.util.Date from = (java.util.Date) view.getFltFromDate().getValue();
+        java.util.Date to = (java.util.Date) view.getFltToDate().getValue();
+        if (from == null || to == null) return null;
+
+        LocalDate fromDate = from.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate toDate = to.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        if (fromDate.isAfter(toDate)) {
+            LocalDate tmp = fromDate;
+            fromDate = toDate;
+            toDate = tmp;
+        }
+
+        final LocalDate f = fromDate;
+        final LocalDate t = toDate;
+
+        return new RowFilter<Object, Object>() {
+            @Override
+            public boolean include(Entry<?, ?> entry) {
+                Object v = entry.getValue(6); // Issue Date column
+                if (v == null) return false;
+                String s = v.toString().trim();
+                if (s.isEmpty()) return false;
+                try {
+                    LocalDate d = LocalDate.parse(s);
+                    return (!d.isBefore(f)) && (!d.isAfter(t));
+                } catch (Exception ignored) {
+                    return false;
+                }
+            }
+        };
     }
 
-    // ==========================================
-    // LOGIC: EXPORTS (MAIN TABLE)
-    // ==========================================
-    private void printTable() {
-        // Show field selection dialog
-        Map<String, Integer> fieldSelection = showFieldSelectionDialog();
-        
-        if (fieldSelection == null) return; // User cancelled
-        
-        // Create filtered table model with selected columns
-        JTable filteredTable = createFilteredTableForPrint(fieldSelection);
-        
+    private void updateSessionsForSelectedCourse() {
+        String course = view.getInputCourse();
         try {
-            filteredTable.print();
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Error: " + e.getMessage());
+            List<String> sessions = StudentLogic.generateSessions(course, StudentLogic.currentYear(), 3);
+            view.setSessionOptions(sessions.toArray(new String[0]));
+        } catch (ValidationException e) {
+            // If course is invalid, do not change sessions.
         }
     }
-    
+
+    private void updateDerivedFields() {
+        int limit = view.getInputBookLimit();
+        try {
+            view.setFeeText(String.valueOf(StudentLogic.feeForBookLimit(limit)));
+        } catch (ValidationException e) {
+            view.setFeeText("");
+        }
+
+        if (!isEditMode) {
+            view.setIssuedByText(CurrentUserContext.getDisplayName());
+            view.setIssueDateText(formatDate(new java.util.Date()));
+            view.setInputStatus("ACTIVE");
+        }
+    }
+
+    private String formatDate(java.util.Date d) {
+        if (d == null) return "";
+        return new SimpleDateFormat("yyyy-MM-dd").format(d);
+    }
+
+    private void resetFilters() {
+        view.getFltCardId().setText("");
+        view.getFltName().setText(""); view.getFltRoll().setText("");
+        view.getFltIssueBy().setText("");
+        view.getFltCourse().setSelectedIndex(0); view.getFltBookLimit().setSelectedIndex(0);
+        view.getFltSession().setSelectedIndex(0);
+    }
+
     private Map<String, Integer> showFieldSelectionDialog() {
-        String[] allColumns = {"Card ID", "Name", "Roll", "Course", "Session", "Issue Date", "Issue By", "Limit", "Fee", "Status"};
-        
+        String[] allColumns = {"S.No", "Card ID", "Name", "Course", "Roll No", "Session", "Issue Date", "Issued By", "Book Limit", "Fee", "Status"};
+
         JPanel panel = new JPanel(new GridLayout(allColumns.length, 1, 5, 5));
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
+
         JCheckBox[] checkboxes = new JCheckBox[allColumns.length];
         for (int i = 0; i < allColumns.length; i++) {
             checkboxes[i] = new JCheckBox(allColumns[i], true); // All selected by default
             panel.add(checkboxes[i]);
         }
-        
+
         JScrollPane scroll = new JScrollPane(panel);
         scroll.setPreferredSize(new Dimension(300, 350));
-        
-        int result = JOptionPane.showConfirmDialog(view, scroll, 
-            "Select Fields to Print", 
-            JOptionPane.OK_CANCEL_OPTION, 
+
+        int result = JOptionPane.showConfirmDialog(view, scroll,
+            "Select Fields to Print",
+            JOptionPane.OK_CANCEL_OPTION,
             JOptionPane.PLAIN_MESSAGE);
-        
+
         if (result != JOptionPane.OK_OPTION) return null;
-        
+
         Map<String, Integer> selection = new LinkedHashMap<>();
         for (int i = 0; i < allColumns.length; i++) {
             if (checkboxes[i].isSelected()) {
                 selection.put(allColumns[i], i);
             }
         }
-        
+
         return selection.isEmpty() ? null : selection;
-    }
-    
-    private JTable createFilteredTableForPrint(Map<String, Integer> selectedFields) {
-        String[] selectedColumns = selectedFields.keySet().toArray(new String[0]);
-        DefaultTableModel filteredModel = new DefaultTableModel(selectedColumns, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
-        };
-        
-        // Add data from current filtered table
-        for (int i = 0; i < view.getTable().getRowCount(); i++) {
-            Object[] row = new Object[selectedColumns.length];
-            int colIndex = 0;
-            for (Integer originalCol : selectedFields.values()) {
-                row[colIndex++] = view.getTable().getValueAt(i, originalCol);
-            }
-            filteredModel.addRow(row);
-        }
-        
-        JTable filteredTable = new JTable(filteredModel);
-        filteredTable.setRowHeight(28);
-        // Use java.awt.Font for Swing components
-        filteredTable.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-        return filteredTable;
     }
 
     // Replace the exportToPDF() method to add footer before doc.close():
@@ -483,14 +646,14 @@ public class StudentController {
         // Show field selection dialog
         Map<String, Integer> fieldSelection = showFieldSelectionDialog();
         if (fieldSelection == null) return;
-        
+
         // Ask for Orientation
         String[] options = {"Portrait", "Landscape"};
-        int choice = JOptionPane.showOptionDialog(view, 
-            "Select Page Orientation:", 
-            "PDF Settings", 
-            JOptionPane.DEFAULT_OPTION, 
-            JOptionPane.QUESTION_MESSAGE, 
+        int choice = JOptionPane.showOptionDialog(view,
+            "Select Page Orientation:",
+            "PDF Settings",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
             null, options, options[0]);
 
         if (choice == -1) return;
@@ -500,11 +663,11 @@ public class StudentController {
 
         JFileChooser fc = new JFileChooser();
         fc.setSelectedFile(new java.io.File("Student_Report"+ dateFormat +".pdf"));
-        
+
         if (fc.showSaveDialog(view) == JFileChooser.APPROVE_OPTION) {
-            
-            Document doc = isLandscape ? 
-                new Document(com.itextpdf.text.PageSize.A4.rotate()) : 
+
+            Document doc = isLandscape ?
+                new Document(com.itextpdf.text.PageSize.A4.rotate()) :
                 new Document(com.itextpdf.text.PageSize.A4);
 
             try {
@@ -512,29 +675,29 @@ public class StudentController {
                 doc.open();
 
                 float bannerHeight = 0;
-                
+
                 // --- ADD BANNER IMAGE ---
                 try {
                     String imgPath = "lib/icons/header.png";
                     com.itextpdf.text.Image img = com.itextpdf.text.Image.getInstance(imgPath);
-                    
+
                     float pageWidth = doc.getPageSize().getWidth();
                     float pageHeight = doc.getPageSize().getHeight();
-                    
-                    float scaler = (pageWidth / img.getWidth()) * 100; 
+
+                    float scaler = (pageWidth / img.getWidth()) * 100;
                     img.scalePercent(scaler);
-                    
+
                     bannerHeight = img.getScaledHeight();
                     img.setAbsolutePosition(0, pageHeight - bannerHeight);
-                    
+
                     doc.add(img);
-                    
+
                 } catch (Exception e) {
                     System.err.println("Header image not found: " + e.getMessage());
                 }
 
                 Paragraph spacer = new Paragraph(" ");
-                spacer.setSpacingAfter(bannerHeight + 20); 
+                spacer.setSpacingAfter(bannerHeight + 20);
                 doc.add(spacer);
 
                 // --- ADD HEADER ELEMENT (Logo, Date, Time) ---
@@ -568,10 +731,10 @@ public class StudentController {
                 }
 
                 doc.add(pdfTable);
-                
+
                 // --- NEW: ADD FOOTER WITH SIGNATURE ---
                 doc.add(createPDFFooter());
-                
+
                 JOptionPane.showMessageDialog(view, "PDF Exported Successfully!");
 
             } catch (Exception ex) {
@@ -594,7 +757,7 @@ public class StudentController {
         dateCell.setBorder(0);
         dateCell.setHorizontalAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
         dateCell.setPadding(10);
-        
+
         Font smallFont = new Font(Font.FontFamily.HELVETICA, 9);
         Phrase datePhrase = new Phrase();
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy");
@@ -615,16 +778,16 @@ public class StudentController {
         signatureCell.setBorder(0);
         signatureCell.setHorizontalAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
         signatureCell.setPadding(10);
-        
+
         Phrase signaturePhrase = new Phrase();
         signaturePhrase.add(new Chunk("Authorized By:\n\n\n", smallFont));
         signaturePhrase.add(new Chunk("_".repeat(20), smallFont));
         signaturePhrase.add(new Chunk("\n", smallFont));
-        
+
         Font nameFont = new Font(Font.FontFamily.HELVETICA, 9, Font.BOLD);
         signaturePhrase.add(new Chunk("Library Authority\n", nameFont));
         signaturePhrase.add(new Chunk("(Signature & Seal)", smallFont));
-        
+
         signatureCell.addElement(signaturePhrase);
         footerTable.addCell(signatureCell);
 
@@ -670,15 +833,15 @@ public class StudentController {
         dateTimeCell.setBorder(0);
         dateTimeCell.setHorizontalAlignment(com.itextpdf.text.Element.ALIGN_RIGHT);
         dateTimeCell.setPadding(5);
-        
+
         Phrase datePhrase = new Phrase();
         Font boldFont = new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD);
         Font normalFont = new Font(Font.FontFamily.HELVETICA, 10);
-        
+
         datePhrase.add(new Chunk("Report Generated On:\n", boldFont));
         datePhrase.add(new Chunk(reportDate + " | " + reportTime, normalFont));
         dateTimeCell.addElement(datePhrase);
-        
+
         headerTable.addCell(dateTimeCell);
 
         // Add a separator line
@@ -692,7 +855,7 @@ public class StudentController {
         containerCell.setBorder(0);
         containerCell.setPadding(0);
         container.addCell(containerCell);
-        
+
         containerCell = new com.itextpdf.text.pdf.PdfPCell(separator);
         containerCell.setBorder(0);
         containerCell.setPadding(0);
@@ -701,40 +864,6 @@ public class StudentController {
         return container;
     }
 
-    private void exportToCSV() {
-        // Show field selection dialog
-        Map<String, Integer> fieldSelection = showFieldSelectionDialog();
-        if (fieldSelection == null) return;
-        
-        JFileChooser fc = new JFileChooser();
-        fc.setSelectedFile(new File("students.csv"));
-        if (fc.showSaveDialog(view) == JFileChooser.APPROVE_OPTION) {
-            try (FileWriter fw = new FileWriter(fc.getSelectedFile())) {
-                // Write headers
-                String[] selectedColumns = fieldSelection.keySet().toArray(new String[0]);
-                for (int i = 0; i < selectedColumns.length; i++) {
-                    fw.write(selectedColumns[i]);
-                    if (i < selectedColumns.length - 1) fw.write(",");
-                }
-                fw.write("\n");
-                
-                // Write data
-                for (int i = 0; i < view.getTable().getRowCount(); i++) {
-                    int colCount = 0;
-                    for (Integer colIndex : fieldSelection.values()) {
-                        fw.write(view.getTable().getValueAt(i, colIndex).toString());
-                        colCount++;
-                        if (colCount < selectedColumns.length) fw.write(",");
-                    }
-                    fw.write("\n");
-                }
-                JOptionPane.showMessageDialog(view, "CSV Saved!");
-            } catch (Exception ex) { 
-                JOptionPane.showMessageDialog(view, "Error: " + ex.getMessage()); 
-            }
-        }
-    }
-    
     private String toTitleCase(String input) {
         String[] words = input.toLowerCase().split("\\s+");
         StringBuilder titleCase = new StringBuilder();
@@ -747,20 +876,20 @@ public class StudentController {
         }
         return titleCase.toString().trim();
     }
-    
+
     private boolean validateRollNumber(String rollStr, String session) {
         // Roll must be exactly 5 digits
         if (!rollStr.matches("\\d{5}")) {
             return false;
         }
-        
+
         // Extract session year (e.g., "2024-2027" -> 24)
         String[] parts = session.split("-");
         if (parts.length < 1) return false;
-        
+
         String sessionYear = parts[0];
         String lastTwoDigits = sessionYear.substring(Math.max(0, sessionYear.length() - 2));
-        
+
         // Roll must start with session year's last two digits
         return rollStr.startsWith(lastTwoDigits);
     }

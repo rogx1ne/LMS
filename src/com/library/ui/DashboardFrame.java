@@ -1,5 +1,6 @@
 package com.library.ui;
 
+import com.library.service.CurrentUserContext;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -41,10 +42,10 @@ public class DashboardFrame extends JFrame {
         // A. Sidebar Header (Logo + Title)
         JPanel pnlHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         pnlHeader.setBackground(COLOR_WHITE);
-        
+
         ImageIcon logoIcon = loadIconSafely("lib/icons/logo_small.png", 75, 75);
         JLabel lblLogo = new JLabel(logoIcon);
-        
+
         JLabel lblTitle = new JLabel("<html>LIBRARY<br>MANAGEMENT<br>SYSTEM</html>");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
         lblTitle.setForeground(COLOR_BLUE_DARK);
@@ -58,24 +59,30 @@ public class DashboardFrame extends JFrame {
         pnlMenu.setLayout(new BoxLayout(pnlMenu, BoxLayout.Y_AXIS));
         pnlMenu.setBorder(new EmptyBorder(40, 30, 0, 0)); // Padding: Top, Left
 
+        boolean isAdministrator = CurrentUserContext.isAdministrator();
+
         // Add Menu Items (Matches your sketch)
         pnlMenu.add(createMenuButton("BOOK", "lib/icons/book.png"));
         pnlMenu.add(Box.createVerticalStrut(15));
-        pnlMenu.add(createMenuButton("PURCHASE", "lib/icons/cart.png"));
+        pnlMenu.add(createMenuButton("TRANSACTION", "lib/icons/cart.png"));
         pnlMenu.add(Box.createVerticalStrut(15));
         pnlMenu.add(createMenuButton("STUDENT", "lib/icons/student.png"));
         pnlMenu.add(Box.createVerticalStrut(15));
+        if (isAdministrator) {
+            pnlMenu.add(createMenuButton("ADMIN", "lib/icons/settings.png"));
+            pnlMenu.add(Box.createVerticalStrut(15));
+        }
         pnlMenu.add(createMenuButton("CIRCULATION", "lib/icons/sync.png"));
-        
+
         // C. Sidebar Footer (User Profile)
         JPanel pnlUser = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 20));
         pnlUser.setBackground(COLOR_WHITE);
-        
-        JLabel lblUserIcon = new JLabel(loadIconSafely("lib/icons/user.png", 32, 32)); 
-        JLabel lblUserName = new JLabel("<html><b>ADMIN USER</b><br><span style='font-size:10px; color:gray'>Logged In</span></html>");
+
+        JLabel lblUserIcon = new JLabel(loadIconSafely("lib/icons/user.png", 32, 32));
+        JLabel lblUserName = new JLabel("<html><b>" + CurrentUserContext.getDisplayName() + "</b><br><span style='font-size:10px; color:gray'>Logged In</span></html>");
         lblUserName.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblUserName.setForeground(COLOR_BLUE_DARK);
-        
+
         // Logout Button (Small text link style)
         JButton btnLogout = new JButton("Logout");
         btnLogout.setBorderPainted(false);
@@ -85,7 +92,7 @@ public class DashboardFrame extends JFrame {
         btnLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnLogout.addActionListener(e -> {
             this.dispose();
-            // new LoginFrame().setVisible(true); // Uncomment when LoginFrame is ready
+            new LoginFrame().setVisible(true); // Uncomment when LoginFrame is ready
         });
 
         pnlUser.add(lblUserIcon);
@@ -102,23 +109,36 @@ public class DashboardFrame extends JFrame {
         pnlContent = new JPanel(cardLayout);
         pnlContent.setBackground(COLOR_BG_CONTENT);
 
-        // --- PAGE 1: BOOK (Placeholder) ---
-        pnlContent.add(createPagePlaceholder("BOOK MANAGEMENT"), "BOOK");
+        // --- PAGE 1: BOOK (MODULE) ---
+        BookModulePanel bookModulePanel = new BookModulePanel();
+        new BookController(bookModulePanel);
+        pnlContent.add(bookModulePanel, "BOOK");
 
-        // --- PAGE 2: PURCHASE (Placeholder) ---
-        pnlContent.add(createPagePlaceholder("PURCHASE ORDERS"), "PURCHASE");
+        // --- PAGE 2: TRANSACTION (Placeholder) ---
+        ProcurementModulePanel procurementModulePanel = new ProcurementModulePanel();
+        new ProcurementController(procurementModulePanel);
+        pnlContent.add(procurementModulePanel, "TRANSACTION");
 
         // --- PAGE 3: STUDENT (MVC INTEGRATION) ---
         // 1. Create the View
         StudentView studentView = new StudentView();
         // 2. Create the Controller (connects View to Logic/DAO)
-        new StudentController(studentView); 
+        new StudentController(studentView);
         // 3. Add the View to the dashboard
         pnlContent.add(studentView, "STUDENT");
 
-        // --- PAGE 4: CIRCULATION (Placeholder) ---
-        pnlContent.add(createPagePlaceholder("CIRCULATION"), "CIRCULATION");
-        
+        // --- PAGE 4: CIRCULATION ---
+        CirculationModulePanel circulationModulePanel = new CirculationModulePanel();
+        new CirculationController(circulationModulePanel);
+        pnlContent.add(circulationModulePanel, "CIRCULATION");
+
+        // --- PAGE 5: ADMIN (ADMIN USER ONLY) ---
+        if (isAdministrator) {
+            AdminModulePanel adminModulePanel = new AdminModulePanel();
+            new AdminController(adminModulePanel);
+            pnlContent.add(adminModulePanel, "ADMIN");
+        }
+
         // Default View - Set to STUDENT for now so you see your changes immediately
         cardLayout.show(pnlContent, "STUDENT");
 
@@ -130,7 +150,7 @@ public class DashboardFrame extends JFrame {
     // --- HELPER: Create Menu Buttons (Text Only, Sketch Style) ---
     private JButton createMenuButton(String text, String iconPath) {
         JButton btn = new JButton(text);
-        
+
         // STYLE: Minimalist Text
         btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
         btn.setForeground(COLOR_BLUE_DARK); // Dark Blue Text
@@ -140,7 +160,7 @@ public class DashboardFrame extends JFrame {
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false); // Make it look like just text
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
+
         // HOVER EFFECT: Slide right or Change Color
         btn.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
@@ -159,20 +179,26 @@ public class DashboardFrame extends JFrame {
 
     // --- HELPER: Content Page Placeholder ---
     private JPanel createPagePlaceholder(String title) {
-        JPanel p = new JPanel(new GridBagLayout());
-        p.setBackground(COLOR_BG_CONTENT);
-        
-        JLabel lbl = new JLabel(title);
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 36));
-        lbl.setForeground(new Color(200, 200, 200)); // Light Grey Text
-        
-        p.add(lbl);
-        return p;
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBackground(ModuleTheme.WHITE);
+        wrapper.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        JPanel inner = new JPanel(new GridBagLayout());
+        inner.setBackground(ModuleTheme.WHITE);
+        inner.setBorder(ModuleTheme.sectionBorder(title));
+
+        JLabel lbl = new JLabel(title + " - MODULE UNDER DEVELOPMENT");
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lbl.setForeground(new Color(140, 140, 140));
+        inner.add(lbl);
+
+        wrapper.add(inner, BorderLayout.CENTER);
+        return wrapper;
     }
 
     private ImageIcon loadIconSafely(String path, int w, int h) {
         File f = new File(path);
         if (f.exists()) return new ImageIcon(new ImageIcon(path).getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH));
-        return null; 
+        return null;
     }
 }

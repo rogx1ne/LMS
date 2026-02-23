@@ -18,7 +18,7 @@ public class StudentView extends JPanel {
     // --- LAYOUT COMPONENTS ---
     public CardLayout cardLayout;
     public JPanel contentPanel;
-    
+
     // --- HEADER NAVIGATION ---
     private JButton navRegister;
     private JButton navView;
@@ -28,7 +28,8 @@ public class StudentView extends JPanel {
     private JTextField txtName, txtRoll, txtPhone;
     private JTextArea txtAddr;
     private JComboBox<String> cmbCourse, cmbSession, cmbBookLimit, cmbStatus;
-    
+    private JTextField txtIssuedBy, txtIssueDate, txtFee;
+
     // --- REGISTER BUTTONS ---
     private JButton btnSaveForm;
 
@@ -37,19 +38,20 @@ public class StudentView extends JPanel {
     private DefaultTableModel tableModel;
     private TableRowSorter<DefaultTableModel> sorter;
     private JLabel lblTotalCount;
-    
+
     // --- VIEW BUTTONS ---
-    private JButton btnPrint, btnExport, btnPdf, btnEdit, btnResetFilters;
+    private JButton btnPdf, btnEdit, btnResetFilters;
 
     // --- FILTER FIELDS ---
-    private JTextField fltName, fltRoll, fltIssueBy, fltIssueDate;
+    private JTextField fltCardId, fltName, fltRoll, fltIssueBy;
     private JComboBox<String> fltSession, fltCourse, fltBookLimit;
+    private JSpinner fltFromDate, fltToDate;
 
     // --- COLORS (Updated) ---
     private static final Color COLOR_BLUE_DARK = new Color(31, 62, 109);
     private static final Color COLOR_WHITE     = Color.WHITE;
     private static final Color COLOR_HEADER_TEXT = new Color(80, 80, 80);
-    
+
     // NEW COLORS FOR THEME
     private static final Color COLOR_LIGHT_GREEN_BG = new Color(235, 250, 235); // Very light mint green
     private static final Color COLOR_TABLE_HEADER   = new Color(200, 230, 200); // Slightly darker green for header
@@ -98,7 +100,7 @@ public class StudentView extends JPanel {
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
+
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) { btn.setForeground(COLOR_BLUE_DARK); }
             public void mouseExited(java.awt.event.MouseEvent evt) { btn.setForeground(COLOR_HEADER_TEXT); }
@@ -121,27 +123,35 @@ public class StudentView extends JPanel {
         lblFormTitle.setForeground(COLOR_BLUE_DARK);
         titlePanel.add(lblFormTitle);
 
-        JPanel form = new JPanel(new GridLayout(5, 2, 40, 25));
+        JPanel form = new JPanel(new GridLayout(6, 2, 40, 20));
         form.setBackground(COLOR_WHITE);
         form.setBorder(new EmptyBorder(20, 0, 20, 0));
 
         txtName = createSharpField();
         txtRoll = createSharpField();
+        ((AbstractDocument) txtRoll.getDocument()).setDocumentFilter(new NumericLimitFilter(5));
         txtPhone = createSharpField();
         ((AbstractDocument) txtPhone.getDocument()).setDocumentFilter(new NumericLimitFilter(10));
-        
+
         txtAddr = new JTextArea(3, 20);
         txtAddr.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         txtAddr.setLineWrap(true);
         txtAddr.setBackground(Color.WHITE);
         txtAddr.setForeground(Color.BLACK);
 
-        cmbCourse = new JComboBox<>(new String[]{"BCA", "MCA", "BBA"});
-        cmbSession = new JComboBox<>(generateSessions());
-        cmbBookLimit = new JComboBox<>(new String[]{"1", "2"});
-        cmbStatus = new JComboBox<>(new String[]{"ACTIVE", "INACTIVE", "SUSPENDED"});
-        
-        styleComboBox(cmbCourse); styleComboBox(cmbSession); 
+        cmbCourse = new JComboBox<>(new String[]{"BCA", "BBA", "MCA"});
+        cmbSession = new JComboBox<>(generateDefaultSessions());
+        cmbBookLimit = new JComboBox<>(new String[]{"2", "1"});
+        cmbStatus = new JComboBox<>(new String[]{"ACTIVE", "INACTIVE"});
+
+        txtIssuedBy = createSharpField();
+        txtIssuedBy.setEditable(false);
+        txtIssueDate = createSharpField();
+        txtIssueDate.setEditable(false);
+        txtFee = createSharpField();
+        txtFee.setEditable(false);
+
+        styleComboBox(cmbCourse); styleComboBox(cmbSession);
         styleComboBox(cmbBookLimit); styleComboBox(cmbStatus);
 
         form.add(createInputGroup("Full Name", txtName));
@@ -150,7 +160,10 @@ public class StudentView extends JPanel {
         form.add(createInputGroup("Roll Number", txtRoll));
         form.add(createInputGroup("Phone Number", txtPhone));
         form.add(createInputGroup("Book Limit", cmbBookLimit));
-        form.add(createInputGroup("Account Status", cmbStatus));
+        form.add(createInputGroup("Fee (Auto)", txtFee));
+        form.add(createInputGroup("Issued By (Auto)", txtIssuedBy));
+        form.add(createInputGroup("Issue Date (Auto)", txtIssueDate));
+        form.add(createInputGroup("Status", cmbStatus));
         form.add(createInputGroup("Address", new JScrollPane(txtAddr)));
 
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -179,15 +192,24 @@ public class StudentView extends JPanel {
         pnlFilters.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(Color.LIGHT_GRAY), "Search & Filters", TitledBorder.LEFT, TitledBorder.TOP, new Font("Segoe UI", Font.BOLD, 11), Color.BLACK));
 
+        fltCardId = createFilterField(110);
         fltName = createFilterField(120);
-        
+
         fltRoll = createFilterField(80);
         fltIssueBy = createFilterField(80);
-        fltIssueDate = createFilterField(90);
         fltCourse = new JComboBox<>(new String[]{"All", "BCA", "MCA", "BBA"});
-        fltSession = new JComboBox<>(generateSessionFilters());
+        fltSession = new JComboBox<>(generateSessionFiltersDefault());
         fltBookLimit = new JComboBox<>(new String[]{"All", "1", "2"});
         styleFilterCombo(fltCourse); styleFilterCombo(fltSession); styleFilterCombo(fltBookLimit);
+
+        fltFromDate = createDateSpinner();
+        fltToDate = createDateSpinner();
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.add(java.util.Calendar.YEAR, -10);
+        cal.set(java.util.Calendar.MONTH, java.util.Calendar.JANUARY);
+        cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
+        fltFromDate.setValue(cal.getTime());
+        fltToDate.setValue(new java.util.Date());
 
         btnResetFilters = new JButton("Reset");
         btnResetFilters.setBackground(Color.WHITE);
@@ -195,28 +217,32 @@ public class StudentView extends JPanel {
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 15); gbc.fill = GridBagConstraints.HORIZONTAL;
-        
+
         // Row 1
         gbc.gridy = 0;
-        addFilterLabel(pnlFilters, "Name:", 0, 0, gbc);      gbc.gridx = 1; pnlFilters.add(fltName, gbc);
-        addFilterLabel(pnlFilters, "Roll:", 2, 0, gbc);      gbc.gridx = 3; pnlFilters.add(fltRoll, gbc);
-        addFilterLabel(pnlFilters, "Session:", 4, 0, gbc);   gbc.gridx = 5; pnlFilters.add(fltSession, gbc);
+        addFilterLabel(pnlFilters, "Card ID:", 0, 0, gbc);   gbc.gridx = 1; pnlFilters.add(fltCardId, gbc);
+        addFilterLabel(pnlFilters, "Name:", 2, 0, gbc);      gbc.gridx = 3; pnlFilters.add(fltName, gbc);
+        addFilterLabel(pnlFilters, "Roll:", 4, 0, gbc);      gbc.gridx = 5; pnlFilters.add(fltRoll, gbc);
         addFilterLabel(pnlFilters, "Course:", 6, 0, gbc);    gbc.gridx = 7; pnlFilters.add(fltCourse, gbc);
 
         // Row 2
         gbc.gridy = 1;
-        addFilterLabel(pnlFilters, "Date:", 0, 1, gbc);      gbc.gridx = 1; pnlFilters.add(fltIssueDate, gbc);
-        addFilterLabel(pnlFilters, "Issued By:", 2, 1, gbc); gbc.gridx = 3; pnlFilters.add(fltIssueBy, gbc);
-        addFilterLabel(pnlFilters, "Books:", 4, 1, gbc);     gbc.gridx = 5; pnlFilters.add(fltBookLimit, gbc);
+        addFilterLabel(pnlFilters, "From:", 0, 1, gbc);      gbc.gridx = 1; pnlFilters.add(fltFromDate, gbc);
+        addFilterLabel(pnlFilters, "To:", 2, 1, gbc);        gbc.gridx = 3; pnlFilters.add(fltToDate, gbc);
+        addFilterLabel(pnlFilters, "Session:", 4, 1, gbc);   gbc.gridx = 5; pnlFilters.add(fltSession, gbc);
+        addFilterLabel(pnlFilters, "Issued By:", 6, 1, gbc); gbc.gridx = 7; pnlFilters.add(fltIssueBy, gbc);
+
+        gbc.gridy = 2;
+        addFilterLabel(pnlFilters, "Book Limit:", 0, 2, gbc); gbc.gridx = 1; pnlFilters.add(fltBookLimit, gbc);
         gbc.gridx = 7; pnlFilters.add(btnResetFilters, gbc);
 
         // --- TABLE (LIGHT GREEN BACKGROUND + BLACK TEXT) ---
-        String[] cols = {"Card ID", "Name", "Roll", "Course", "Session", "Issue Date", "Issue By", "Limit", "Fee", "Status"};
+        String[] cols = {"S.No", "Card ID", "Name", "Course", "Roll No", "Session", "Issue Date", "Issued By", "Book Limit", "Fee", "Status"};
         tableModel = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
-        
+
         table = new JTable(tableModel);
         table.setRowHeight(28);
-        
+
         // Table Body Styling
         table.setBackground(COLOR_LIGHT_GREEN_BG); // Light Green Body
         table.setForeground(Color.BLACK);          // Black Text
@@ -242,16 +268,14 @@ public class StudentView extends JPanel {
         pnlFooter.setBackground(COLOR_WHITE);
         lblTotalCount = new JLabel("Total Records: 0");
         lblTotalCount.setForeground(Color.BLACK);
-        
+
         JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         pnlActions.setBackground(COLOR_WHITE);
-        
+
         btnEdit = new JButton("Edit / Update"); styleFooterButton(btnEdit); btnEdit.setBackground(new Color(255, 140, 0));
-        btnPrint = new JButton("Print List"); styleFooterButton(btnPrint);
-        btnExport = new JButton("Download CSV"); styleFooterButton(btnExport);
         btnPdf = new JButton("Download PDF"); styleFooterButton(btnPdf);
 
-        pnlActions.add(btnEdit); pnlActions.add(btnPrint); pnlActions.add(btnExport); pnlActions.add(btnPdf);
+        pnlActions.add(btnEdit); pnlActions.add(btnPdf);
         pnlFooter.add(lblTotalCount, BorderLayout.WEST); pnlFooter.add(pnlActions, BorderLayout.EAST);
 
         pnlView.add(pnlFilters, BorderLayout.NORTH);
@@ -259,7 +283,7 @@ public class StudentView extends JPanel {
         pnlView.add(pnlFooter, BorderLayout.SOUTH);
         return pnlView;
     }
-    
+
     // Helper to add black labels
     private void addFilterLabel(JPanel p, String text, int x, int y, GridBagConstraints gbc) {
         gbc.gridx = x; gbc.gridy = y;
@@ -274,17 +298,15 @@ public class StudentView extends JPanel {
     public JTable getTable() { return table; }
     public DefaultTableModel getTableModel() { return tableModel; }
     public TableRowSorter<DefaultTableModel> getSorter() { return sorter; }
-    
+
     public JButton getNavRegister() { return navRegister; }
     public JButton getNavView() { return navView; }
-    
+
     public JButton getBtnSaveForm() { return btnSaveForm; }
-    public JButton getBtnPrint() { return btnPrint; }
-    public JButton getBtnExport() { return btnExport; }
     public JButton getBtnPdf() { return btnPdf; }
     public JButton getBtnEdit() { return btnEdit; }
     public JButton getBtnResetFilters() { return btnResetFilters; }
-    
+
     public String getInputName() { return txtName.getText().trim(); }
     public String getInputRoll() { return txtRoll.getText().trim(); }
     public String getInputPhone() { return txtPhone.getText().trim(); }
@@ -293,6 +315,9 @@ public class StudentView extends JPanel {
     public String getInputSession() { return (String) cmbSession.getSelectedItem(); }
     public int getInputBookLimit() { return Integer.parseInt((String) cmbBookLimit.getSelectedItem()); }
     public String getInputStatus() { return (String) cmbStatus.getSelectedItem(); }
+    public String getIssuedByText() { return txtIssuedBy.getText(); }
+    public String getIssueDateText() { return txtIssueDate.getText(); }
+    public String getFeeText() { return txtFee.getText(); }
 
     public void setInputName(String s) { txtName.setText(s); }
     public void setInputRoll(String s) { txtRoll.setText(s); }
@@ -302,26 +327,41 @@ public class StudentView extends JPanel {
     public void setInputSession(String s) { cmbSession.setSelectedItem(s); }
     public void setInputBookLimit(String s) { cmbBookLimit.setSelectedItem(s); }
     public void setInputStatus(String s) { cmbStatus.setSelectedItem(s); }
-    
+    public void setIssuedByText(String s) { txtIssuedBy.setText(s); }
+    public void setIssueDateText(String s) { txtIssueDate.setText(s); }
+    public void setFeeText(String s) { txtFee.setText(s); }
+
+    public void setSessionOptions(String[] sessions) {
+        cmbSession.removeAllItems();
+        for (String s : sessions) cmbSession.addItem(s);
+        if (cmbSession.getItemCount() > 0) cmbSession.setSelectedIndex(0);
+    }
+
     public void showCard(String name) { cardLayout.show(contentPanel, name); }
     public void setFormTitle(String title) { lblFormTitle.setText(title); }
     public void setSaveButtonText(String text) { btnSaveForm.setText(text); }
     public void setStatusEnabled(boolean enabled) { cmbStatus.setEnabled(enabled); }
     public void updateTotalCount(int count) { lblTotalCount.setText("Total Records: " + count); }
-    
+
     public void clearForm() {
         txtName.setText(""); txtRoll.setText(""); txtPhone.setText(""); txtAddr.setText("");
         if(cmbSession.getItemCount()>0) cmbSession.setSelectedIndex(0);
-        cmbStatus.setSelectedIndex(0);
+        cmbBookLimit.setSelectedItem("2");
+        cmbStatus.setSelectedItem("ACTIVE");
+        if (txtIssuedBy != null) txtIssuedBy.setText("");
+        if (txtIssueDate != null) txtIssueDate.setText("");
+        if (txtFee != null) txtFee.setText("");
     }
-    
+
+    public JTextField getFltCardId() { return fltCardId; }
     public JTextField getFltName() { return fltName; }
     public JTextField getFltRoll() { return fltRoll; }
     public JTextField getFltIssueBy() { return fltIssueBy; }
-    public JTextField getFltIssueDate() { return fltIssueDate; }
     public JComboBox<String> getFltCourse() { return fltCourse; }
     public JComboBox<String> getFltSession() { return fltSession; }
     public JComboBox<String> getFltBookLimit() { return fltBookLimit; }
+    public JSpinner getFltFromDate() { return fltFromDate; }
+    public JSpinner getFltToDate() { return fltToDate; }
 
     public JTextField getInputNameField() {
         return txtName;
@@ -350,6 +390,7 @@ public class StudentView extends JPanel {
     public JComboBox<String> getInputBookLimitCombo() {
         return cmbBookLimit;
     }
+    public JComboBox<String> getInputStatusCombo() { return cmbStatus; }
 
     public JButton getSaveButton() {
         return btnSaveForm;
@@ -361,7 +402,7 @@ public class StudentView extends JPanel {
     private JTextField createSharpField() {
         JTextField field = new JTextField();
         field.setPreferredSize(new Dimension(200, 30));
-        
+
         // --- FORCE WHITE BOX FIX ---
         field.setOpaque(true);                // 1. Force non-transparent
         field.setBackground(Color.WHITE);     // 2. Background White
@@ -374,11 +415,11 @@ public class StudentView extends JPanel {
             BorderFactory.createEmptyBorder(5, 5, 5, 5)));
         return field;
     }
-    
+
     private JTextField createFilterField(int w) {
         JTextField field = new JTextField();
         field.setPreferredSize(new Dimension(w, 25));
-        
+
         // --- FORCE WHITE BOX FIX ---
         field.setOpaque(true);
         field.setBackground(Color.WHITE);
@@ -398,10 +439,10 @@ public class StudentView extends JPanel {
         box.setBackground(Color.WHITE);
         box.setForeground(Color.BLACK);
         // ---------------------------
-        
+
         box.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         box.setPreferredSize(new Dimension(200, 30));
-        
+
         // Special Fix for Linux Dropdowns
         if (box.getEditor().getEditorComponent() instanceof JTextField) {
             JTextField editor = (JTextField) box.getEditor().getEditorComponent();
@@ -424,10 +465,10 @@ public class StudentView extends JPanel {
         btn.setForeground(COLOR_WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
     }
-    
-    
+
+
     private void styleFilterCombo(JComboBox<?> box) {
-        
+
         box.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         box.setBackground(COLOR_WHITE);
         box.setForeground(Color.BLACK);
@@ -445,17 +486,37 @@ public class StudentView extends JPanel {
         return p;
     }
 
-    private String[] generateSessions() {
+    private String[] generateDefaultSessions() {
         int y = Year.now().getValue();
         return new String[]{ (y)+"-"+(y+3), (y-1)+"-"+(y+2), (y-2)+"-"+(y+1) };
     }
-    
-    private String[] generateSessionFilters() {
-        String[] s = generateSessions();
-        String[] f = new String[s.length+1];
+
+    private String[] generateSessionFiltersDefault() {
+        int y = Year.now().getValue();
+        // Merge UG (3-year) and PG (2-year) sessions so filtering works for all courses.
+        java.util.LinkedHashSet<String> sessions = new java.util.LinkedHashSet<>();
+        sessions.add((y) + "-" + (y + 3));
+        sessions.add((y - 1) + "-" + (y + 2));
+        sessions.add((y - 2) + "-" + (y + 1));
+        sessions.add((y) + "-" + (y + 2));
+        sessions.add((y - 1) + "-" + (y + 1));
+        sessions.add((y - 2) + "-" + (y));
+
+        String[] f = new String[sessions.size() + 1];
         f[0] = "All";
-        System.arraycopy(s, 0, f, 1, s.length);
+        int i = 1;
+        for (String s : sessions) f[i++] = s;
         return f;
+    }
+
+    private JSpinner createDateSpinner() {
+        java.util.Date now = new java.util.Date();
+        SpinnerDateModel model = new SpinnerDateModel(now, null, null, java.util.Calendar.DAY_OF_MONTH);
+        JSpinner sp = new JSpinner(model);
+        JSpinner.DateEditor editor = new JSpinner.DateEditor(sp, "yyyy-MM-dd");
+        sp.setEditor(editor);
+        sp.setPreferredSize(new Dimension(110, 25));
+        return sp;
     }
 
     private class NumericLimitFilter extends DocumentFilter {
