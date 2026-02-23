@@ -50,7 +50,7 @@ The full schema is in:
 Run it once (as a privileged user, because it drops/creates user):
 
 ```sql
-@/home/abhiadi/mine/clg/LMS/script.sql
+LMS/script.sql
 ```
 
 `script.sql` creates:
@@ -85,12 +85,17 @@ LMS_SMTP_PASS=your-app-password
 LMS_SMTP_FROM=your-email@gmail.com
 ```
 
-> `run.sh` auto-loads `.env` before starting the app.
+> `run.sh`(for linux) auto-loads `.env` before starting the app or `run.bat`(for windows).
 
 ## 4) Run the Application
 
 ```bash
 ./run.sh
+```
+or
+
+```bash
+./run.bat
 ```
 
 This script:
