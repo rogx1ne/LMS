@@ -12,6 +12,41 @@ public class StudentDAO {
 
     private final StudentIdGenerator idGenerator = new StudentIdGenerator();
 
+    private boolean existsRollInCourseSession(
+        Connection conn,
+        int roll,
+        String course,
+        String session,
+        String excludeCardId
+    ) throws SQLException {
+        String sql =
+            "SELECT COUNT(*) FROM TBL_STUDENT " +
+            "WHERE ROLL = ? AND COURSE = ? AND ACAD_SESSION = ? " +
+            (excludeCardId != null ? "AND CARD_ID <> ?" : "");
+
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, roll);
+            pst.setString(2, course);
+            pst.setString(3, session);
+            if (excludeCardId != null) {
+                pst.setString(4, excludeCardId);
+            }
+            try (ResultSet rs = pst.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        }
+    }
+
+    public boolean isRollTakenInCourseSession(int roll, String course, String session, String excludeCardId) {
+        try (Connection conn = DBConnection.getConnection()) {
+            if (conn == null) return false;
+            return existsRollInCourseSession(conn, roll, course, session, excludeCardId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public Student registerStudent(
         int roll,
         String name,
@@ -34,6 +69,10 @@ public class StudentDAO {
             boolean oldAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
+                if (existsRollInCourseSession(conn, roll, course, session, null)) {
+                    throw new SQLException("Roll No already exists for selected course and session.");
+                }
+
                 String cardId = idGenerator.nextCardId(conn);
                 String receiptNo = idGenerator.nextReceiptNo(conn);
 
@@ -78,6 +117,10 @@ public class StudentDAO {
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(query)) {
+
+            if (existsRollInCourseSession(conn, s.getRoll(), s.getCourse(), s.getSession(), null)) {
+                return false;
+            }
 
             pst.setString(1, s.getCardId());
             pst.setInt(2, s.getRoll());
@@ -163,6 +206,9 @@ public boolean updateStudent(Student s) {
                  "WHERE CARD_ID=?";
     try (java.sql.Connection conn = DBConnection.getConnection();
          java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (existsRollInCourseSession(conn, s.getRoll(), s.getCourse(), s.getSession(), s.getCardId())) {
+            return false;
+        }
         ps.setString(1, s.getName());
         ps.setInt(2, s.getRoll());
         ps.setLong(3, s.getPhone());

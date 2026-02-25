@@ -36,15 +36,10 @@ public class AddBookPanel extends JPanel {
         title.setFont(new Font("Segoe UI", Font.BOLD, 16));
         title.setForeground(ModuleTheme.BLUE_DARK);
 
-        JLabel hint = new JLabel("Author format: Last Name, First Name");
-        hint.setForeground(new Color(110, 110, 110));
-
         JPanel top = new JPanel();
         top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
         top.setBackground(ModuleTheme.WHITE);
         top.add(title);
-        top.add(Box.createVerticalStrut(4));
-        top.add(hint);
 
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(ModuleTheme.WHITE);

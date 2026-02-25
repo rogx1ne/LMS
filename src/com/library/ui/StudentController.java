@@ -231,12 +231,17 @@ public class StudentController {
         try {
             String name = StudentLogic.toTitleCaseName(rawName);
             StudentLogic.validateRollNumber(rollStr, session);
+            int roll = Integer.parseInt(rollStr);
             long phone = StudentLogic.parseAndValidateContact(phoneStr);
 
             int limit = view.getInputBookLimit();
             double fee = StudentLogic.feeForBookLimit(limit);
 
             if (isEditMode) {
+                if (dao.isRollTakenInCourseSession(roll, course, session, editingCardId)) {
+                    throw new ValidationException("Roll No already exists for this course and session.");
+                }
+
                 Student existing = dao.getStudentByCardId(editingCardId);
                 if (existing == null) {
                     JOptionPane.showMessageDialog(view, "Student not found.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -245,7 +250,7 @@ public class StudentController {
 
                 Student updated = new Student(
                     existing.getCardId(),
-                    Integer.parseInt(rollStr),
+                    roll,
                     name,
                     phone,
                     addr.trim(),
@@ -269,8 +274,12 @@ public class StudentController {
                 return;
             }
 
+            if (dao.isRollTakenInCourseSession(roll, course, session, null)) {
+                throw new ValidationException("Roll No already exists for this course and session.");
+            }
+
             Student created = dao.registerStudent(
-                Integer.parseInt(rollStr),
+                roll,
                 name,
                 phone,
                 addr.trim(),
@@ -282,10 +291,9 @@ public class StudentController {
                 "ACTIVE"
             );
 
-            view.clearForm();
             refreshTable();
+            prepareRegistration();
             showRegistrationSuccessDialog(created);
-            view.showCard("LIST");
 
         } catch (ValidationException ve) {
             JOptionPane.showMessageDialog(view, ve.getMessage(), "Validation Error", JOptionPane.ERROR_MESSAGE);
@@ -904,93 +912,33 @@ public class StudentController {
         JComboBox<String> cmbBookLimit = view.getInputBookLimitCombo();
         JButton btnSave = view.getSaveButton();
 
-        // Add Enter key listener to Name field -> go to Roll
-        txtName.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-                    e.consume();
-                    txtRoll.requestFocus();
-                }
+        bindEnterToNextFocus(txtName, txtRoll);
+        bindEnterToNextFocus(txtRoll, txtPhone);
+        bindEnterToNextFocus(txtPhone, txtAddr);
+        bindEnterToNextFocus(txtAddr, cmbCourse);
+        bindEnterToNextFocus(cmbCourse, cmbSession);
+        bindEnterToNextFocus(cmbSession, cmbBookLimit);
+        bindEnterToNextFocus(cmbBookLimit, btnSave);
+
+        InputMap saveInputMap = btnSave.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap saveActionMap = btnSave.getActionMap();
+        saveInputMap.put(KeyStroke.getKeyStroke("ENTER"), "submitForm");
+        saveActionMap.put("submitForm", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                handleSaveOrUpdate();
             }
         });
+    }
 
-        // Add Enter key listener to Roll field -> go to Phone
-        txtRoll.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-                    e.consume();
-                    txtPhone.requestFocus();
-                }
-            }
-        });
-
-        // Add Enter key listener to Phone field -> go to Address
-        txtPhone.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-                    e.consume();
-                    txtAddr.requestFocus();
-                }
-            }
-        });
-
-        // Add Enter key listener to Address field -> go to Course
-        txtAddr.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-                    e.consume();
-                    cmbCourse.requestFocus();
-                }
-            }
-        });
-
-        // Disable Tab key in Address field (prevent tabs)
-        txtAddr.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_TAB) {
-                    e.consume(); // Prevent tab insertion
-                    cmbCourse.requestFocus(); // Move to next field instead
-                }
-            }
-        });
-
-        // Add Enter key listener to Course combo -> go to Session
-        cmbCourse.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-                    e.consume();
-                    cmbSession.requestFocus();
-                }
-            }
-        });
-
-        // Add Enter key listener to Session combo -> go to Book Limit
-        cmbSession.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-                    e.consume();
-                    cmbBookLimit.requestFocus();
-                }
-            }
-        });
-
-        // Add Enter key listener to Book Limit combo -> go to Save button
-        cmbBookLimit.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-                    e.consume();
-                    btnSave.requestFocus();
-                }
-            }
-        });
-
-        // Add Enter key listener to Save button -> save form
-        btnSave.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-                    e.consume();
-                    handleSaveOrUpdate();
-                }
+    private void bindEnterToNextFocus(JComponent source, Component nextFocus) {
+        InputMap inputMap = source.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap actionMap = source.getActionMap();
+        inputMap.put(KeyStroke.getKeyStroke("ENTER"), "moveFocusNext");
+        actionMap.put("moveFocusNext", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                nextFocus.requestFocusInWindow();
             }
         });
     }

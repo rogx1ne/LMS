@@ -123,7 +123,7 @@ public class StudentView extends JPanel {
         lblFormTitle.setForeground(COLOR_BLUE_DARK);
         titlePanel.add(lblFormTitle);
 
-        JPanel form = new JPanel(new GridLayout(6, 2, 40, 20));
+        JPanel form = new JPanel(new GridLayout(0, 2, 40, 20));
         form.setBackground(COLOR_WHITE);
         form.setBorder(new EmptyBorder(20, 0, 20, 0));
 
@@ -160,10 +160,6 @@ public class StudentView extends JPanel {
         form.add(createInputGroup("Roll Number", txtRoll));
         form.add(createInputGroup("Phone Number", txtPhone));
         form.add(createInputGroup("Book Limit", cmbBookLimit));
-        form.add(createInputGroup("Fee (Auto)", txtFee));
-        form.add(createInputGroup("Issued By (Auto)", txtIssuedBy));
-        form.add(createInputGroup("Issue Date (Auto)", txtIssueDate));
-        form.add(createInputGroup("Status", cmbStatus));
         form.add(createInputGroup("Address", new JScrollPane(txtAddr)));
 
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -345,6 +341,7 @@ public class StudentView extends JPanel {
 
     public void clearForm() {
         txtName.setText(""); txtRoll.setText(""); txtPhone.setText(""); txtAddr.setText("");
+        cmbCourse.setSelectedIndex(0);
         if(cmbSession.getItemCount()>0) cmbSession.setSelectedIndex(0);
         cmbBookLimit.setSelectedItem("2");
         cmbStatus.setSelectedItem("ACTIVE");
@@ -523,10 +520,14 @@ public class StudentView extends JPanel {
         private int limit;
         public NumericLimitFilter(int limit) { this.limit = limit; }
         public void insertString(FilterBypass fb, int offset, String str, AttributeSet attr) throws BadLocationException {
-            if ((fb.getDocument().getLength() + str.length()) <= limit && str.matches("[0-9]+")) super.insertString(fb, offset, str, attr);
+            if (str == null || str.isEmpty()) return;
+            if ((fb.getDocument().getLength() + str.length()) <= limit && str.matches("\\d+")) super.insertString(fb, offset, str, attr);
         }
         public void replace(FilterBypass fb, int offset, int length, String str, AttributeSet attrs) throws BadLocationException {
-            if ((fb.getDocument().getLength() - length + str.length()) <= limit && str.matches("[0-9]+")) super.replace(fb, offset, length, str, attrs);
+            String value = str == null ? "" : str;
+            if ((fb.getDocument().getLength() - length + value.length()) <= limit && (value.isEmpty() || value.matches("\\d+"))) {
+                super.replace(fb, offset, length, value, attrs);
+            }
         }
     }
 }

@@ -20,11 +20,11 @@ public class BookDAO {
 
     public String peekNextAccessionNo() {
         try (Connection conn = DBConnection.getConnection()) {
-            if (conn == null) return "A00001";
+            if (conn == null) return "000001";
             return idGenerator.nextAccessionNo(conn);
         } catch (SQLException e) {
             e.printStackTrace();
-            return "A00001";
+            return "000001";
         }
     }
 

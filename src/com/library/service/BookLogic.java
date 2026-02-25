@@ -16,14 +16,30 @@ public final class BookLogic {
     public static String normalizeAuthorName(String raw) throws ValidationException {
         String author = safe(raw);
         if (author.isEmpty()) throw new ValidationException("Author Name is required.");
-        if (!author.contains(",")) {
-            throw new ValidationException("Author must be entered as 'Last Name, First Name'.");
+
+        // If already has comma, just format it
+        if (author.contains(",")) {
+            String[] parts = author.split(",", 2);
+            if (safe(parts[0]).isEmpty() || safe(parts[1]).isEmpty()) {
+                // If it's just a comma or missing one side, fallback to title case without comma
+                return toTitleCase(author.replace(",", ""));
+            }
+            return toTitleCase(parts[0]) + ", " + toTitleCase(parts[1]);
         }
-        String[] parts = author.split(",", 2);
-        if (safe(parts[0]).isEmpty() || safe(parts[1]).isEmpty()) {
-            throw new ValidationException("Author format must be 'Last Name, First Name'.");
+
+        // Auto-transform: "First Middle Last" -> "Last, First Middle"
+        String[] words = author.split("\\s+");
+        if (words.length == 1) {
+            return toTitleCase(words[0]);
         }
-        return toTitleCase(parts[0]) + ", " + toTitleCase(parts[1]);
+
+        String lastName = words[words.length - 1];
+        StringBuilder firstMiddle = new StringBuilder();
+        for (int i = 0; i < words.length - 1; i++) {
+            firstMiddle.append(words[i]).append(" ");
+        }
+
+        return toTitleCase(lastName) + ", " + toTitleCase(firstMiddle.toString().trim());
     }
 
     public static String normalizeTitle(String raw) throws ValidationException {
