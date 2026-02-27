@@ -90,20 +90,11 @@ public class AddBookPanel extends JPanel {
         ModuleTheme.styleInput(txtBillNo);
         ModuleTheme.styleInput(txtBillDate);
         ModuleTheme.styleInput(txtWithdrawnDate);
-        ModuleTheme.styleInput(txtAccessionPreview);
-        ModuleTheme.styleInput(txtStatus);
-        ModuleTheme.styleCombo(cmbSource);
-        ModuleTheme.styleTextArea(txtRemarks);
+        ModuleTheme.addDatePicker(txtBillDate);
+        ModuleTheme.addDatePicker(txtWithdrawnDate);
 
-        txtBookNo.setEditable(false);
-        txtBookNo.setBackground(new Color(245, 245, 245));
-        txtAccessionPreview.setEditable(false);
-        txtAccessionPreview.setBackground(new Color(245, 245, 245));
-        txtStatus.setEditable(false);
-        txtStatus.setBackground(new Color(245, 245, 245));
-
-        txtBillDate.setToolTipText("yyyy-MM-dd");
-        txtWithdrawnDate.setToolTipText("yyyy-MM-dd (optional)");
+        txtBillDate.setToolTipText("Click to select Bill Date (yyyy-MM-dd)");
+        txtWithdrawnDate.setToolTipText("Click to select Withdrawn Date (optional)");
     }
 
     private void addRow(JPanel form, GridBagConstraints gbc, int row, String l1, JComponent c1, String l2, JComponent c2) {

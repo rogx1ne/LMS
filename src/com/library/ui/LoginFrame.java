@@ -155,28 +155,11 @@ public class LoginFrame extends JFrame {
 
     private JButton createSharpButton(String text) {
         JButton btn = new JButton(text);
-        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI()); // Force remove Linux theme
+        ModuleTheme.styleButton(btn, COLOR_BLUE_DARK, COLOR_WHITE, COLOR_GREEN, COLOR_WHITE);
         btn.setPreferredSize(new Dimension(150, 45));
         btn.setMaximumSize(new Dimension(150, 45));
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        btn.setBackground(Color.WHITE);
-        btn.setForeground(new Color(46, 125, 50));
-        btn.setFocusPainted(false);
-        btn.setOpaque(true);
-        btn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) {
-                btn.setBackground(new Color(46, 125, 50));
-                btn.setForeground(Color.WHITE);
-            }
-            public void mouseExited(MouseEvent e) {
-                btn.setBackground(Color.WHITE);
-                btn.setForeground(new Color(46, 125, 50));
-            }
-        });
         return btn;
     }
 
@@ -431,14 +414,9 @@ public class LoginFrame extends JFrame {
 
     private JButton createSharpButtonForDialog(String text) {
         JButton btn = new JButton(text);
-        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI()); // Force remove Linux theme
+        ModuleTheme.stylePrimaryButton(btn);
         btn.setMaximumSize(new Dimension(300, 40));
-        btn.setBackground(COLOR_GREEN);
-        btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        btn.setFocusPainted(false);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
     }
 }

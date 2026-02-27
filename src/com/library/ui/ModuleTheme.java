@@ -62,27 +62,49 @@ public final class ModuleTheme {
     }
 
     public static void stylePrimaryButton(JButton btn) {
-        btn.setBackground(BLUE_DARK);
-        btn.setForeground(WHITE);
+        styleButton(btn, BLUE_DARK, WHITE, GREEN, WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btn.setFocusPainted(false);
-        btn.setBorder(new EmptyBorder(6, 14, 6, 14));
     }
 
     public static void styleAccentButton(JButton btn) {
-        btn.setBackground(new Color(255, 140, 0));
-        btn.setForeground(WHITE);
+        styleButton(btn, new Color(255, 140, 0), WHITE, GREEN, WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btn.setFocusPainted(false);
-        btn.setBorder(new EmptyBorder(6, 14, 6, 14));
     }
 
     public static void styleSubtleButton(JButton btn) {
-        btn.setBackground(WHITE);
-        btn.setForeground(BLACK);
+        styleButton(btn, WHITE, BLACK, BLUE_DARK, WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btn.setFocusPainted(false);
         btn.setBorder(new LineBorder(Color.LIGHT_GRAY));
+    }
+
+    public static void styleButton(JButton btn, Color normalBg, Color normalFg, Color hoverBg, Color hoverFg) {
+        btn.setBackground(normalBg);
+        btn.setForeground(normalFg);
+        btn.setFocusPainted(false);
+        btn.setBorder(new EmptyBorder(6, 14, 6, 14));
+        btn.setOpaque(true);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Force remove platform specific styling
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (btn.isEnabled()) {
+                    btn.setBackground(hoverBg);
+                    btn.setForeground(hoverFg);
+                }
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (btn.isEnabled()) {
+                    btn.setBackground(normalBg);
+                    btn.setForeground(normalFg);
+                }
+            }
+        });
     }
 
     public static void styleTable(JTable table) {
@@ -112,5 +134,20 @@ public final class ModuleTheme {
             new LineBorder(Color.LIGHT_GRAY),
             new EmptyBorder(4, 6, 4, 6)
         );
+    }
+
+    public static void addDatePicker(JTextField field) {
+        field.setEditable(false);
+        field.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        field.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                Window owner = SwingUtilities.getWindowAncestor(field);
+                String selected = DatePickerDialog.showPicker(owner, field.getText());
+                if (selected != null) {
+                    field.setText(selected);
+                }
+            }
+        });
     }
 }

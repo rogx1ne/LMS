@@ -508,14 +508,13 @@ public class StudentController {
         };
         view.getFltCardId().getDocument().addDocumentListener(dl);
         view.getFltName().getDocument().addDocumentListener(dl);
-        view.getFltRoll().getDocument().addDocumentListener(dl);
-        view.getFltIssueBy().getDocument().addDocumentListener(dl);
-
-        view.getFltCourse().addActionListener(e -> applyFilters());
-        view.getFltSession().addActionListener(e -> applyFilters());
-        view.getFltBookLimit().addActionListener(e -> applyFilters());
-        view.getFltFromDate().addChangeListener(e -> applyFilters());
-        view.getFltToDate().addChangeListener(e -> applyFilters());
+                view.getFltRoll().getDocument().addDocumentListener(dl);
+                view.getFltIssueBy().getDocument().addDocumentListener(dl);
+                view.getFltFromDate().getDocument().addDocumentListener(dl);
+                view.getFltToDate().getDocument().addDocumentListener(dl);
+        
+                view.getFltCourse().addActionListener(e -> applyFilters());
+        
     }
 
     private void applyFilters() {
@@ -546,36 +545,34 @@ public class StudentController {
     }
 
     private RowFilter<Object, Object> buildIssueDateRangeFilter() {
-        java.util.Date from = (java.util.Date) view.getFltFromDate().getValue();
-        java.util.Date to = (java.util.Date) view.getFltToDate().getValue();
-        if (from == null || to == null) return null;
+        String fromStr = view.getFltFromDate().getText().trim();
+        String toStr = view.getFltToDate().getText().trim();
+        if (fromStr.isEmpty() || toStr.isEmpty()) return null;
 
-        LocalDate fromDate = from.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate toDate = to.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        if (fromDate.isAfter(toDate)) {
-            LocalDate tmp = fromDate;
-            fromDate = toDate;
-            toDate = tmp;
-        }
+        try {
+            LocalDate f1 = LocalDate.parse(fromStr);
+            LocalDate t1 = LocalDate.parse(toStr);
+            final LocalDate f = f1.isBefore(t1) ? f1 : t1;
+            final LocalDate t = f1.isBefore(t1) ? t1 : f1;
 
-        final LocalDate f = fromDate;
-        final LocalDate t = toDate;
-
-        return new RowFilter<Object, Object>() {
-            @Override
-            public boolean include(Entry<?, ?> entry) {
-                Object v = entry.getValue(6); // Issue Date column
-                if (v == null) return false;
-                String s = v.toString().trim();
-                if (s.isEmpty()) return false;
-                try {
-                    LocalDate d = LocalDate.parse(s);
-                    return (!d.isBefore(f)) && (!d.isAfter(t));
-                } catch (Exception ignored) {
-                    return false;
+            return new RowFilter<Object, Object>() {
+                @Override
+                public boolean include(Entry<?, ?> entry) {
+                    Object v = entry.getValue(6); // Issue Date column
+                    if (v == null) return false;
+                    String s = v.toString().trim();
+                    if (s.isEmpty()) return false;
+                    try {
+                        LocalDate d = LocalDate.parse(s);
+                        return (!d.isBefore(f)) && (!d.isAfter(t));
+                    } catch (Exception ignored) {
+                        return false;
+                    }
                 }
-            }
-        };
+            };
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void updateSessionsForSelectedCourse() {
@@ -614,6 +611,8 @@ public class StudentController {
         view.getFltIssueBy().setText("");
         view.getFltCourse().setSelectedIndex(0); view.getFltBookLimit().setSelectedIndex(0);
         view.getFltSession().setSelectedIndex(0);
+        view.getFltFromDate().setText("");
+        view.getFltToDate().setText("");
     }
 
     private Map<String, Integer> showFieldSelectionDialog() {

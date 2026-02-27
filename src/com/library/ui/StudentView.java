@@ -45,7 +45,7 @@ public class StudentView extends JPanel {
     // --- FILTER FIELDS ---
     private JTextField fltCardId, fltName, fltRoll, fltIssueBy;
     private JComboBox<String> fltSession, fltCourse, fltBookLimit;
-    private JSpinner fltFromDate, fltToDate;
+    private JTextField fltFromDate, fltToDate;
 
     // --- COLORS (Updated) ---
     private static final Color COLOR_BLUE_DARK = new Color(31, 62, 109);
@@ -188,31 +188,36 @@ public class StudentView extends JPanel {
         pnlFilters.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(Color.LIGHT_GRAY), "Search & Filters", TitledBorder.LEFT, TitledBorder.TOP, new Font("Segoe UI", Font.BOLD, 11), Color.BLACK));
 
-        fltCardId = createFilterField(110);
-        fltName = createFilterField(120);
+        fltCardId = createFilterField(100);
+        fltName = createFilterField(100);
 
-        fltRoll = createFilterField(80);
-        fltIssueBy = createFilterField(80);
+        fltRoll = createFilterField(100);
+        fltIssueBy = createFilterField(100);
         fltCourse = new JComboBox<>(new String[]{"All", "BCA", "MCA", "BBA"});
         fltSession = new JComboBox<>(generateSessionFiltersDefault());
         fltBookLimit = new JComboBox<>(new String[]{"All", "1", "2"});
         styleFilterCombo(fltCourse); styleFilterCombo(fltSession); styleFilterCombo(fltBookLimit);
 
-        fltFromDate = createDateSpinner();
-        fltToDate = createDateSpinner();
+        fltFromDate = createFilterField(100);
+        fltToDate = createFilterField(100);
+        ModuleTheme.addDatePicker(fltFromDate);
+        ModuleTheme.addDatePicker(fltToDate);
+
         java.util.Calendar cal = java.util.Calendar.getInstance();
         cal.add(java.util.Calendar.YEAR, -10);
         cal.set(java.util.Calendar.MONTH, java.util.Calendar.JANUARY);
         cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
-        fltFromDate.setValue(cal.getTime());
-        fltToDate.setValue(new java.util.Date());
+        fltFromDate.setText(new java.text.SimpleDateFormat("yyyy-MM-dd").format(cal.getTime()));
+        fltToDate.setText(new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date()));
 
         btnResetFilters = new JButton("Reset");
         btnResetFilters.setBackground(Color.WHITE);
         btnResetFilters.setForeground(Color.BLACK);
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 15); gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 15); 
+        gbc.fill = GridBagConstraints.NONE; // Changed from HORIZONTAL
+        gbc.anchor = GridBagConstraints.WEST; // Added anchor
 
         // Row 1
         gbc.gridy = 0;
@@ -231,6 +236,11 @@ public class StudentView extends JPanel {
         gbc.gridy = 2;
         addFilterLabel(pnlFilters, "Book Limit:", 0, 2, gbc); gbc.gridx = 1; pnlFilters.add(fltBookLimit, gbc);
         gbc.gridx = 7; pnlFilters.add(btnResetFilters, gbc);
+
+        // --- FILLER TO PUSH EVERYTHING LEFT ---
+        gbc.gridx = 8; gbc.gridy = 0; gbc.weightx = 1.0; gbc.fill = GridBagConstraints.HORIZONTAL;
+        pnlFilters.add(new JLabel(""), gbc);
+        // --------------------------------------
 
         // --- TABLE (LIGHT GREEN BACKGROUND + BLACK TEXT) ---
         String[] cols = {"S.No", "Card ID", "Name", "Course", "Roll No", "Session", "Issue Date", "Issued By", "Book Limit", "Fee", "Status"};
@@ -357,8 +367,8 @@ public class StudentView extends JPanel {
     public JComboBox<String> getFltCourse() { return fltCourse; }
     public JComboBox<String> getFltSession() { return fltSession; }
     public JComboBox<String> getFltBookLimit() { return fltBookLimit; }
-    public JSpinner getFltFromDate() { return fltFromDate; }
-    public JSpinner getFltToDate() { return fltToDate; }
+    public JTextField getFltFromDate() { return fltFromDate; }
+    public JTextField getFltToDate() { return fltToDate; }
 
     public JTextField getInputNameField() {
         return txtName;
@@ -415,7 +425,9 @@ public class StudentView extends JPanel {
 
     private JTextField createFilterField(int w) {
         JTextField field = new JTextField();
-        field.setPreferredSize(new Dimension(w, 25));
+        Dimension d = new Dimension(w, 30);
+        field.setPreferredSize(d);
+        field.setMinimumSize(d);
 
         // --- FORCE WHITE BOX FIX ---
         field.setOpaque(true);
@@ -451,25 +463,24 @@ public class StudentView extends JPanel {
     }
 
     private void stylePrimaryButton(JButton btn) {
-        btn.setBackground(COLOR_BLUE_DARK);
-        btn.setForeground(COLOR_WHITE);
+        ModuleTheme.styleButton(btn, COLOR_BLUE_DARK, COLOR_WHITE, ModuleTheme.GREEN, COLOR_WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btn.setPreferredSize(new Dimension(180, 40));
     }
 
     private void styleFooterButton(JButton btn) {
-        btn.setBackground(COLOR_BLUE_DARK);
-        btn.setForeground(COLOR_WHITE);
+        ModuleTheme.styleButton(btn, COLOR_BLUE_DARK, COLOR_WHITE, ModuleTheme.GREEN, COLOR_WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
     }
 
 
     private void styleFilterCombo(JComboBox<?> box) {
-
+        Dimension d = new Dimension(100, 30);
+        box.setPreferredSize(d);
+        box.setMinimumSize(d);
         box.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         box.setBackground(COLOR_WHITE);
         box.setForeground(Color.BLACK);
-        box.setPreferredSize(new Dimension(90, 25));
     }
 
     private JPanel createInputGroup(String label, JComponent field) {
@@ -504,16 +515,6 @@ public class StudentView extends JPanel {
         int i = 1;
         for (String s : sessions) f[i++] = s;
         return f;
-    }
-
-    private JSpinner createDateSpinner() {
-        java.util.Date now = new java.util.Date();
-        SpinnerDateModel model = new SpinnerDateModel(now, null, null, java.util.Calendar.DAY_OF_MONTH);
-        JSpinner sp = new JSpinner(model);
-        JSpinner.DateEditor editor = new JSpinner.DateEditor(sp, "yyyy-MM-dd");
-        sp.setEditor(editor);
-        sp.setPreferredSize(new Dimension(110, 25));
-        return sp;
     }
 
     private class NumericLimitFilter extends DocumentFilter {

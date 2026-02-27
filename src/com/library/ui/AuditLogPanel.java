@@ -31,6 +31,8 @@ public class AuditLogPanel extends JPanel {
         ModuleTheme.styleCombo(cmbModule);
         ModuleTheme.styleInput(txtFromDate);
         ModuleTheme.styleInput(txtToDate);
+        ModuleTheme.addDatePicker(txtFromDate);
+        ModuleTheme.addDatePicker(txtToDate);
         ModuleTheme.stylePrimaryButton(btnSearch);
         ModuleTheme.styleSubtleButton(btnReset);
 

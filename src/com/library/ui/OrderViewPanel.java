@@ -29,6 +29,7 @@ public class OrderViewPanel extends JPanel {
 
         ModuleTheme.styleInput(fltOrderId);
         ModuleTheme.styleInput(fltOrderDate);
+        ModuleTheme.addDatePicker(fltOrderDate);
         ModuleTheme.styleSubtleButton(btnRefresh);
 
         GridBagConstraints gbc = new GridBagConstraints();

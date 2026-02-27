@@ -104,6 +104,7 @@ public class OrderEntryPanel extends JPanel {
     private void styleInputs() {
         ModuleTheme.styleInput(txtOrderId);
         ModuleTheme.styleInput(txtOrderDate);
+        ModuleTheme.addDatePicker(txtOrderDate);
         ModuleTheme.styleCombo(cmbSellerId);
         ModuleTheme.styleInput(txtBookTitle);
         ModuleTheme.styleInput(txtAuthor);
@@ -111,9 +112,7 @@ public class OrderEntryPanel extends JPanel {
         ModuleTheme.styleInput(txtQty);
 
         txtOrderId.setEditable(false);
-        txtOrderDate.setEditable(false);
         txtOrderId.setBackground(new Color(245, 245, 245));
-        txtOrderDate.setBackground(new Color(245, 245, 245));
     }
 
     private void addRow(JPanel panel, GridBagConstraints gbc, int row, String l1, JComponent c1, String l2, JComponent c2) {

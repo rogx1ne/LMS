@@ -34,6 +34,10 @@ public class BookEditDialog extends JDialog {
         setLayout(new BorderLayout());
 
         txtAccessNo.setEditable(false);
+        ModuleTheme.styleInput(txtBillDate);
+        ModuleTheme.styleInput(txtWithdrawn);
+        ModuleTheme.addDatePicker(txtBillDate);
+        ModuleTheme.addDatePicker(txtWithdrawn);
 
         JPanel form = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();

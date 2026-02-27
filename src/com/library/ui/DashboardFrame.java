@@ -62,6 +62,8 @@ public class DashboardFrame extends JFrame {
         boolean isAdministrator = CurrentUserContext.isAdministrator();
 
         // Add Menu Items (Matches your sketch)
+        pnlMenu.add(createMenuButton("HOME", "lib/icons/home.png"));
+        pnlMenu.add(Box.createVerticalStrut(15));
         pnlMenu.add(createMenuButton("BOOK", "lib/icons/book.png"));
         pnlMenu.add(Box.createVerticalStrut(15));
         pnlMenu.add(createMenuButton("TRANSACTION", "lib/icons/cart.png"));
@@ -109,6 +111,10 @@ public class DashboardFrame extends JFrame {
         pnlContent = new JPanel(cardLayout);
         pnlContent.setBackground(COLOR_BG_CONTENT);
 
+        // --- PAGE 0: HOME ---
+        HomePanel homePanel = new HomePanel();
+        pnlContent.add(homePanel, "HOME");
+
         // --- PAGE 1: BOOK (MODULE) ---
         BookModulePanel bookModulePanel = new BookModulePanel();
         new BookController(bookModulePanel);
@@ -139,8 +145,8 @@ public class DashboardFrame extends JFrame {
             pnlContent.add(adminModulePanel, "ADMIN");
         }
 
-        // Default View - Set to STUDENT for now so you see your changes immediately
-        cardLayout.show(pnlContent, "STUDENT");
+        // Default View - Set to HOME
+        cardLayout.show(pnlContent, "HOME");
 
         // Add to Frame
         add(pnlSidebar, BorderLayout.WEST);

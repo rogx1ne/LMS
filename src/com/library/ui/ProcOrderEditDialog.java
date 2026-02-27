@@ -37,7 +37,8 @@ public class ProcOrderEditDialog extends JDialog {
 
         ModuleTheme.styleCombo(cmbSellerId);
         ModuleTheme.styleInput(txtOrderDate);
-        txtOrderDate.setToolTipText("yyyy-MM-dd");
+        ModuleTheme.addDatePicker(txtOrderDate);
+        txtOrderDate.setToolTipText("Click to select Order Date (yyyy-MM-dd)");
 
         for (String id : sellerIds) cmbSellerId.addItem(id);
 
