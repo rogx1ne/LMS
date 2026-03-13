@@ -47,4 +47,21 @@ public class ProcurementModulePanel extends JPanel {
     public SellerPanel getSellerPanel() { return sellerPanel; }
     public OrderEntryPanel getOrderEntryPanel() { return orderEntryPanel; }
     public OrderViewPanel getOrderViewPanel() { return orderViewPanel; }
+
+    public void showSection(String key) {
+        if (key == null) return;
+        switch (key.trim()) {
+            case "SELLER":
+                cardLayout.show(contentPanel, "SELLER");
+                break;
+            case "ADD_ORDER":
+                cardLayout.show(contentPanel, "ADD_ORDER");
+                break;
+            case "VIEW_ORDER":
+                cardLayout.show(contentPanel, "VIEW_ORDER");
+                break;
+            default:
+                break;
+        }
+    }
 }

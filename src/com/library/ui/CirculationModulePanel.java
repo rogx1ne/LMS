@@ -41,4 +41,18 @@ public class CirculationModulePanel extends JPanel {
 
     public IssuePanel getIssuePanel() { return issuePanel; }
     public ReturnPanel getReturnPanel() { return returnPanel; }
+
+    public void showSection(String key) {
+        if (key == null) return;
+        switch (key.trim()) {
+            case "ISSUE":
+                cardLayout.show(contentPanel, "ISSUE");
+                break;
+            case "RETURN":
+                cardLayout.show(contentPanel, "RETURN");
+                break;
+            default:
+                break;
+        }
+    }
 }

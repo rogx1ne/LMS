@@ -46,4 +46,21 @@ public class BookModulePanel extends JPanel {
     public AddBookPanel getAddBookPanel() { return addBookPanel; }
     public AccessionRegisterPanel getAccessionRegisterPanel() { return accessionRegisterPanel; }
     public StockPanel getStockPanel() { return stockPanel; }
+
+    public void showSection(String key) {
+        if (key == null) return;
+        switch (key.trim()) {
+            case "ADD":
+                cardLayout.show(contentPanel, "ADD");
+                break;
+            case "REGISTER":
+                cardLayout.show(contentPanel, "REGISTER");
+                break;
+            case "STOCK":
+                cardLayout.show(contentPanel, "STOCK");
+                break;
+            default:
+                break;
+        }
+    }
 }

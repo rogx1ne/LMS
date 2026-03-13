@@ -5,6 +5,9 @@ import java.awt.*;
 
 public class Main {
     public static void main(String[] args) {
+        // Treat ENTER like TAB for faster navigation between inputs.
+        com.library.ui.EnterFocusTraversal.install();
+
         // 1. FORCE THE THEME (This fixes the black boxes)
         try {
             // Option A: Nimbus (Modern, Clean, respects your colors)

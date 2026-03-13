@@ -2,6 +2,7 @@ package com.library.dao;
 
 import com.library.database.DBConnection;
 import com.library.model.User;
+import com.library.model.UserProfile;
 import java.sql.*;
 
 public class UserDAO {
@@ -149,6 +150,32 @@ public class UserDAO {
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public UserProfile getUserProfile(String userId) {
+        if (userId == null || userId.trim().isEmpty()) return null;
+
+        String sql =
+            "SELECT USER_ID, NAME, EMAIL, PHNO, NVL(STATUS,'ACTIVE') AS STATUS " +
+            "FROM TBL_CREDENTIALS WHERE USER_ID = ?";
+        try (Connection conn = DBConnection.getConnection()) {
+            if (conn == null) return null;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, userId.trim());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) return null;
+                    return new UserProfile(
+                        rs.getString("USER_ID"),
+                        rs.getString("NAME"),
+                        rs.getString("EMAIL"),
+                        rs.getLong("PHNO"),
+                        rs.getString("STATUS")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            return null;
         }
     }
 

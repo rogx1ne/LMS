@@ -47,4 +47,21 @@ public class AdminModulePanel extends JPanel {
     public UserManagementPanel getUserManagementPanel() { return userManagementPanel; }
     public DataImportExportPanel getDataImportExportPanel() { return dataImportExportPanel; }
     public AuditLogPanel getAuditLogPanel() { return auditLogPanel; }
+
+    public void showSection(String key) {
+        if (key == null) return;
+        switch (key.trim()) {
+            case "USERS":
+                cardLayout.show(contentPanel, "USERS");
+                break;
+            case "DATA":
+                cardLayout.show(contentPanel, "DATA");
+                break;
+            case "AUDIT":
+                cardLayout.show(contentPanel, "AUDIT");
+                break;
+            default:
+                break;
+        }
+    }
 }
