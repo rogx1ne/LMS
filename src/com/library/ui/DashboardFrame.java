@@ -47,6 +47,7 @@ public class DashboardFrame extends JFrame {
     private StudentView studentView;
     private CirculationModulePanel circulationModulePanel;
     private AdminModulePanel adminModulePanel; // may be null for non-admin
+    private AssistantLoaderPanel assistantLoaderPanel;
 
     public DashboardFrame() {
         initComponents();
@@ -110,6 +111,8 @@ public class DashboardFrame extends JFrame {
 
         // Add Menu Items (Matches your sketch)
         pnlMenu.add(createMenuButton("HOME", "lib/icons/home.png", "H"));
+        pnlMenu.add(Box.createVerticalStrut(15));
+        pnlMenu.add(createMenuButton("ASSISTANT", "lib/icons/robot.png", "?"));
         pnlMenu.add(Box.createVerticalStrut(15));
         pnlMenu.add(createMenuButton("BOOK", "lib/icons/book.png", "B"));
         pnlMenu.add(Box.createVerticalStrut(15));
@@ -176,6 +179,10 @@ public class DashboardFrame extends JFrame {
         // --- PAGE 0: HOME ---
         homePanel = new HomePanel();
         pnlContent.add(homePanel, "HOME");
+
+        // --- PAGE 0.5: ASSISTANT (Lazy-loaded) ---
+        assistantLoaderPanel = new AssistantLoaderPanel(this);
+        pnlContent.add(assistantLoaderPanel, "ASSISTANT");
 
         // --- PAGE 1: BOOK (MODULE) ---
         bookModulePanel = new BookModulePanel();

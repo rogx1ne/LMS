@@ -1,0 +1,20 @@
+DB connection troubleshooting (Oracle / JDBC)
+
+1) Ensure Oracle DB is running and the listener is up.
+   - If you use Oracle XE, the default is usually host=localhost, port=1521, SID=xe.
+
+2) Check the app’s connection settings:
+   - File: src/com/library/database/DBConnection.java
+   - URL: jdbc:oracle:thin:@localhost:1521:xe
+   - USER/PASSWORD: PRJ2531H / PRJ2531H (created by script.sql)
+
+3) Confirm the schema exists:
+   - Run script.sql once to create user + tables + seed users.
+
+4) Common ORA errors:
+   - ORA-12514/ORA-12541: listener/service name mismatch or listener down
+   - ORA-01017: invalid username/password
+   - ORA-28000: account locked
+
+If you tell me the exact ORA code/message, I can map it to the likely fix.
+

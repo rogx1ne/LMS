@@ -1,0 +1,19 @@
+Forgot-password OTP email troubleshooting
+
+This LMS sends OTP using SMTP env vars loaded from .env (run.sh sources it).
+
+1) Check .env values (copy from .env.example):
+   - LMS_SMTP_HOST (e.g. smtp.gmail.com)
+   - LMS_SMTP_PORT (587 typical for STARTTLS)
+   - LMS_SMTP_USER
+   - LMS_SMTP_PASS (app password, not your normal password)
+   - LMS_SMTP_FROM (optional; defaults to LMS_SMTP_USER)
+
+2) Gmail notes:
+   - Use an App Password (Google Account → Security → App passwords).
+   - Normal password often fails.
+
+3) If email still fails:
+   - Verify your network can reach the SMTP host/port
+   - Check if your provider blocks SMTP or requires SSL settings
+
