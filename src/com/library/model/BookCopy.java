@@ -19,6 +19,10 @@ public class BookCopy {
     private final BigDecimal cost;
     private final String billNo;
     private final Date billDate;
+    private final String subject;
+    private final String course;
+    private final String year;
+    private final String type;
     private final Date withdrawnDate;
     private final String remarks;
     private final String status;
@@ -39,6 +43,10 @@ public class BookCopy {
         BigDecimal cost,
         String billNo,
         Date billDate,
+        String subject,
+        String course,
+        String year,
+        String type,
         Date withdrawnDate,
         String remarks,
         String status
@@ -58,6 +66,10 @@ public class BookCopy {
         this.cost = cost;
         this.billNo = billNo;
         this.billDate = billDate;
+        this.subject = subject;
+        this.course = course;
+        this.year = year;
+        this.type = type;
         this.withdrawnDate = withdrawnDate;
         this.remarks = remarks;
         this.status = status;
@@ -78,6 +90,10 @@ public class BookCopy {
     public BigDecimal getCost() { return cost; }
     public String getBillNo() { return billNo; }
     public Date getBillDate() { return billDate; }
+    public String getSubject() { return subject; }
+    public String getCourse() { return course; }
+    public String getYear() { return year; }
+    public String getType() { return type; }
     public Date getWithdrawnDate() { return withdrawnDate; }
     public String getRemarks() { return remarks; }
     public String getStatus() { return status; }

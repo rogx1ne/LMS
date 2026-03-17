@@ -40,7 +40,7 @@ public class SellerDAO {
     public String peekNextSellerId() {
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return "SID0000001";
-            return idGenerator.nextSellerId(conn);
+            return idGenerator.peekNextSellerId(conn);
         } catch (SQLException e) {
             e.printStackTrace();
             return "SID0000001";

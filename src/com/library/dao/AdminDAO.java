@@ -4,6 +4,7 @@ import com.library.database.DBConnection;
 import com.library.model.AuditLogEntry;
 import com.library.model.User;
 import com.library.service.AuditLogger;
+import com.library.service.PasswordHasher;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -71,8 +72,8 @@ public class AdminDAO {
 
     public User createUser(String name, String password, String email, String phone, String performedBy) throws SQLException {
         String sql =
-            "INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, EMAIL, PHNO, STATUS) " +
-            "VALUES (?, ?, ?, ?, ?, 'ACTIVE')";
+            "INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, EMAIL, PHNO, ROLE, STATUS) " +
+            "VALUES (?, ?, ?, ?, ?, 'LIBRARIAN', 'ACTIVE')";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) throw new SQLException("DB connection is null.");
             boolean oldAuto = conn.getAutoCommit();
@@ -83,14 +84,14 @@ public class AdminDAO {
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
                     ps.setString(1, userId);
                     ps.setString(2, name.trim());
-                    ps.setString(3, password.trim());
+                    ps.setString(3, PasswordHasher.hashPassword(password));
                     ps.setString(4, email.trim());
                     ps.setLong(5, phno);
                     ps.executeUpdate();
                 }
                 AuditLogger.logAction(conn, performedBy, "Admin", "Created user " + userId);
                 conn.commit();
-                return new User(userId, name.trim(), password.trim(), email.trim(), phno, "ACTIVE");
+                return new User(userId, name.trim(), "[PROTECTED]", email.trim(), phno, "ACTIVE");
             } catch (Exception e) {
                 conn.rollback();
                 if (e instanceof SQLException) throw (SQLException) e;
@@ -202,8 +203,8 @@ public class AdminDAO {
     }
 
     public List<Map<String, Object>> fetchTableData(String uiTableName) throws SQLException {
-        String tableName = resolvePhysicalTable(uiTableName);
-        String sql = "SELECT * FROM " + tableName;
+        String tableName = resolveExportTarget(uiTableName);
+        String sql = exportSqlFor(tableName);
         List<Map<String, Object>> out = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection()) {
@@ -226,7 +227,7 @@ public class AdminDAO {
 
     public int importRows(String uiTableName, List<Map<String, String>> rows, String performedBy) throws SQLException {
         if (rows == null || rows.isEmpty()) return 0;
-        String tableName = resolvePhysicalTable(uiTableName);
+        String tableName = resolveImportTarget(uiTableName);
 
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) throw new SQLException("DB connection is null.");
@@ -290,8 +291,8 @@ public class AdminDAO {
             "WHEN NOT MATCHED THEN INSERT (AUTHOR_NAME, BK_TITLE, EDITION) VALUES (src.AUTHOR_NAME, src.BK_TITLE, src.EDITION)";
         String insertSql =
             "INSERT INTO TBL_BOOK_INFORMATION (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, " +
-            "PAGES, SOURCE, CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "PAGES, SOURCE, CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, BK_SUBJECT, BK_COURSE, BK_YEAR, BK_TYPE, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         int count = 0;
         try (PreparedStatement mergePs = conn.prepareStatement(mergeCatalogSql);
@@ -322,10 +323,14 @@ public class AdminDAO {
                 ps.setBigDecimal(13, parseDecimal(row, "U_PRICE"));
                 ps.setString(14, opt(row, "B_NO"));
                 ps.setDate(15, parseNullableDate(row, "B_DATE"));
-                ps.setDate(16, parseNullableDate(row, "WITHDRAWN"));
-                ps.setString(17, opt(row, "REMARKS"));
-                ps.setString(18, req(row, "STATUS"));
-                ps.setString(19, opt(row, "CIRC_STATUS").isEmpty() ? "AVAILABLE" : opt(row, "CIRC_STATUS"));
+                ps.setString(16, opt(row, "BK_SUBJECT"));
+                ps.setString(17, opt(row, "BK_COURSE"));
+                ps.setString(18, opt(row, "BK_YEAR"));
+                ps.setString(19, opt(row, "BK_TYPE").isEmpty() ? "BOOK" : opt(row, "BK_TYPE"));
+                ps.setDate(20, parseNullableDate(row, "WITHDRAWN"));
+                ps.setString(21, opt(row, "REMARKS"));
+                ps.setString(22, req(row, "STATUS"));
+                ps.setString(23, opt(row, "CIRC_STATUS").isEmpty() ? "AVAILABLE" : opt(row, "CIRC_STATUS"));
                 ps.addBatch();
                 count++;
             }
@@ -335,24 +340,69 @@ public class AdminDAO {
     }
 
     private int importOrders(Connection conn, List<Map<String, String>> rows) throws SQLException {
-        String sql = "INSERT INTO TBL_ORDER_HEADER (ORDER_ID, S_ID, ORDER_DATE) VALUES (?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (Map<String, String> row : rows) {
-                ps.setString(1, req(row, "ORDER_ID"));
-                ps.setString(2, req(row, "S_ID"));
-                ps.setDate(3, parseDate(row, "ORDER_DATE"));
-                ps.addBatch();
+        String headerSql = "INSERT INTO TBL_ORDER_HEADER (ORDER_ID, S_ID, ORDER_DATE) VALUES (?, ?, ?)";
+        String detailSql = "INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY) VALUES (?, ?, ?, ?, ?)";
+        Map<String, Map<String, String>> headers = new LinkedHashMap<>();
+
+        for (Map<String, String> row : rows) {
+            String orderId = req(row, "ORDER_ID");
+            Map<String, String> existing = headers.get(orderId);
+            if (existing == null) {
+                headers.put(orderId, row);
+                continue;
             }
-            int[] counts = ps.executeBatch();
+            if (!req(existing, "S_ID").equals(req(row, "S_ID")) || !req(existing, "ORDER_DATE").equals(req(row, "ORDER_DATE"))) {
+                throw new SQLException("Conflicting header values found for order " + orderId);
+            }
+        }
+
+        try (PreparedStatement headerPs = conn.prepareStatement(headerSql);
+             PreparedStatement detailPs = conn.prepareStatement(detailSql)) {
+            for (Map<String, String> header : headers.values()) {
+                headerPs.setString(1, req(header, "ORDER_ID"));
+                headerPs.setString(2, req(header, "S_ID"));
+                headerPs.setDate(3, parseDate(header, "ORDER_DATE"));
+                headerPs.addBatch();
+            }
+            headerPs.executeBatch();
+
+            for (Map<String, String> row : rows) {
+                detailPs.setString(1, req(row, "ORDER_ID"));
+                detailPs.setString(2, req(row, "BOOK_TITLE"));
+                detailPs.setString(3, req(row, "AUTHOR"));
+                detailPs.setString(4, req(row, "PUBLICATION"));
+                detailPs.setInt(5, parseInt(row, "QUANTITY"));
+                detailPs.addBatch();
+            }
+            int[] counts = detailPs.executeBatch();
             return counts.length;
         }
     }
 
-    private String resolvePhysicalTable(String uiTableName) throws SQLException {
+    private String resolveExportTarget(String uiTableName) throws SQLException {
+        if (TABLE_STUDENTS.equalsIgnoreCase(uiTableName)) return "TBL_STUDENT";
+        if (TABLE_BOOKS.equalsIgnoreCase(uiTableName)) return "TBL_BOOK_INFORMATION";
+        if (TABLE_ORDERS.equalsIgnoreCase(uiTableName)) return "TBL_ORDER_EXPORT";
+        throw new SQLException("Unsupported table selection: " + uiTableName);
+    }
+
+    private String resolveImportTarget(String uiTableName) throws SQLException {
         if (TABLE_STUDENTS.equalsIgnoreCase(uiTableName)) return "TBL_STUDENT";
         if (TABLE_BOOKS.equalsIgnoreCase(uiTableName)) return "TBL_BOOK_INFORMATION";
         if (TABLE_ORDERS.equalsIgnoreCase(uiTableName)) return "TBL_ORDER_HEADER";
         throw new SQLException("Unsupported table selection: " + uiTableName);
+    }
+
+    private String exportSqlFor(String tableName) throws SQLException {
+        if ("TBL_STUDENT".equals(tableName)) return "SELECT * FROM TBL_STUDENT";
+        if ("TBL_BOOK_INFORMATION".equals(tableName)) return "SELECT * FROM TBL_BOOK_INFORMATION";
+        if ("TBL_ORDER_EXPORT".equals(tableName)) {
+            return
+                "SELECT h.ORDER_ID, h.S_ID, h.ORDER_DATE, d.BOOK_TITLE, d.AUTHOR, d.PUBLICATION, d.QUANTITY " +
+                "FROM TBL_ORDER_HEADER h JOIN TBL_ORDER_DETAILS d ON d.ORDER_ID = h.ORDER_ID " +
+                "ORDER BY h.ORDER_DATE DESC, h.ORDER_ID DESC, d.BOOK_TITLE";
+        }
+        throw new SQLException("Unsupported table export: " + tableName);
     }
 
     private String req(Map<String, String> row, String key) throws SQLException {

@@ -59,6 +59,7 @@ public class AccessionRegisterPanel extends JPanel {
         String[] cols = {
             "Accession No", "Author Name", "Book Title", "Volume", "Edition", "Publisher", "Publisher Place",
             "Pub Year", "Pages", "Source", "Class No", "Book No", "Cost", "Bill No", "Bill Date",
+            "Subject", "Course", "Year", "Type",
             "Withdrawn Date", "Remarks", "Status"
         };
 

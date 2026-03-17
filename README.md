@@ -70,6 +70,14 @@ Current defaults:
 - USER: `PRJ2531H`
 - PASSWORD: `PRJ2531H`
 
+You can also override these at runtime with:
+
+```env
+LMS_DB_URL=jdbc:oracle:thin:@localhost:1521:xe
+LMS_DB_USER=PRJ2531H
+LMS_DB_PASSWORD=PRJ2531H
+```
+
 ## 3) Configure Email OTP (.env)
 
 Forgot-password OTP uses SMTP env vars.

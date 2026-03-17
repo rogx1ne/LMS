@@ -34,7 +34,7 @@ public class OrderDAO {
     public String peekNextOrderId() {
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return "ORD-000001";
-            return idGenerator.nextOrderId(conn);
+            return idGenerator.peekNextOrderId(conn);
         } catch (SQLException e) {
             e.printStackTrace();
             return "ORD-000001";

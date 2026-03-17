@@ -21,10 +21,89 @@ public class BookDAO {
     public String peekNextAccessionNo() {
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return "000001";
-            return idGenerator.nextAccessionNo(conn);
+            return idGenerator.peekNextAccessionNo(conn);
         } catch (SQLException e) {
             e.printStackTrace();
             return "000001";
+        }
+    }
+
+    public List<BookCopy> addBookCopies(List<BookCopy> drafts) throws SQLException {
+        String mergeCatalogSql =
+            "MERGE INTO TBL_BOOK_CATALOG c " +
+            "USING (SELECT ? AS AUTHOR_NAME, ? AS BK_TITLE, ? AS EDITION FROM dual) src " +
+            "ON (c.AUTHOR_NAME = src.AUTHOR_NAME AND c.BK_TITLE = src.BK_TITLE AND c.EDITION = src.EDITION) " +
+            "WHEN NOT MATCHED THEN INSERT (AUTHOR_NAME, BK_TITLE, EDITION) VALUES (src.AUTHOR_NAME, src.BK_TITLE, src.EDITION)";
+
+        String insertSql =
+            "INSERT INTO TBL_BOOK_INFORMATION (" +
+            "ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE, " +
+            "CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, BK_SUBJECT, BK_COURSE, BK_YEAR, BK_TYPE, WITHDRAWN, REMARKS, STATUS" +
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        List<BookCopy> result = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection()) {
+            if (conn == null) throw new SQLException("DB connection is null.");
+            boolean oldAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+
+            try {
+                for (BookCopy draft : drafts) {
+                    String accessionNo = idGenerator.nextAccessionNo(conn);
+
+                    try (PreparedStatement mergePs = conn.prepareStatement(mergeCatalogSql)) {
+                        mergePs.setString(1, draft.getAuthorName());
+                        mergePs.setString(2, draft.getTitle());
+                        mergePs.setInt(3, draft.getEdition());
+                        mergePs.executeUpdate();
+                    }
+
+                    try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
+                        ps.setString(1, accessionNo);
+                        ps.setString(2, draft.getAuthorName());
+                        ps.setString(3, draft.getTitle());
+                        if (draft.getVolume() == null) ps.setNull(4, java.sql.Types.NUMERIC); else ps.setInt(4, draft.getVolume());
+                        ps.setInt(5, draft.getEdition());
+                        ps.setString(6, draft.getPublisher());
+                        ps.setString(7, draft.getPublicationPlace());
+                        ps.setInt(8, draft.getPublicationYear());
+                        ps.setInt(9, draft.getPages());
+                        ps.setString(10, draft.getSource());
+                        ps.setString(11, draft.getClassNo());
+                        ps.setString(12, draft.getBookNo());
+                        ps.setBigDecimal(13, draft.getCost());
+                        ps.setString(14, draft.getBillNo());
+                        ps.setDate(15, draft.getBillDate());
+                        ps.setString(16, draft.getSubject());
+                        ps.setString(17, draft.getCourse());
+                        ps.setString(18, draft.getYear());
+                        ps.setString(19, draft.getType());
+                        ps.setDate(20, draft.getWithdrawnDate());
+                        ps.setString(21, draft.getRemarks());
+                        ps.setString(22, draft.getStatus());
+                        ps.executeUpdate();
+                    }
+
+                    result.add(new BookCopy(
+                        accessionNo, draft.getAuthorName(), draft.getTitle(), draft.getVolume(),
+                        draft.getEdition(), draft.getPublisher(), draft.getPublicationPlace(),
+                        draft.getPublicationYear(), draft.getPages(), draft.getSource(),
+                        draft.getClassNo(), draft.getBookNo(), draft.getCost(),
+                        draft.getBillNo(), draft.getBillDate(), 
+                        draft.getSubject(), draft.getCourse(), draft.getYear(), draft.getType(),
+                        draft.getWithdrawnDate(),
+                        draft.getRemarks(), draft.getStatus()
+                    ));
+                }
+
+                conn.commit();
+                return result;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAutoCommit);
+            }
         }
     }
 
@@ -38,8 +117,8 @@ public class BookDAO {
         String insertSql =
             "INSERT INTO TBL_BOOK_INFORMATION (" +
             "ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE, " +
-            "CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, WITHDRAWN, REMARKS, STATUS" +
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, BK_SUBJECT, BK_COURSE, BK_YEAR, BK_TYPE, WITHDRAWN, REMARKS, STATUS" +
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) throw new SQLException("DB connection is null.");
@@ -72,9 +151,13 @@ public class BookDAO {
                     ps.setBigDecimal(13, draft.getCost());
                     ps.setString(14, draft.getBillNo());
                     ps.setDate(15, draft.getBillDate());
-                    ps.setDate(16, draft.getWithdrawnDate());
-                    ps.setString(17, draft.getRemarks());
-                    ps.setString(18, draft.getStatus());
+                    ps.setString(16, draft.getSubject());
+                    ps.setString(17, draft.getCourse());
+                    ps.setString(18, draft.getYear());
+                    ps.setString(19, draft.getType());
+                    ps.setDate(20, draft.getWithdrawnDate());
+                    ps.setString(21, draft.getRemarks());
+                    ps.setString(22, draft.getStatus());
                     ps.executeUpdate();
                 }
 
@@ -96,6 +179,10 @@ public class BookDAO {
                     draft.getCost(),
                     draft.getBillNo(),
                     draft.getBillDate(),
+                    draft.getSubject(),
+                    draft.getCourse(),
+                    draft.getYear(),
+                    draft.getType(),
                     draft.getWithdrawnDate(),
                     draft.getRemarks(),
                     draft.getStatus()
@@ -118,7 +205,9 @@ public class BookDAO {
 
         String sql =
             "UPDATE TBL_BOOK_INFORMATION SET AUTHOR_NAME=?, BK_TITLE=?, VOLUME=?, EDITION=?, PUBLISHER=?, PUB_PLACE=?, " +
-            "PUB_YEAR=?, PAGES=?, SOURCE=?, CLASS_NO=?, BOOK_NO=?, U_PRICE=?, B_NO=?, B_DATE=?, WITHDRAWN=?, REMARKS=?, STATUS=? " +
+            "PUB_YEAR=?, PAGES=?, SOURCE=?, CLASS_NO=?, BOOK_NO=?, U_PRICE=?, B_NO=?, B_DATE=?, " +
+            "BK_SUBJECT=?, BK_COURSE=?, BK_YEAR=?, BK_TYPE=?, " +
+            "WITHDRAWN=?, REMARKS=?, STATUS=? " +
             "WHERE ACCESS_NO=?";
 
         try (Connection conn = DBConnection.getConnection()) {
@@ -148,10 +237,14 @@ public class BookDAO {
                     ps.setBigDecimal(12, b.getCost());
                     ps.setString(13, b.getBillNo());
                     ps.setDate(14, b.getBillDate());
-                    ps.setDate(15, b.getWithdrawnDate());
-                    ps.setString(16, b.getRemarks());
-                    ps.setString(17, b.getStatus());
-                    ps.setString(18, b.getAccessionNo());
+                    ps.setString(15, b.getSubject());
+                    ps.setString(16, b.getCourse());
+                    ps.setString(17, b.getYear());
+                    ps.setString(18, b.getType());
+                    ps.setDate(19, b.getWithdrawnDate());
+                    ps.setString(20, b.getRemarks());
+                    ps.setString(21, b.getStatus());
+                    ps.setString(22, b.getAccessionNo());
                     int rows = ps.executeUpdate();
                     conn.commit();
                     return rows > 0;
@@ -330,6 +423,10 @@ public class BookDAO {
             rs.getBigDecimal("U_PRICE"),
             rs.getString("B_NO"),
             rs.getDate("B_DATE"),
+            rs.getString("BK_SUBJECT"),
+            rs.getString("BK_COURSE"),
+            rs.getString("BK_YEAR"),
+            rs.getString("BK_TYPE"),
             rs.getDate("WITHDRAWN"),
             rs.getString("REMARKS"),
             rs.getString("STATUS")

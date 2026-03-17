@@ -3,20 +3,28 @@ package com.library.dao;
 import com.library.database.DBConnection;
 import com.library.model.User;
 import com.library.model.UserProfile;
+import com.library.service.PasswordHasher;
+
 import java.sql.*;
 
 public class UserDAO {
 
     // 1. VALIDATE LOGIN
     public boolean validateLogin(String userId, String password) {
-        String query = "SELECT 1 FROM TBL_CREDENTIALS WHERE USER_ID = ? AND PSWD = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
+        if (userId == null || userId.trim().isEmpty() || password == null || password.trim().isEmpty()) return false;
+        String query = "SELECT PSWD FROM TBL_CREDENTIALS WHERE USER_ID = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return false;
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
-                pstmt.setString(1, userId);
-                pstmt.setString(2, password);
+                pstmt.setString(1, userId.trim());
                 try (ResultSet rs = pstmt.executeQuery()) {
-                    return rs.next();
+                    if (!rs.next()) return false;
+                    String storedPassword = rs.getString("PSWD");
+                    boolean ok = PasswordHasher.verifyPassword(password, storedPassword);
+                    if (ok && PasswordHasher.needsUpgrade(storedPassword)) {
+                        upgradePasswordHash(conn, userId.trim(), password);
+                    }
+                    return ok;
                 }
             }
         } catch (SQLException e) {
@@ -42,7 +50,7 @@ public class UserDAO {
     }
 
     public String getUserRole(String userId) {
-        String fallback = "ADMIN".equalsIgnoreCase(userId) ? "ADMIN" : "LIBRARIAN";
+        String fallback = "LIBRARIAN";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return fallback;
             if (!roleColumnExists(conn)) return fallback;
@@ -71,7 +79,7 @@ public class UserDAO {
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
                 pstmt.setString(1, user.getUserId());
                 pstmt.setString(2, user.getName());
-                pstmt.setString(3, user.getPassword());
+                pstmt.setString(3, PasswordHasher.hashPassword(user.getPassword()));
                 pstmt.setString(4, user.getEmail());
                 pstmt.setLong(5, user.getPhoneNumber());
                 pstmt.setString(6, user.getStatus() == null ? "ACTIVE" : user.getStatus());
@@ -110,7 +118,7 @@ public class UserDAO {
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return false;
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
-                pstmt.setString(1, newPassword);
+                pstmt.setString(1, PasswordHasher.hashPassword(newPassword));
                 pstmt.setString(2, userId);
                 pstmt.setString(3, email);
                 pstmt.setLong(4, phone);
@@ -143,7 +151,7 @@ public class UserDAO {
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return false;
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
-                pstmt.setString(1, newPassword);
+                pstmt.setString(1, PasswordHasher.hashPassword(newPassword));
                 pstmt.setString(2, userId);
                 return pstmt.executeUpdate() > 0;
             }
@@ -187,6 +195,16 @@ public class UserDAO {
             return rs.next() && rs.getInt(1) > 0;
         } catch (SQLException e) {
             return false;
+        }
+    }
+
+    private void upgradePasswordHash(Connection conn, String userId, String rawPassword) {
+        String sql = "UPDATE TBL_CREDENTIALS SET PSWD = ? WHERE USER_ID = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, PasswordHasher.hashPassword(rawPassword));
+            ps.setString(2, userId);
+            ps.executeUpdate();
+        } catch (SQLException ignored) {
         }
     }
 

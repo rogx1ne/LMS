@@ -21,6 +21,10 @@ public class BookEditDialog extends JDialog {
     private final JTextField txtCost = new JTextField();
     private final JTextField txtBillNo = new JTextField();
     private final JTextField txtBillDate = new JTextField();
+    private final JTextField txtSubject = new JTextField();
+    private final JTextField txtCourse = new JTextField();
+    private final JTextField txtYear = new JTextField();
+    private final JComboBox<String> cmbType = new JComboBox<>(new String[]{"BOOK", "REPORT", "PROJECT", "THESIS", "JOURNAL"});
     private final JTextField txtWithdrawn = new JTextField();
     private final JTextArea txtRemarks = new JTextArea(3, 20);
     private final JComboBox<String> cmbStatus = new JComboBox<>(new String[]{"ACTIVE", "WITHDRAWN", "LOST", "DAMAGED"});
@@ -53,6 +57,8 @@ public class BookEditDialog extends JDialog {
         addRow(form, gbc, r++, "Class No", txtClassNo, "Book No", txtBookNo);
         addRow(form, gbc, r++, "Cost", txtCost, "Bill No", txtBillNo);
         addRow(form, gbc, r++, "Bill Date (yyyy-MM-dd)", txtBillDate, "Withdrawn Date", txtWithdrawn);
+        addRow(form, gbc, r++, "Subject", txtSubject, "Course", txtCourse);
+        addRow(form, gbc, r++, "Year", txtYear, "Category Type", cmbType);
         addRow(form, gbc, r++, "Status", cmbStatus, "Remarks", new JScrollPane(txtRemarks));
 
         JButton btnSave = new JButton("Save Changes");
@@ -104,6 +110,10 @@ public class BookEditDialog extends JDialog {
         txtCost.setText(String.valueOf(b.getCost()));
         txtBillNo.setText(b.getBillNo());
         txtBillDate.setText(b.getBillDate() == null ? "" : String.valueOf(b.getBillDate()));
+        txtSubject.setText(b.getSubject());
+        txtCourse.setText(b.getCourse());
+        txtYear.setText(b.getYear());
+        cmbType.setSelectedItem(b.getType() == null ? "BOOK" : b.getType());
         txtWithdrawn.setText(b.getWithdrawnDate() == null ? "" : String.valueOf(b.getWithdrawnDate()));
         txtRemarks.setText(b.getRemarks());
         cmbStatus.setSelectedItem(b.getStatus());
@@ -126,6 +136,10 @@ public class BookEditDialog extends JDialog {
     public String getCost() { return txtCost.getText().trim(); }
     public String getBillNo() { return txtBillNo.getText().trim(); }
     public String getBillDate() { return txtBillDate.getText().trim(); }
+    public String getSubject() { return txtSubject.getText().trim(); }
+    public String getCourse() { return txtCourse.getText().trim(); }
+    public String getYear() { return txtYear.getText().trim(); }
+    public String getBookType() { return String.valueOf(cmbType.getSelectedItem()); }
     public String getWithdrawn() { return txtWithdrawn.getText().trim(); }
     public String getRemarks() { return txtRemarks.getText().trim(); }
     public String getStatus() { return String.valueOf(cmbStatus.getSelectedItem()); }

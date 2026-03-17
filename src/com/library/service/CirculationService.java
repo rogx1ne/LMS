@@ -39,13 +39,24 @@ public class CirculationService {
     public String nextIssueId(Connection conn) throws SQLException {
         int yy = Year.now().getValue() % 100;
         String prefix = "LID" + String.format("%02d", yy);
-        String sql = "SELECT COUNT(*) FROM TBL_ISSUE WHERE ISSUE_ID LIKE ?";
+        long next = IdCounterService.nextValue(conn, "ISSUE_" + yy, observedIssueMax(conn, prefix + "%"));
+        return prefix + String.format("%05d", next);
+    }
+
+    public String peekNextIssueId(Connection conn) throws SQLException {
+        int yy = Year.now().getValue() % 100;
+        String prefix = "LID" + String.format("%02d", yy);
+        long next = IdCounterService.peekNextValue(conn, "ISSUE_" + yy, observedIssueMax(conn, prefix + "%"));
+        return prefix + String.format("%05d", next);
+    }
+
+    private long observedIssueMax(Connection conn, String prefixLike) throws SQLException {
+        String sql = "SELECT NVL(MAX(TO_NUMBER(SUBSTR(ISSUE_ID, 6))), 0) FROM TBL_ISSUE WHERE ISSUE_ID LIKE ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, prefix + "%");
+            ps.setString(1, prefixLike);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
-                int next = rs.getInt(1) + 1;
-                return prefix + String.format("%05d", next);
+                return rs.getLong(1);
             }
         }
     }

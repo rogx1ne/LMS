@@ -31,6 +31,7 @@ public class BookController {
     private final StockPanel stockPanel;
 
     private final BookDAO dao = new BookDAO();
+    private final com.library.dao.BillDAO billDAO = new com.library.dao.BillDAO();
     private final BookPdfService pdfService = new BookPdfService();
 
     public BookController(BookModulePanel module) {
@@ -87,6 +88,20 @@ public class BookController {
     private void saveNewBookCopy() {
         try {
             BookCopy draft = buildBookFromAddPanel();
+
+            // --- BILL VERIFICATION ---
+            if (draft.getBillNo() != null && !draft.getBillNo().isEmpty()) {
+                if (billDAO.billExists(draft.getBillNo())) {
+                    int remaining = billDAO.getRemainingQuantity(draft.getBillNo(), draft.getTitle(), draft.getAuthorName());
+                    if (remaining == -1) {
+                        throw new ValidationException("This book (Title/Author) is NOT found on the specified Bill (" + draft.getBillNo() + ").");
+                    }
+                    if (remaining <= 0) {
+                        throw new ValidationException("All copies for this book on Bill " + draft.getBillNo() + " have already been registered.");
+                    }
+                }
+            }
+
             BookCopy created = dao.addBookCopy(draft);
             JOptionPane.showMessageDialog(module, "Book copy saved. Accession No: " + created.getAccessionNo());
 
@@ -116,8 +131,13 @@ public class BookController {
         String bookNo = BookLogic.generateBookNo(author);
         BigDecimal cost = BookLogic.validateCost(addPanel.getTxtCost().getText());
         String billNo = BookLogic.normalizeBillNo(addPanel.getTxtBillNo().getText());
-
         Date billDate = parseDateNullable(addPanel.getTxtBillDate().getText(), "Bill Date");
+
+        String subject = addPanel.getTxtSubject().getText().trim();
+        String course = addPanel.getTxtCourse().getText().trim();
+        String year = addPanel.getTxtYear().getText().trim();
+        String type = String.valueOf(addPanel.getCmbType().getSelectedItem());
+
         Date withdrawnDate = parseDateNullable(addPanel.getTxtWithdrawnDate().getText(), "Withdrawn Date");
         String remarks = BookLogic.normalizeRemarks(addPanel.getTxtRemarks().getText());
         String status = BookLogic.deriveStatus(withdrawnDate == null ? null : withdrawnDate.toLocalDate());
@@ -138,6 +158,10 @@ public class BookController {
             cost,
             billNo,
             billDate,
+            subject,
+            course,
+            year,
+            type,
             withdrawnDate,
             remarks,
             status
@@ -165,6 +189,10 @@ public class BookController {
                 b.getCost(),
                 b.getBillNo(),
                 b.getBillDate(),
+                b.getSubject(),
+                b.getCourse(),
+                b.getYear(),
+                b.getType(),
                 b.getWithdrawnDate(),
                 b.getRemarks(),
                 b.getStatus()
@@ -225,6 +253,12 @@ public class BookController {
         BigDecimal cost = BookLogic.validateCost(d.getCost());
         String billNo = BookLogic.normalizeBillNo(d.getBillNo());
         Date billDate = parseDateNullable(d.getBillDate(), "Bill Date");
+
+        String subject = d.getSubject();
+        String course = d.getCourse();
+        String year = d.getYear();
+        String type = d.getBookType();
+
         Date withdrawnDate = parseDateNullable(d.getWithdrawn(), "Withdrawn Date");
         String remarks = BookLogic.normalizeRemarks(d.getRemarks());
 
@@ -249,6 +283,10 @@ public class BookController {
             cost,
             billNo,
             billDate,
+            subject,
+            course,
+            year,
+            type,
             withdrawnDate,
             remarks,
             status

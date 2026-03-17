@@ -40,7 +40,7 @@ public class CirculationDAO {
     public String peekNextIssueId() {
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return fallbackIssueId();
-            return circulationService.nextIssueId(conn);
+            return circulationService.peekNextIssueId(conn);
         } catch (SQLException e) {
             e.printStackTrace();
             return fallbackIssueId();

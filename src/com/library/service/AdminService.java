@@ -8,21 +8,22 @@ public class AdminService {
     public String validateName(String raw) throws ValidationException {
         String name = normalize(raw);
         if (name.isEmpty()) throw new ValidationException("Name is required.");
-        if (name.length() > 20) throw new ValidationException("Name must be <= 20 characters.");
+        if (name.length() > 50) throw new ValidationException("Name must be <= 50 characters.");
         return name;
     }
 
     public String validatePassword(String raw) throws ValidationException {
         String password = normalize(raw);
         if (password.isEmpty()) throw new ValidationException("Password is required.");
-        if (password.length() > 10) throw new ValidationException("Password must be <= 10 characters.");
+        if (password.length() < 8) throw new ValidationException("Password must be at least 8 characters.");
+        if (password.length() > 64) throw new ValidationException("Password must be <= 64 characters.");
         return password;
     }
 
     public String validateEmail(String raw) throws ValidationException {
         String email = normalize(raw).toLowerCase(Locale.ENGLISH);
         if (email.isEmpty()) throw new ValidationException("Email is required.");
-        if (email.length() > 20) throw new ValidationException("Email must be <= 20 characters.");
+        if (email.length() > 80) throw new ValidationException("Email must be <= 80 characters.");
         if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
             throw new ValidationException("Invalid email format.");
         }

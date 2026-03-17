@@ -10,6 +10,7 @@ import java.awt.*;
 public final class ModuleTheme {
     public static final Color BLUE_DARK = new Color(31, 62, 109);
     public static final Color GREEN = new Color(46, 125, 50);
+    public static final Color GREEN_DARK = new Color(27, 94, 32);
     public static final Color WHITE = Color.WHITE;
     public static final Color BLACK = Color.BLACK;
     public static final Color HEADER_TEXT = new Color(80, 80, 80);
@@ -66,8 +67,13 @@ public final class ModuleTheme {
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
     }
 
+    public static void stylePrimaryButtonOnBlue(JButton btn) {
+        styleButton(btn, GREEN, WHITE, GREEN_DARK, WHITE);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+    }
+
     public static void styleAccentButton(JButton btn) {
-        styleButton(btn, new Color(255, 140, 0), WHITE, GREEN, WHITE);
+        styleButton(btn, GREEN, WHITE, BLUE_DARK, WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
     }
 
@@ -87,6 +93,11 @@ public final class ModuleTheme {
 
         // Force remove platform specific styling
         btn.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+
+        // Ensure readable text when using dark button fills (blue/green).
+        if (normalBg != null && !WHITE.equals(normalBg)) {
+            btn.setForeground(WHITE);
+        }
 
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override

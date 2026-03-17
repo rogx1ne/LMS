@@ -106,6 +106,10 @@ public class LoginFrame extends JFrame {
         btnLogin.addActionListener(e -> {
             String uid = txtUserId.getText().trim();
             String pwd = new String(txtPassword.getPassword());
+            if (uid.isEmpty() || pwd.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "User ID and Password are required.", "Missing Credentials", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
             if (userDAO.validateLogin(uid, pwd)) {
                 String display = userDAO.getDisplayName(uid);
@@ -155,7 +159,8 @@ public class LoginFrame extends JFrame {
 
     private JButton createSharpButton(String text) {
         JButton btn = new JButton(text);
-        ModuleTheme.styleButton(btn, COLOR_BLUE_DARK, COLOR_WHITE, COLOR_GREEN, COLOR_WHITE);
+        // Login screen background is already blue, so use a green button for contrast.
+        ModuleTheme.stylePrimaryButtonOnBlue(btn);
         btn.setPreferredSize(new Dimension(150, 45));
         btn.setMaximumSize(new Dimension(150, 45));
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -250,6 +255,7 @@ public class LoginFrame extends JFrame {
         d.add(pnlMain);
 
         final String[] generatedOtp = new String[]{null};
+        final String[] otpUserId = new String[]{null};
         final long[] otpSentAt = new long[]{0L};
         final boolean[] otpVerified = new boolean[]{false};
         final int otpValidityMs = 10 * 60 * 1000; // 10 minutes
@@ -271,6 +277,7 @@ public class LoginFrame extends JFrame {
                 String otp = otpService.generateOtp();
                 otpService.sendOtp(email, uid, otp);
                 generatedOtp[0] = otp;
+                otpUserId[0] = uid;
                 otpSentAt[0] = System.currentTimeMillis();
                 otpVerified[0] = false;
 
@@ -300,6 +307,10 @@ public class LoginFrame extends JFrame {
 
             if (generatedOtp[0] == null) {
                 JOptionPane.showMessageDialog(d, "Please send OTP first.");
+                return;
+            }
+            if (otpUserId[0] == null || !otpUserId[0].equalsIgnoreCase(uid)) {
+                JOptionPane.showMessageDialog(d, "User ID changed after OTP was sent. Request a new OTP.");
                 return;
             }
             if (otpInput.isEmpty()) {
@@ -336,12 +347,16 @@ public class LoginFrame extends JFrame {
                 JOptionPane.showMessageDialog(d, "Please verify OTP first.");
                 return;
             }
+            if (otpUserId[0] == null || !otpUserId[0].equalsIgnoreCase(uid)) {
+                JOptionPane.showMessageDialog(d, "OTP was verified for a different User ID. Request a new OTP.");
+                return;
+            }
             if (pwd.isEmpty()) {
                 JOptionPane.showMessageDialog(d, "New Password is required.");
                 return;
             }
-            if (pwd.length() > 10) {
-                JOptionPane.showMessageDialog(d, "Password must be 10 characters or less.");
+            if (pwd.length() < 8 || pwd.length() > 64) {
+                JOptionPane.showMessageDialog(d, "Password must be between 8 and 64 characters.");
                 return;
             }
 
@@ -351,6 +366,9 @@ public class LoginFrame extends JFrame {
             }
 
             if (userDAO.updatePasswordByUserId(uid, pwd)) {
+                generatedOtp[0] = null;
+                otpUserId[0] = null;
+                otpVerified[0] = false;
                 JOptionPane.showMessageDialog(d, "Password reset successful. Please login.", "Success", JOptionPane.INFORMATION_MESSAGE);
                 d.dispose();
             } else {

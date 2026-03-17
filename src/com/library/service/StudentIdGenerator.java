@@ -11,23 +11,27 @@ public final class StudentIdGenerator {
     public String nextCardId(Connection conn) throws SQLException {
         int yy = Year.now().getValue() % 100;
         String prefix = "PPU-" + String.format("%02d", yy);
-        int seq = countByPrefix(conn, "SELECT COUNT(*) FROM TBL_STUDENT WHERE CARD_ID LIKE ?", prefix + "%") + 1;
+        long seq = IdCounterService.nextValue(conn, "STUDENT_CARD_" + yy, maxSuffixByPrefix(conn, "CARD_ID", prefix + "%", 7));
         return prefix + String.format("%03d", seq);
     }
 
     public String nextReceiptNo(Connection conn) throws SQLException {
         int yy = Year.now().getValue() % 100;
         String prefix = "LR-" + String.format("%02d", yy);
-        int seq = countByPrefix(conn, "SELECT COUNT(*) FROM TBL_STUDENT WHERE RECEIPT_NO LIKE ?", prefix + "%") + 1;
+        long seq = IdCounterService.nextValue(conn, "STUDENT_RECEIPT_" + yy, maxSuffixByPrefix(conn, "RECEIPT_NO", prefix + "%", 6));
         return prefix + String.format("%03d", seq);
     }
 
-    private int countByPrefix(Connection conn, String sql, String likeValue) throws SQLException {
+    private long maxSuffixByPrefix(Connection conn, String columnName, String likeValue, int startPosition) throws SQLException {
+        String sql =
+            "SELECT NVL(MAX(TO_NUMBER(SUBSTR(" + columnName + ", ?))), 0) " +
+            "FROM TBL_STUDENT WHERE " + columnName + " LIKE ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, likeValue);
+            ps.setInt(1, startPosition);
+            ps.setString(2, likeValue);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
-                return rs.getInt(1);
+                return rs.getLong(1);
             }
         }
     }
