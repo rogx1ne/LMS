@@ -7,6 +7,7 @@ import com.library.model.BookStockItem;
 import com.library.service.BookLogic;
 import com.library.service.BookPdfService;
 import com.library.service.CurrentUserContext;
+import com.library.service.PdfReportService;
 import com.library.service.ValidationException;
 
 import javax.swing.*;
@@ -33,6 +34,7 @@ public class BookController {
     private final BookDAO dao = new BookDAO();
     private final com.library.dao.BillDAO billDAO = new com.library.dao.BillDAO();
     private final BookPdfService pdfService = new BookPdfService();
+    private final PdfReportService reportService = new PdfReportService();
 
     public BookController(BookModulePanel module) {
         this.module = module;
@@ -294,17 +296,7 @@ public class BookController {
     }
 
     private void exportAccessionGridPdf() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setSelectedFile(new java.io.File("accession_register.pdf"));
-        if (chooser.showSaveDialog(module) != JFileChooser.APPROVE_OPTION) return;
-
-        try {
-            pdfService.exportTable(registerPanel.getTable(), "Accession Register", chooser.getSelectedFile().toPath());
-            JOptionPane.showMessageDialog(module, "PDF exported.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(module, "PDF export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        reportService.exportToPdf(module, registerPanel.getTable(), "Accession Register", "Accession_Register");
     }
 
     private void refreshStockTable(boolean checkAlerts) {

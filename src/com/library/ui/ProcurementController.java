@@ -6,6 +6,7 @@ import com.library.model.OrderDetail;
 import com.library.model.OrderHeader;
 import com.library.model.OrderSummary;
 import com.library.model.Seller;
+import com.library.service.PdfReportService;
 import com.library.service.ProcurementEmailService;
 import com.library.service.ProcurementPdfService;
 import com.library.service.ProcurementValidationService;
@@ -35,6 +36,7 @@ public class ProcurementController {
     private final OrderDAO orderDAO = new OrderDAO();
     private final ProcurementValidationService validationService = new ProcurementValidationService();
     private final ProcurementPdfService pdfService = new ProcurementPdfService();
+    private final PdfReportService reportService = new PdfReportService();
     private final ProcurementEmailService emailService = new ProcurementEmailService();
 
     private OrderHeader lastOrderHeader;
@@ -255,16 +257,7 @@ public class ProcurementController {
 
     private void exportSellerPdf() {
         if (!ensureSellerSchema()) return;
-        JFileChooser chooser = new JFileChooser();
-        chooser.setSelectedFile(new File("sellers.pdf"));
-        if (chooser.showSaveDialog(module) != JFileChooser.APPROVE_OPTION) return;
-        try {
-            pdfService.exportTable(sellerPanel.getTable(), "Seller Master", chooser.getSelectedFile().toPath());
-            JOptionPane.showMessageDialog(module, "Seller PDF downloaded.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(module, "PDF export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        reportService.exportToPdf(module, sellerPanel.getTable(), "Seller Master", "Sellers");
     }
 
     private void refreshSellerIdCombo() {

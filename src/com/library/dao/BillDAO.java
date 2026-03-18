@@ -70,6 +70,32 @@ public class BillDAO {
         return out;
     }
 
+    public List<BillItem> getAllBills() {
+        List<BillItem> out = new ArrayList<>();
+        String sql = "SELECT * FROM TBL_BILL ORDER BY B_DATE DESC, B_ID";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                out.add(new BillItem(
+                    rs.getString("B_ID"),
+                    rs.getString("S_ID"),
+                    rs.getString("TTL"),
+                    rs.getString("AUTHOR"),
+                    rs.getInt("QUANTITY"),
+                    rs.getBigDecimal("U_PRICE"),
+                    rs.getDate("B_DATE"),
+                    rs.getInt("TAX"),
+                    rs.getBigDecimal("TTL_AMUT"),
+                    rs.getBigDecimal("GR_TTL")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return out;
+    }
+
     public int getRemainingQuantity(String billId, String title, String author) {
         String billQtySql = "SELECT QUANTITY FROM TBL_BILL WHERE B_ID = ? AND TTL = ? AND AUTHOR = ?";
         String registeredQtySql = "SELECT COUNT(*) FROM TBL_BOOK_INFORMATION WHERE B_NO = ? AND BK_TITLE = ? AND AUTHOR_NAME = ?";
