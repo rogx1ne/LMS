@@ -1,29 +1,41 @@
-# LMS Architecture
+# LMS Architecture & Design Document
 
-## Runtime Flow
-- `Main.java` installs UI behavior and launches `LoginFrame`.
-- `LoginFrame` authenticates through `UserDAO`, populates `CurrentUserContext`, and opens `DashboardFrame`.
-- `DashboardFrame` is the application shell. It uses `CardLayout` to host each module panel and wires the controllers.
+## 1. Application Runtime Flow
+1. **Bootstrap:** `Main.java` sets the Look-and-Feel and launches `LoginFrame`.
+2. **Authentication:** `UserDAO` validates the user.
+3. **Session Management:** `CurrentUserContext` (Singleton pattern) stores the logged-in user's role and identity.
+4. **Shell Initialization:** `DashboardFrame` acts as the primary shell. It uses a `CardLayout` to switch between modules and a sidebar for navigation.
+5. **Role-Based Control:** Upon loading, the sidebar visibility is dynamically adjusted based on `CurrentUserContext.isAdministrator()`.
 
-## Layers
-- `ui`
-  - Swing panels, dialogs, shell navigation, controller wiring
-- `dao`
-  - JDBC queries, transactions, schema availability checks
-- `service`
-  - validation logic, ID generation, hashing, PDF/email helpers, support utilities
-- `model`
-  - immutable or DTO-style data objects
+## 2. Layered Architecture
+### UI Layer (`com.library.ui`)
+- **View Panels:** Standalone `JPanel` subclasses (e.g., `AddBookPanel`).
+- **Controllers:** Manage event listeners, bridge UI and Service/DAO, and update views.
+- **Theme:** `ModuleTheme` provides centralized styling (Fonts, Colors, Buttons).
 
-## Key Design Principles
-- Keep business validation in `service`, not inline in UI handlers when avoidable.
-- Keep DB writes transactional in `dao`.
-- Let UI coordinate workflows, not own persistence logic.
-- Prefer deterministic reporting and operational behavior for LMS workflows.
+### Service Layer (`com.library.service`)
+- **Business Logic:** `BookLogic` and `StudentLogic` ensure data integrity before database insertion.
+- **Utilities:** `PasswordHasher` (SHA-256), `IdCounterService` (Thread-safe ID generation).
+- **Reporting Engine:** 
+  - `PdfReportService`: Standardizes grid-based PDF exports (used across Students, Books, and Bills).
+  - `ExcelService`: Handles `.xlsx` file parsing using Apache POI.
 
-## High-Risk Areas
-- Authentication and password reset
-- Schema compatibility with Oracle 10g
-- Import/export round-tripping
-- ID generation and concurrency
-- Circulation state transitions between `TBL_ISSUE` and `TBL_BOOK_INFORMATION`
+### DAO Layer (`com.library.dao`)
+- **Persistence:** Handles pure JDBC operations. 
+- **Transactions:** Complex operations (like `placeOrder` or `addBookCopies`) use manual `commit()` and `rollback()` logic to ensure ACID compliance.
+
+### Model Layer (`com.library.model`)
+- **Data Carriers:** Immutable or POJO classes mapping directly to database tables (e.g., `Student`, `BookCopy`).
+
+## 3. Standardization & Quality
+- **PDF Reporting:** All reports follow a 3-part design:
+  - **Banner:** College header image (`header.png`).
+  - **Meta:** Standard header with date/time of generation.
+  - **Auth:** Footer with "Prepared By" and "Authorized By" signature lines.
+- **Error Handling:** Centralized through `ValidationException` and displayed via `JOptionPane` on the UI.
+- **Audit Logging:** Every critical write operation (Add, Update, Delete) is recorded in `TBL_AUDIT_LOG`.
+
+## 4. Known Risks
+- **Oracle XE 10g Limitations:** Memory and CPU limits; code must prioritize efficient queries and closing connections/statements immediately in `finally` blocks.
+- **ID Generation:** Must never be performed by code (`MAX(ID) + 1`) to avoid race conditions; always use the `TBL_ID_COUNTER` table.
+- **Circulation Integrity:** Special care is taken when transitioning books between `TBL_ISSUE` and `TBL_BOOK_INFORMATION` to prevent state mismatch.

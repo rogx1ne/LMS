@@ -35,6 +35,10 @@ public class DashboardFrame extends JFrame {
     private JLabel lblUserName;
     private JButton btnToggleSidebar;
     private JButton btnLogout;
+    private JTextField txtGlobalSearch;
+    private final JList<NavItem> suggestionList = new JList<>(new DefaultListModel<>());
+    private final JPopupMenu suggestionPopup = new JPopupMenu();
+    private final List<NavItem> navItems = new ArrayList<>();
     private final List<JButton> menuButtons = new ArrayList<>();
     private JPanel pnlMenu;
     private JPanel pnlUser;
@@ -58,6 +62,30 @@ public class DashboardFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+
+        // --- TOP BAR (Global Search) ---
+        JPanel pnlTop = new JPanel(new BorderLayout());
+        pnlTop.setBackground(COLOR_WHITE);
+        pnlTop.setPreferredSize(new Dimension(getWidth(), 60));
+        pnlTop.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
+
+        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 15));
+        pnlSearch.setBackground(COLOR_WHITE);
+        
+        txtGlobalSearch = new JTextField(25);
+        ModuleTheme.styleInput(txtGlobalSearch);
+        txtGlobalSearch.putClientProperty("lms.disableEnterTraversal", Boolean.TRUE);
+        txtGlobalSearch.setToolTipText("Search modules (e.g., 'book', 'issue', 'users')...");
+        
+        buildNavigationItems();
+        initSuggestionPopup();
+        wireGlobalSearch();
+
+        JLabel lblSearch = new JLabel("Global Search:");
+        lblSearch.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        pnlSearch.add(lblSearch);
+        pnlSearch.add(txtGlobalSearch);
+        pnlTop.add(pnlSearch, BorderLayout.WEST);
 
         // --- 1. LEFT SIDEBAR ---
         pnlSidebar = new JPanel();
@@ -212,13 +240,219 @@ public class DashboardFrame extends JFrame {
         cardLayout.show(pnlContent, "HOME");
 
         // Add to Frame
+        add(pnlTop, BorderLayout.NORTH);
         add(pnlSidebar, BorderLayout.WEST);
         add(pnlContent, BorderLayout.CENTER);
 
-        // Ensure initial state is expanded.
+        setupKeyboardShortcuts();
         setSidebarCollapsed(false);
     }
 
+    private void setupKeyboardShortcuts() {
+        JRootPane root = getRootPane();
+        InputMap im = root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap am = root.getActionMap();
+
+        String[] keys = {"F1", "F2", "F3", "F4", "F5", "F6"};
+        String[] modules = {"HOME", "BOOK", "TRANSACTION", "STUDENT", "ADMIN", "CIRCULATION"};
+
+        for (int i = 0; i < keys.length; i++) {
+            final String mod = modules[i];
+            im.put(KeyStroke.getKeyStroke(keys[i]), keys[i]);
+            am.put(keys[i], new AbstractAction() {
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    cardLayout.show(pnlContent, mod);
+                }
+            });
+        }
+
+        im.put(KeyStroke.getKeyStroke("control F"), "focusSearch");
+        am.put("focusSearch", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                txtGlobalSearch.requestFocusInWindow();
+            }
+        });
+    }
+
+    private void buildNavigationItems() {
+        boolean isAdmin = CurrentUserContext.isAdministrator();
+
+        // Top-level modules
+        navItems.add(NavItem.module("HOME", "Home", "start", "dashboard", "main"));
+        navItems.add(NavItem.module("BOOK", "Book Module", "books", "catalog", "inventory", "accession", "stock"));
+        navItems.add(NavItem.module("TRANSACTION", "Transaction / Procurement", "transaction", "procurement", "order", "seller", "purchase", "bill"));
+        navItems.add(NavItem.module("STUDENT", "Student Module", "student", "registration", "card", "receipt"));
+        navItems.add(NavItem.module("CIRCULATION", "Circulation", "issue", "return", "fine", "due"));
+        if (isAdmin) navItems.add(NavItem.module("ADMIN", "Admin", "admin", "users", "audit", "import", "export", "excel"));
+
+        // Book sub-sections
+        navItems.add(NavItem.section("BOOK", "ADD", "Book → Add Book", "add", "new", "copy", "entry"));
+        navItems.add(NavItem.section("BOOK", "REGISTER", "Book → Accession Register", "accession", "register", "record"));
+        navItems.add(NavItem.section("BOOK", "STOCK", "Book → Stock", "stock", "available", "quantity", "low"));
+
+        // Procurement sub-sections
+        navItems.add(NavItem.section("TRANSACTION", "SELLER", "Transaction → Seller Master", "seller", "vendor", "supplier"));
+        navItems.add(NavItem.section("TRANSACTION", "ADD_ORDER", "Transaction → Add Order", "order", "purchase", "entry", "bill"));
+        navItems.add(NavItem.section("TRANSACTION", "VIEW_ORDER", "Transaction → View Order", "order", "history", "view", "receipt"));
+        navItems.add(NavItem.section("TRANSACTION", "BILL_ENTRY", "Transaction → Bill Entry", "bill", "invoice", "cost"));
+        navItems.add(NavItem.section("TRANSACTION", "BILL_REPORT", "Transaction → Bill Report", "bill", "spending", "audit"));
+        navItems.add(NavItem.section("TRANSACTION", "BILL_ACCESSION", "Transaction → Bill Accession", "bill", "accession", "bulk"));
+
+        // Circulation sub-sections
+        navItems.add(NavItem.section("CIRCULATION", "ISSUE", "Circulation → Issue Book", "issue", "borrow", "lend"));
+        navItems.add(NavItem.section("CIRCULATION", "RETURN", "Circulation → Return Book", "return", "fine", "late"));
+
+        // Admin sub-sections
+        if (isAdmin) {
+            navItems.add(NavItem.section("ADMIN", "USERS", "Admin → User Management", "users", "credentials", "role", "librarian"));
+            navItems.add(NavItem.section("ADMIN", "DATA", "Admin → Import / Export", "import", "export", "excel", "poi"));
+            navItems.add(NavItem.section("ADMIN", "AUDIT", "Admin → Audit Logs", "audit", "logs", "history", "actions"));
+        }
+    }
+
+    private void initSuggestionPopup() {
+        suggestionPopup.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        suggestionPopup.setFocusable(false);
+
+        suggestionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        suggestionList.setVisibleRowCount(8);
+        suggestionList.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        suggestionList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            JLabel l = new JLabel(value == null ? "" : value.title);
+            l.setOpaque(true);
+            l.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+            l.setBackground(isSelected ? new Color(230, 240, 255) : Color.WHITE);
+            l.setForeground(Color.BLACK);
+            return l;
+        });
+
+        JScrollPane sc = new JScrollPane(suggestionList);
+        sc.setBorder(BorderFactory.createEmptyBorder());
+        sc.setPreferredSize(new Dimension(400, 200));
+        suggestionPopup.add(sc);
+
+        suggestionList.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() >= 1) {
+                    NavItem selected = suggestionList.getSelectedValue();
+                    if (selected != null) {
+                        navigate(selected);
+                        suggestionPopup.setVisible(false);
+                    }
+                }
+            }
+        });
+    }
+
+    private void wireGlobalSearch() {
+        txtGlobalSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { refreshSuggestions(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { refreshSuggestions(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { refreshSuggestions(); }
+        });
+
+        txtGlobalSearch.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
+                    NavItem selected = null;
+                    if (suggestionPopup.isVisible()) {
+                        selected = suggestionList.getSelectedValue();
+                    }
+                    
+                    if (selected == null) {
+                        // If nothing selected or popup hidden, try to find a quick match
+                        refreshSuggestions();
+                        selected = suggestionList.getSelectedValue();
+                    }
+
+                    if (selected != null) {
+                        navigate(selected);
+                        suggestionPopup.setVisible(false);
+                        e.consume();
+                    }
+                    return;
+                }
+
+                if (!suggestionPopup.isVisible()) {
+                    if (e.getKeyCode() == java.awt.event.KeyEvent.VK_DOWN && !txtGlobalSearch.getText().trim().isEmpty()) {
+                        refreshSuggestions();
+                    }
+                    return;
+                }
+
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_DOWN) {
+                    int next = Math.min(suggestionList.getModel().getSize() - 1, suggestionList.getSelectedIndex() + 1);
+                    suggestionList.setSelectedIndex(Math.max(0, next));
+                    suggestionList.ensureIndexIsVisible(suggestionList.getSelectedIndex());
+                    e.consume();
+                } else if (e.getKeyCode() == java.awt.event.KeyEvent.VK_UP) {
+                    int prev = Math.max(0, suggestionList.getSelectedIndex() - 1);
+                    suggestionList.setSelectedIndex(prev);
+                    suggestionList.ensureIndexIsVisible(prev);
+                    e.consume();
+                } else if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ESCAPE) {
+                    suggestionPopup.setVisible(false);
+                    e.consume();
+                }
+            }
+        });
+
+        txtGlobalSearch.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusLost(java.awt.event.FocusEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    Component fo = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+                    if (fo == null || !SwingUtilities.isDescendingFrom(fo, suggestionPopup)) {
+                        suggestionPopup.setVisible(false);
+                    }
+                });
+            }
+        });
+    }
+
+    private void refreshSuggestions() {
+        String q = txtGlobalSearch.getText().trim().toLowerCase();
+        if (q.isEmpty()) {
+            suggestionPopup.setVisible(false);
+            return;
+        }
+
+        DefaultListModel<NavItem> model = (DefaultListModel<NavItem>) suggestionList.getModel();
+        model.clear();
+
+        List<NavItem> matches = new ArrayList<>();
+        String[] tokens = q.split("\\s+");
+
+        for (NavItem item : navItems) {
+            if (item.matches(tokens)) matches.add(item);
+        }
+
+        matches.sort(java.util.Comparator.<NavItem>comparingInt(i -> i.score(q)).reversed());
+
+        for (int i = 0; i < Math.min(matches.size(), 10); i++) {
+            model.addElement(matches.get(i));
+        }
+
+        if (model.isEmpty()) {
+            suggestionPopup.setVisible(false);
+        } else {
+            suggestionList.setSelectedIndex(0);
+            if (!suggestionPopup.isVisible() && txtGlobalSearch.isShowing()) {
+                suggestionPopup.show(txtGlobalSearch, 0, txtGlobalSearch.getHeight());
+                txtGlobalSearch.requestFocusInWindow();
+            }
+        }
+    }
+
+    private void navigate(NavItem item) {
+        if (item.sectionKey == null) navigateTo(item.moduleKey);
+        else navigateTo(item.moduleKey, item.sectionKey);
+        txtGlobalSearch.setText("");
+        ModuleTheme.showToast(this, "Navigated to " + item.title);
+    }
+
+    private void performGlobalSearch() {
+        // Handled by NavItem logic
+    }
     public void navigateTo(String moduleKey) {
         if (moduleKey == null || moduleKey.trim().isEmpty()) return;
         cardLayout.show(pnlContent, moduleKey.trim());
@@ -422,5 +656,45 @@ public class DashboardFrame extends JFrame {
         File f = new File(path);
         if (f.exists()) return new ImageIcon(new ImageIcon(path).getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH));
         return null;
+    }
+
+    private static final class NavItem {
+        final String moduleKey;
+        final String sectionKey;
+        final String title;
+        final String keywords;
+
+        private NavItem(String moduleKey, String sectionKey, String title, String keywords) {
+            this.moduleKey = moduleKey;
+            this.sectionKey = sectionKey;
+            this.title = title;
+            this.keywords = keywords == null ? "" : keywords;
+        }
+
+        static NavItem module(String moduleKey, String title, String... keywords) {
+            return new NavItem(moduleKey, null, title, String.join(" ", keywords));
+        }
+
+        static NavItem section(String moduleKey, String sectionKey, String title, String... keywords) {
+            return new NavItem(moduleKey, sectionKey, title, String.join(" ", keywords));
+        }
+
+        boolean matches(String[] tokens) {
+            String hay = (title + " " + keywords).toLowerCase();
+            for (String t : tokens) {
+                if (!hay.contains(t)) return false;
+            }
+            return true;
+        }
+
+        int score(String query) {
+            String t = title.toLowerCase();
+            if (t.equals(query)) return 100;
+            if (t.startsWith(query)) return 80;
+            if (t.contains(query)) return 50;
+            return 10;
+        }
+
+        @Override public String toString() { return title; }
     }
 }

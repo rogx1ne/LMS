@@ -52,7 +52,7 @@ public class OrderViewPanel extends JPanel {
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        JScrollPane scroll = new JScrollPane(table);
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(table, "No Orders found matching your filters."));
         scroll.getViewport().setBackground(ModuleTheme.TABLE_BG);
 
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));

@@ -1,59 +1,38 @@
-# LMS Agent Guide
+# LMS Agent Guide (Technical Reference)
 
-## Scope
-- This repository is a Java Swing desktop Library Management System backed by Oracle via JDBC.
-- Keep changes constrained to LMS functionality. Do not add unrelated platform features.
-- Prefer deterministic behavior for operational features such as circulation, reporting, and imports.
+This guide is for developers and AI agents working on the Library Management System. It defines the technical boundaries, architectural standards, and operational flows.
 
-## Architecture
-- Entry point: `src/Main.java`
-- UI shell: `src/com/library/ui/DashboardFrame.java`
-- Layers:
-  - `ui`: Swing screens, dialogs, controllers
-  - `dao`: JDBC persistence and transactions
-  - `service`: validation, business rules, utilities
-  - `model`: data carriers
+## 1. Technical Scope
+- **Framework:** Java Swing (Desktop application).
+- **Database:** Oracle Database (optimized for XE 10g).
+- **Communication:** JDBC (Direct connection).
+- **Reporting:** iText (PDF generation) and Apache POI (Excel integration).
 
-## Current Product Shape
-- Modules:
-  - Login
-  - Book
-  - Transaction / Procurement
-  - Student
-  - Circulation
-  - Admin
-- Transaction module no longer includes the bill-accession flow. Keep it limited to seller and order workflows unless explicitly redesigned.
+## 2. Architectural Layers
+- **UI (`src/com/library/ui`)**: Uses `JPanel` and `JDialog`. Communication with logic happens via Controllers.
+- **DAO (`src/com/library/dao`)**: Pure JDBC. Handles SQL queries, transactions, and batch processing.
+- **Service (`src/com/library/service`)**: 
+  - **Logic:** `BookLogic`, `StudentLogic` handle validation.
+  - **Reporting:** `PdfReportService` (Grid reports), `StudentPdfService` (IDs/Receipts).
+  - **Utilities:** `PasswordHasher`, `AuditLogger`.
+- **Model (`src/com/library/model`)**: Plain Old Java Objects (POJOs) for data mapping.
 
-## Database Rules
-- Primary schema script: `script.sql`
-- Demo dataset: `dummy.sql`
-- Oracle XE 10g compatibility matters.
-- Avoid SQL features newer than Oracle 10g unless the migration target is explicitly changed.
-- Current runtime DB config can come from:
-  - `LMS_DB_URL`
-  - `LMS_DB_USER`
-  - `LMS_DB_PASSWORD`
+## 3. Product Shape & Module Structure
+- **Login**: Role-based (ADMIN/LIBRARIAN) with SMTP-based OTP reset.
+- **Book Module**: Manual accession, catalog management, and stock monitoring.
+- **Transaction Module**: Fully integrated lifecycle:
+  - Seller Management -> Order Placement -> Official Bill Entry -> Bill Reporting -> Bill Accession (Auto-generating book copies).
+- **Student Module**: Registration, Fee management, and ID Card generation.
+- **Circulation**: Issue/Return logic with automated fine calculation.
+- **Admin**: User management, Audit Log viewing, and Excel Data Migration.
 
-## Security Expectations
-- Do not introduce plain-text password storage.
-- Use the existing password hashing flow in `PasswordHasher`.
-- Keep write actions role-aware and auditable.
+## 4. Operational Mandates
+- **Oracle 10g Compatibility:** Avoid `STANDARD_HASH` or modern SQL analytical functions. Use `SYSTIMESTAMP` for logs.
+- **ID Generation:** Always use `TBL_ID_COUNTER` via `IdCounterService`. Never use `MAX(ID) + 1`.
+- **Reporting:** All new grid-based reports **MUST** use `PdfReportService` to ensure consistent branding and user-controlled field selection.
+- **Security:** Never log or store plain-text passwords. Use SHA-256 via `PasswordHasher`.
 
-## Change Strategy
-- Prefer targeted fixes over broad rewrites.
-- Preserve existing Swing visual language unless the task is specifically UI redesign.
-- If schema and code diverge, fix both together.
-- When adding documentation, keep `AGENTS.md` concise and move detail into `docs/`.
-
-## Verification
-- Minimum verification for code changes:
-  - `./run.sh` must compile successfully
-  - `javac -Xlint:deprecation` full-project compile should pass when relevant
-- In this environment, GUI runtime cannot be fully verified because there is no X11 display.
-- If DB-dependent behavior changes, note whether Oracle-side verification was or was not performed.
-
-## Reference Docs
-- `docs/architecture.md`
-- `docs/database-and-operations.md`
-- `docs/module-workflows.md`
-- `docs/verification-checklist.md`
+## 5. Verification Protocols
+- **Compilation:** `./run.sh` must be clean.
+- **Database:** Schema changes must be reflected in `script.sql` and `dummy.sql`.
+- **Audit:** All sensitive writes (Deletes, Updates, User creation) must be logged via `AuditLogger`.

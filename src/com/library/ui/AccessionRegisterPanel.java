@@ -70,11 +70,12 @@ public class AccessionRegisterPanel extends JPanel {
         table = new JTable(tableModel);
         ModuleTheme.styleTable(table);
         table.setAutoCreateRowSorter(true);
+        ModuleTheme.applyStatusRenderer(table, 21);
 
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        JScrollPane scroll = new JScrollPane(table);
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(table, "No Books found in Accession Register."));
         scroll.getViewport().setBackground(ModuleTheme.TABLE_BG);
 
         JPanel footer = new JPanel(new BorderLayout());

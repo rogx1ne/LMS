@@ -1,53 +1,45 @@
-# Database And Operations
+# Database Operations & Maintenance Guide
 
-## Schema Files
-- `script.sql`
-  - Creates or reinitializes the LMS schema objects inside `PRJ2531H`
-  - Designed for reruns on Oracle XE 10g
-- `dummy.sql`
-  - Clears LMS rows and inserts demo-safe operational data
+This document is for database administrators and developers to manage the Oracle backend.
 
-## Runtime DB Configuration
-- Defaults are in `DBConnection.java`
-- Environment overrides:
-  - `LMS_DB_URL`
-  - `LMS_DB_USER`
-  - `LMS_DB_PASSWORD`
+## 1. Schema & Data Files
+### `script.sql` (Full Schema)
+- **Purpose:** Destructive reinitialization. Drops the `PRJ2531H` user, recreation, and table setup.
+- **Tables Created:** 
+  - `TBL_CREDENTIALS`, `TBL_ID_COUNTER`, `TBL_AUDIT_LOG`
+  - `TBL_BOOK_CATALOG`, `TBL_BOOK_INFORMATION`, `TBL_BOOK_STOCK`, `TBL_BOOK_ALERT_LOG`
+  - `TBL_STUDENT`, `TBL_SELLER`, `TBL_ORDER_HEADER`, `TBL_ORDER_DETAILS`, `TBL_BILL`, `TBL_ISSUE`
 
-## Seed Credentials
-- `ADMIN / ADMIN`
-- `LIB01 / LIB01`
-- `LIB02 / LIB02`
-- `USR01 / USR01PASS`
+### `dummy.sql` (Demo Data)
+- **Purpose:** Loads 200+ rows of demo data across all modules (Students, Books, Sellers, Bills).
+- **Primary Bills:** Includes `BILL260001`, `BILL260002`, `BILL260003`, and `DUMMY_BILL_2026` for procurement testing.
 
-## Operational Tables
-- `TBL_CREDENTIALS`
-- `TBL_ID_COUNTER`
-- `TBL_AUDIT_LOG`
-- `TBL_BOOK_CATALOG`
-- `TBL_BOOK_INFORMATION`
-- `TBL_BOOK_STOCK`
-- `TBL_BOOK_ALERT_LOG`
-- `TBL_STUDENT`
-- `TBL_SELLER`
-- `TBL_ORDER_HEADER`
-- `TBL_ORDER_DETAILS`
-- `TBL_BILL`
-- `TBL_ISSUE`
+## 2. Configuration & Runtime
+- **Primary Config:** `src/com/library/database/DBConnection.java`.
+- **Environment Overrides:** 
+  - `LMS_DB_URL`: JDBC thin URL (Default: `jdbc:oracle:thin:@localhost:1521:xe`)
+  - `LMS_DB_USER`: Username (Default: `PRJ2531H`)
+  - `LMS_DB_PASSWORD`: Password (Default: `PRJ2531H`)
 
-## Important Operational Rules
-- Passwords in new/reset flows are hashed in application code.
-- SQL seed users use `SHA256$...` values for Oracle 10g compatibility.
-- ID generation uses `TBL_ID_COUNTER`; do not revert to `COUNT(*) + 1`.
-- Transaction module is seller/order oriented; bill-entry may exist as code but should not be reintroduced into navigation without an intentional design decision.
+## 3. Seed Credentials (Default Logins)
+- **Admin:** `ADMIN / ADMIN`
+- **Librarians:** `LIB01 / LIB01`, `LIB02 / LIB02`
+- **User:** `USR01 / USR01PASS`
 
-## DB Refresh Procedure
-1. Run `script.sql`.
-2. Run `dummy.sql` if demo data is needed.
-3. Start the app with `./run.sh`.
+## 4. Operational Maintenance
+### Critical Database Rules
+1. **Oracle 10g Compatibility:** 
+   - Never use modern analytical functions (e.g., `LISTAGG`, `ROW_NUMBER() OVER`). 
+   - Avoid `STANDARD_HASH` as it’s only available in newer Oracle versions.
+   - Use `SHA256$...` prefix for hashed passwords stored in `TBL_CREDENTIALS`.
+2. **ID Consistency:** 
+   - `TBL_ID_COUNTER` is the source of truth for all sequential IDs (Accession No, Student ID, Seller ID). 
+   - If the counter is manually modified, the application logic may fail due to duplicate key constraints.
+3. **Transaction Integrity:** 
+   - Most writes are performed with `AUTOCOMMIT = FALSE` to ensure atomicity.
 
-## When Updating SQL
-- Keep Oracle 10g compatibility unless the project explicitly upgrades DB version.
-- Avoid `STANDARD_HASH` and similar unsupported functions in Oracle XE 10g.
-- Prefer rerunnable patterns where possible.
-
+## 5. DB Refresh Procedure
+1. Log in to SQL*Plus as `SYSTEM` or `SYSDBA`.
+2. Execute `@script.sql`.
+3. (Optional) Execute `@dummy.sql`.
+4. Run the application using `./run.sh`.

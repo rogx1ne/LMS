@@ -105,6 +105,15 @@ public class AddBookPanel extends JPanel {
 
         txtBillDate.setToolTipText("Click to select Bill Date (yyyy-MM-dd)");
         txtWithdrawnDate.setToolTipText("Click to select Withdrawn Date (optional)");
+
+        setupValidation();
+    }
+
+    private void setupValidation() {
+        ModuleTheme.addValidation(txtAuthor, s -> !s.trim().isEmpty());
+        ModuleTheme.addValidation(txtTitle, s -> !s.trim().isEmpty());
+        ModuleTheme.addValidation(txtCost, s -> s.trim().matches("\\d+(\\.\\d+)?"));
+        ModuleTheme.addValidation(txtBillNo, s -> !s.trim().isEmpty());
     }
 
     private void addRow(JPanel form, GridBagConstraints gbc, int row, String l1, JComponent c1, String l2, JComponent c2) {

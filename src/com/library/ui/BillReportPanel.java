@@ -56,7 +56,7 @@ public class BillReportPanel extends JPanel {
         table.setRowSorter(sorter);
 
         add(top, BorderLayout.NORTH);
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add(new JScrollPane(ModuleTheme.createEmptyStateLayer(table, "No Bills found matching your filters.")), BorderLayout.CENTER);
 
         // --- ACTIONS ---
         btnRefresh.addActionListener(e -> refreshData());

@@ -128,10 +128,13 @@ public class StudentView extends JPanel {
         form.setBorder(new EmptyBorder(20, 0, 20, 0));
 
         txtName = createSharpField();
+        ModuleTheme.addValidation(txtName, s -> !s.trim().isEmpty() && s.length() > 2);
         txtRoll = createSharpField();
         ((AbstractDocument) txtRoll.getDocument()).setDocumentFilter(new NumericLimitFilter(5));
+        ModuleTheme.addValidation(txtRoll, s -> s.length() == 5);
         txtPhone = createSharpField();
         ((AbstractDocument) txtPhone.getDocument()).setDocumentFilter(new NumericLimitFilter(10));
+        ModuleTheme.addValidation(txtPhone, s -> s.length() == 10);
 
         txtAddr = new JTextArea(3, 20);
         txtAddr.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
@@ -264,9 +267,10 @@ public class StudentView extends JPanel {
 
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
+        ModuleTheme.applyStatusRenderer(table, 10);
 
         // ScrollPane Viewport (Fills empty space with green)
-        JScrollPane scroll = new JScrollPane(table);
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(table, "No Students found matching your criteria."));
         scroll.getViewport().setBackground(COLOR_LIGHT_GREEN_BG);
 
         // Footer Actions

@@ -177,7 +177,7 @@ public class PdfReportService {
         leftCell.setPadding(10);
         Phrase p1 = new Phrase();
         p1.add(new Chunk("\n\n\n", smallFont));
-        p1.add(new Chunk("_".repeat(20), smallFont));
+        p1.add(new Chunk("____________________", smallFont));
         p1.add(new Chunk("\nPrepared By", smallFont));
         leftCell.addElement(p1);
         footerTable.addCell(leftCell);
@@ -194,7 +194,7 @@ public class PdfReportService {
         rightCell.setPadding(10);
         Phrase p2 = new Phrase();
         p2.add(new Chunk("Authorized By:\n\n\n", smallFont));
-        p2.add(new Chunk("_".repeat(20), smallFont));
+        p2.add(new Chunk("____________________", smallFont));
         p2.add(new Chunk("\n", smallFont));
         p2.add(new Chunk("Library Authority\n", new Font(Font.FontFamily.HELVETICA, 9, Font.BOLD)));
         p2.add(new Chunk("(Signature & Seal)", smallFont));

@@ -1,127 +1,104 @@
 # Library Management System (LMS) - Java Swing + Oracle
 
-A desktop Library Management System built with:
-- **Frontend:** Java Swing
-- **Backend:** Oracle Database (JDBC)
-- **Architecture:** Layered (`ui`, `dao`, `service`, `model`)
+A robust, enterprise-grade desktop Library Management System designed for efficiency and accuracy. Built with a modular, layered architecture to handle high-volume library operations.
 
-## Modules
+## 🚀 Key Features
 
-- **Login**
-  - Role-aware login (`ADMIN`, `LIBRARIAN`)
-  - Forgot password with OTP email flow (User ID -> OTP -> reset)
-- **Book**
-  - Add book copy, accession register, stock view, low-stock alerts
-- **Transaction / Procurement**
-  - Seller management, order header/details, PDF receipt
-- **Student**
-  - Registration, validation, card/receipt generation, active student view
-- **Circulation**
-  - Issue/return with due date and weekly fine logic
-- **Admin (ADMIN only)**
-  - User management
-  - Excel import/export (Apache POI)
-  - Audit log viewer
+### 🔐 Security & Access Control
+- **Role-Based Access (RBAC):** Dedicated views for `ADMIN` and `LIBRARIAN` roles.
+- **Secure Authentication:** Password hashing using SHA-256 via `PasswordHasher`.
+- **Password Recovery:** SMTP-integrated OTP reset flow (requires `.env` configuration).
+- **Audit Trails:** Comprehensive logging of all critical operations (Deletes, Updates, User actions).
 
-## Project Structure
+### 📚 Book & Catalog Management
+- **Manual Accession:** Direct entry of physical copies into the library register.
+- **Real-Time Stock Monitoring:** Automated stock summaries and low-stock alerts.
+- **Accession Register:** Searchable grid of all physical assets with field-level filtering.
+
+### 💳 Student & ID Services
+- **Registration:** Validated entry with automated ID and receipt generation.
+- **Library Cards:** High-quality PDF and PNG card generation for students.
+- **Borrow History:** Instant lookup of a student's past and current transactions.
+
+### 📑 Procurement & Transaction Lifecycle (New!)
+The system now supports a complete **Procure-to-Shelf** workflow:
+1. **Seller Master:** Centralized database of book suppliers.
+2. **Order Placement:** Formal procurement orders with PDF/Email receipt support.
+3. **Bill Entry:** Record official invoices, including unit prices and tax.
+4. **Bill Report:** Searchable audit trail of all financial transactions and spending.
+5. **Bill Accession:** Bulk-import books from received bills directly into the catalog.
+
+### 🔄 Circulation
+- **Smart Issue/Return:** Validates student limits and book availability.
+- **Fine Management:** Automated calculation of overdue fines based on library policy.
+
+### 📊 Standardized Reporting
+All modules utilize the new **`PdfReportService`** for professional document output:
+- **Customizable:** Users select which fields to include and choose between Portrait/Landscape.
+- **Branded:** Professional college banners and timestamped headers.
+- **Authenticated:** Secure footers with "Prepared By" and "Authorized By" signature lines.
+
+---
+
+## 🏗 Architecture
 
 ```text
-src/
-  Main.java
-  com/library/
-    ui/        # Swing screens + controllers
-    dao/       # DB access and transactions
-    service/   # business logic, validation, utilities
-    model/     # data models
-    database/  # DB connection
+src/com/library/
+  ├── ui/         # Swing UI Panels, Dialogs, and Controllers
+  ├── dao/        # JDBC Persistence (SQL Queries & Transactions)
+  ├── service/    # Business Logic, Validation, and PDF/Excel Engines
+  ├── model/      # Data Models (POJOs)
+  └── database/   # Database Connection Management
 ```
 
-## Prerequisites
+---
 
-- Java 11+ (JDK)
-- Oracle XE / Oracle DB running and reachable
-- SQL*Plus (or any Oracle SQL client)
+## 🛠 Prerequisites
 
-## 1) Database Setup
+- **Java 8+ (JDK)**
+- **Oracle XE 10g** (or higher)
+- **SQL*Plus** or similar Oracle client
+- **Libraries (included):** iText (PDF), Apache POI (Excel), Log4j (Logging).
 
-The full schema is in:
-- `script.sql`
+---
 
-Run it once (as a privileged user, because it drops/creates user):
+## ⚙️ Setup & Installation
 
+### 1) Database Initialization
+Run the schema script as a privileged user to create the `PRJ2531H` workspace:
 ```sql
-LMS/script.sql
+@script.sql
+```
+(Optional) Load demo data for testing the procurement and bill flows:
+```sql
+@dummy.sql
 ```
 
-`script.sql` creates:
-- User `PRJ2531H` / password `PRJ2531H`
-- All LMS tables (credentials, books, students, orders, issue, audit logs, etc.)
-- Seed users:
-  - `ADMIN / ADMIN` (ROLE = `ADMIN`)
-  - `LIB01 / LIB01` (ROLE = `LIBRARIAN`)
+### 2) Connection Configuration
+Update `src/com/library/database/DBConnection.java` or use environment variables:
+- `LMS_DB_URL=jdbc:oracle:thin:@localhost:1521:xe`
+- `LMS_DB_USER=PRJ2531H`
+- `LMS_DB_PASSWORD=PRJ2531H`
 
-## 2) Configure DB Connection
+### 3) Email OTP (.env)
+Copy `.env.example` to `.env` and provide your SMTP details for the "Forgot Password" feature.
 
-Update Oracle connection if needed in:
-- `src/com/library/database/DBConnection.java`
+### 4) Execution
+**Linux:** `./run.sh`  
+**Windows:** `./run.bat`
 
-Current defaults:
-- URL: `jdbc:oracle:thin:@localhost:1521:xe`
-- USER: `PRJ2531H`
-- PASSWORD: `PRJ2531H`
+---
 
-You can also override these at runtime with:
+## 👨‍💻 Default Credentials
+- **Admin:** `ADMIN / ADMIN`
+- **Librarian:** `LIB01 / LIB01`
+- **User:** `USR01 / USR01PASS`
 
-```env
-LMS_DB_URL=jdbc:oracle:thin:@localhost:1521:xe
-LMS_DB_USER=PRJ2531H
-LMS_DB_PASSWORD=PRJ2531H
-```
+---
 
-## 3) Configure Email OTP (.env)
-
-Forgot-password OTP uses SMTP env vars.
-
-1. Copy `.env.example` to `.env` (already created in this project)
-2. Fill values in `.env`:
-
-```env
-LMS_SMTP_HOST=smtp.gmail.com
-LMS_SMTP_PORT=587
-LMS_SMTP_USER=your-email@gmail.com
-LMS_SMTP_PASS=your-app-password
-LMS_SMTP_FROM=your-email@gmail.com
-```
-
-> `run.sh`(for linux) auto-loads `.env` before starting the app or `run.bat`(for windows).
-
-## 4) Run the Application
-
-```bash
-./run.sh
-```
-or
-
-```bash
-./run.bat
-```
-
-This script:
-- Compiles all Java files to `bin/`
-- Runs the app with `lib/*` classpath
-
-## Notes
-
-- **Admin menu is visible only for `ROLE = ADMIN`.**
-- Librarian users do not get admin controls.
-- If DB is down/unreachable, app will show connection errors from Oracle.
-
-## Common Troubleshooting
-
-- **ORA-17800 / connection read error**
-  - Oracle listener/DB not reachable
-  - Verify DB host/port/SID and `DBConnection.java`
-- **Invalid credentials**
-  - Ensure `script.sql` has been executed successfully
-- **OTP email not sent**
-  - Check `.env` SMTP values and provider app-password settings
+## 📂 Documentation
+For deeper technical details, refer to the `docs/` folder:
+- `architecture.md`: System design and runtime flow.
+- `database-and-operations.md`: Table structures and maintenance.
+- `module-workflows.md`: Detailed step-by-step operational guides.
+- `verification-checklist.md`: Pre-release testing protocol.
