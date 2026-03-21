@@ -7,6 +7,7 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 
 public class AccessionRegisterPanel extends JPanel {
+    private final JTextField fltGlobalSearch = new JTextField();
     private final JTextField fltAccessNo = new JTextField();
     private final JTextField fltAuthor = new JTextField();
     private final JTextField fltTitle = new JTextField();
@@ -40,26 +41,44 @@ public class AccessionRegisterPanel extends JPanel {
         gbc.insets = new Insets(5, 7, 5, 7);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        addFilter(filters, gbc, "Accession No:", fltAccessNo, 0, 0);
-        addFilter(filters, gbc, "Author:", fltAuthor, 2, 0);
-        addFilter(filters, gbc, "Book Title:", fltTitle, 4, 0);
-        addFilter(filters, gbc, "Volume:", fltVolume, 6, 0);
+        // Row 0: Global Search (Full width)
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0;
+        JLabel lblSearch = new JLabel("Unified Search (Title/Author/Tags):");
+        lblSearch.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblSearch.setForeground(ModuleTheme.BLUE_DARK);
+        filters.add(lblSearch, gbc);
 
-        addFilter(filters, gbc, "Publisher:", fltPublisher, 0, 1);
-        addFilter(filters, gbc, "Pub Year:", fltYear, 2, 1);
-        addFilter(filters, gbc, "Source:", fltSource, 4, 1);
-        addFilter(filters, gbc, "Bill No:", fltBillNo, 6, 1);
+        gbc.gridx = 1;
+        gbc.gridwidth = 7;
+        gbc.weightx = 1;
+        filters.add(fltGlobalSearch, gbc);
+
+        // Row 1 & 2: Individual Column Filters
+        gbc.gridwidth = 1; // reset
+        addFilter(filters, gbc, "Accession No:", fltAccessNo, 0, 1);
+        addFilter(filters, gbc, "Author:", fltAuthor, 2, 1);
+        addFilter(filters, gbc, "Book Title:", fltTitle, 4, 1);
+        addFilter(filters, gbc, "Volume:", fltVolume, 6, 1);
+
+        addFilter(filters, gbc, "Publisher:", fltPublisher, 0, 2);
+        addFilter(filters, gbc, "Pub Year:", fltYear, 2, 2);
+        addFilter(filters, gbc, "Source:", fltSource, 4, 2);
+        addFilter(filters, gbc, "Bill No:", fltBillNo, 6, 2);
 
         gbc.gridx = 7;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.gridwidth = 1;
+        gbc.weightx = 0;
         ModuleTheme.styleSubtleButton(btnRefresh);
         filters.add(btnRefresh, gbc);
 
         String[] cols = {
             "Accession No", "Author Name", "Book Title", "Volume", "Edition", "Publisher", "Publisher Place",
             "Pub Year", "Pages", "Source", "Class No", "Book No", "Cost", "Bill No", "Bill Date",
-            "Subject", "Course", "Year", "Type",
+            "Tags",
             "Withdrawn Date", "Remarks", "Status"
         };
 
@@ -70,7 +89,7 @@ public class AccessionRegisterPanel extends JPanel {
         table = new JTable(tableModel);
         ModuleTheme.styleTable(table);
         table.setAutoCreateRowSorter(true);
-        ModuleTheme.applyStatusRenderer(table, 21);
+        ModuleTheme.applyStatusRenderer(table, 18); // Updated index for Status
 
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
@@ -98,6 +117,8 @@ public class AccessionRegisterPanel extends JPanel {
     }
 
     private void styleFilters() {
+        ModuleTheme.styleInput(fltGlobalSearch);
+        fltGlobalSearch.setPreferredSize(new Dimension(0, 30));
         ModuleTheme.styleInput(fltAccessNo);
         ModuleTheme.styleInput(fltAuthor);
         ModuleTheme.styleInput(fltTitle);
@@ -129,6 +150,7 @@ public class AccessionRegisterPanel extends JPanel {
         lblTotal.setText("Total Records: " + count);
     }
 
+    public JTextField getFltGlobalSearch() { return fltGlobalSearch; }
     public JTextField getFltAccessNo() { return fltAccessNo; }
     public JTextField getFltAuthor() { return fltAuthor; }
     public JTextField getFltTitle() { return fltTitle; }

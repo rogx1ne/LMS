@@ -171,9 +171,19 @@ public class DashboardFrame extends JFrame {
         btnLogout.setFont(new Font("Segoe UI", Font.BOLD, 11));
         btnLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnLogout.addActionListener(e -> {
-            CurrentUserContext.clear();
-            this.dispose();
-            new LoginFrame().setVisible(true); // Uncomment when LoginFrame is ready
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to log out?",
+                "Logout Confirmation",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                CurrentUserContext.clear();
+                this.dispose();
+                new LoginFrame().setVisible(true);
+            }
         });
         btnLogout.putClientProperty(CLIENT_PROP_FULL_TEXT, "Logout");
 
@@ -540,6 +550,23 @@ public class DashboardFrame extends JFrame {
         repaint();
     }
 
+    private JButton activeMenuButton;
+
+    private void setSelectedButton(JButton btn) {
+        if (activeMenuButton != null) {
+            activeMenuButton.setForeground(COLOR_BLUE_DARK);
+            activeMenuButton.setBackground(COLOR_WHITE);
+            activeMenuButton.setOpaque(false);
+        }
+        activeMenuButton = btn;
+        if (activeMenuButton != null) {
+            activeMenuButton.setForeground(COLOR_GREEN);
+            activeMenuButton.setBackground(new Color(240, 250, 240));
+            activeMenuButton.setOpaque(true);
+        }
+        repaint();
+    }
+
     // --- HELPER: Create Menu Buttons (Icon + Text) ---
     private JButton createMenuButton(String text, String iconPath, String fallbackLetter) {
         JButton btn = new JButton(text);
@@ -550,30 +577,38 @@ public class DashboardFrame extends JFrame {
         btn.setIconTextGap(12);
 
         // STYLE: Minimalist
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 15));
         btn.setForeground(COLOR_BLUE_DARK); // Dark Blue Text
         btn.setBackground(COLOR_WHITE);     // White Background
         btn.setHorizontalAlignment(SwingConstants.LEFT);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
-        btn.setContentAreaFilled(false); // Make it look like just text
+        btn.setContentAreaFilled(false); 
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         btn.setPreferredSize(new Dimension(220, 44));
+        btn.setBorder(new EmptyBorder(0, 15, 0, 15));
 
-        // HOVER EFFECT: Slide right or Change Color
+        // HOVER EFFECT
         btn.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
-                btn.setForeground(COLOR_GREEN); // Turn Green on hover
+                if (btn != activeMenuButton) {
+                    btn.setForeground(COLOR_GREEN);
+                }
             }
             public void mouseExited(MouseEvent e) {
-                btn.setForeground(COLOR_BLUE_DARK); // Back to Blue
+                if (btn != activeMenuButton) {
+                    btn.setForeground(COLOR_BLUE_DARK);
+                }
             }
         });
 
         // CLICK ACTION: Switch Page
-        btn.addActionListener(e -> cardLayout.show(pnlContent, text));
+        btn.addActionListener(e -> {
+            cardLayout.show(pnlContent, text);
+            setSelectedButton(btn);
+        });
 
         menuButtons.add(btn);
         return btn;

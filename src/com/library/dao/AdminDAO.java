@@ -176,7 +176,7 @@ public class AdminDAO {
             LocalDate end = toDate.toLocalDate().plusDays(1);
             params.add(Timestamp.valueOf(end.atStartOfDay()));
         }
-        sql.append(" ORDER BY LOG_TS DESC, LOG_ID DESC");
+        sql.append(" ORDER BY LOG_TS ASC, LOG_ID ASC");
 
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return out;
@@ -394,13 +394,13 @@ public class AdminDAO {
     }
 
     private String exportSqlFor(String tableName) throws SQLException {
-        if ("TBL_STUDENT".equals(tableName)) return "SELECT * FROM TBL_STUDENT";
-        if ("TBL_BOOK_INFORMATION".equals(tableName)) return "SELECT * FROM TBL_BOOK_INFORMATION";
+        if ("TBL_STUDENT".equals(tableName)) return "SELECT * FROM TBL_STUDENT ORDER BY CARD_ID ASC";
+        if ("TBL_BOOK_INFORMATION".equals(tableName)) return "SELECT * FROM TBL_BOOK_INFORMATION ORDER BY ACCESS_NO ASC";
         if ("TBL_ORDER_EXPORT".equals(tableName)) {
             return
                 "SELECT h.ORDER_ID, h.S_ID, h.ORDER_DATE, d.BOOK_TITLE, d.AUTHOR, d.PUBLICATION, d.QUANTITY " +
                 "FROM TBL_ORDER_HEADER h JOIN TBL_ORDER_DETAILS d ON d.ORDER_ID = h.ORDER_ID " +
-                "ORDER BY h.ORDER_DATE DESC, h.ORDER_ID DESC, d.BOOK_TITLE";
+                "ORDER BY h.ORDER_DATE ASC, h.ORDER_ID ASC, d.BOOK_TITLE ASC";
         }
         throw new SQLException("Unsupported table export: " + tableName);
     }

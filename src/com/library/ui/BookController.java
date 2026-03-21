@@ -62,6 +62,7 @@ public class BookController {
 
         attachFilterListeners();
 
+        stockPanel.getTxtSearch().getDocument().addDocumentListener(new SimpleDocumentListener(this::applyStockFilter));
         stockPanel.getBtnRefresh().addActionListener(e -> refreshStockTable(true));
         stockPanel.getBtnCheckAlerts().addActionListener(e -> refreshStockTable(true));
 
@@ -135,38 +136,15 @@ public class BookController {
         String billNo = BookLogic.normalizeBillNo(addPanel.getTxtBillNo().getText());
         Date billDate = parseDateNullable(addPanel.getTxtBillDate().getText(), "Bill Date");
 
-        String subject = addPanel.getTxtSubject().getText().trim();
-        String course = addPanel.getTxtCourse().getText().trim();
-        String year = addPanel.getTxtYear().getText().trim();
-        String type = String.valueOf(addPanel.getCmbType().getSelectedItem());
+        String tags = BookLogic.normalizeTags(addPanel.getTxtTags().getText());
 
         Date withdrawnDate = parseDateNullable(addPanel.getTxtWithdrawnDate().getText(), "Withdrawn Date");
         String remarks = BookLogic.normalizeRemarks(addPanel.getTxtRemarks().getText());
         String status = BookLogic.deriveStatus(withdrawnDate == null ? null : withdrawnDate.toLocalDate());
 
         return new BookCopy(
-            null,
-            author,
-            title,
-            volume,
-            edition,
-            publisher,
-            pubPlace,
-            pubYear,
-            pages,
-            source,
-            classNo,
-            bookNo,
-            cost,
-            billNo,
-            billDate,
-            subject,
-            course,
-            year,
-            type,
-            withdrawnDate,
-            remarks,
-            status
+            null, author, title, volume, edition, publisher, pubPlace, pubYear, pages, source,
+            classNo, bookNo, cost, billNo, billDate, tags, withdrawnDate, remarks, status
         );
     }
 
@@ -191,10 +169,7 @@ public class BookController {
                 b.getCost(),
                 b.getBillNo(),
                 b.getBillDate(),
-                b.getSubject(),
-                b.getCourse(),
-                b.getYear(),
-                b.getType(),
+                b.getTags(),
                 b.getWithdrawnDate(),
                 b.getRemarks(),
                 b.getStatus()
@@ -236,6 +211,9 @@ public class BookController {
             }
         } catch (ValidationException ve) {
             JOptionPane.showMessageDialog(module, ve.getMessage(), "Validation", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(module, "Update failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -256,10 +234,7 @@ public class BookController {
         String billNo = BookLogic.normalizeBillNo(d.getBillNo());
         Date billDate = parseDateNullable(d.getBillDate(), "Bill Date");
 
-        String subject = d.getSubject();
-        String course = d.getCourse();
-        String year = d.getYear();
-        String type = d.getBookType();
+        String tags = BookLogic.normalizeTags(d.getTags());
 
         Date withdrawnDate = parseDateNullable(d.getWithdrawn(), "Withdrawn Date");
         String remarks = BookLogic.normalizeRemarks(d.getRemarks());
@@ -270,28 +245,8 @@ public class BookController {
         }
 
         return new BookCopy(
-            accession,
-            author,
-            title,
-            volume,
-            edition,
-            publisher,
-            pubPlace,
-            pubYear,
-            pages,
-            source,
-            classNo,
-            bookNo,
-            cost,
-            billNo,
-            billDate,
-            subject,
-            course,
-            year,
-            type,
-            withdrawnDate,
-            remarks,
-            status
+            accession, author, title, volume, edition, publisher, pubPlace, pubYear, pages, source,
+            classNo, bookNo, cost, billNo, billDate, tags, withdrawnDate, remarks, status
         );
     }
 
@@ -341,6 +296,7 @@ public class BookController {
 
     private void attachFilterListeners() {
         DocumentListener dl = new SimpleDocumentListener(this::applyFilters);
+        registerPanel.getFltGlobalSearch().getDocument().addDocumentListener(dl);
         registerPanel.getFltAccessNo().getDocument().addDocumentListener(dl);
         registerPanel.getFltAuthor().getDocument().addDocumentListener(dl);
         registerPanel.getFltTitle().getDocument().addDocumentListener(dl);
@@ -353,6 +309,18 @@ public class BookController {
 
     private void applyFilters() {
         List<RowFilter<Object, Object>> filters = new ArrayList<>();
+        
+        // Unified Global Search (Title, Author, Tags)
+        String global = registerPanel.getFltGlobalSearch().getText().trim();
+        if (!global.isEmpty()) {
+            List<RowFilter<Object, Object>> orFilters = new ArrayList<>();
+            orFilters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(global), 1)); // Author
+            orFilters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(global), 2)); // Title
+            orFilters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(global), 15)); // Tags
+            filters.add(RowFilter.orFilter(orFilters));
+        }
+
+        // Column Specific Filters
         addRegexFilter(filters, registerPanel.getFltAccessNo().getText(), 0);
         addRegexFilter(filters, registerPanel.getFltAuthor().getText(), 1);
         addRegexFilter(filters, registerPanel.getFltTitle().getText(), 2);
@@ -370,7 +338,17 @@ public class BookController {
         registerPanel.updateTotalCount(registerPanel.getTable().getRowCount());
     }
 
+    private void applyStockFilter() {
+        String t = stockPanel.getTxtSearch().getText().trim();
+        if (t.isEmpty()) {
+            stockPanel.getSorter().setRowFilter(null);
+            return;
+        }
+        stockPanel.getSorter().setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(t), 0, 1, 3));
+    }
+
     private void resetFilters() {
+        registerPanel.getFltGlobalSearch().setText("");
         registerPanel.getFltAccessNo().setText("");
         registerPanel.getFltAuthor().setText("");
         registerPanel.getFltTitle().setText("");
@@ -380,6 +358,9 @@ public class BookController {
         registerPanel.getFltBillNo().setText("");
         registerPanel.getFltSource().setSelectedIndex(0);
         applyFilters();
+
+        stockPanel.getTxtSearch().setText("");
+        applyStockFilter();
     }
 
     private void addRegexFilter(List<RowFilter<Object, Object>> filters, String raw, int col) {

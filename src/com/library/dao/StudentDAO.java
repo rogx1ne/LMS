@@ -145,7 +145,8 @@ public class StudentDAO {
     // --- 4. FETCH ACTIVE STUDENTS (For Table View) ---
     public List<Student> getActiveStudents() {
         List<Student> list = new ArrayList<>();
-        String query = "SELECT * FROM TBL_STUDENT WHERE STATUS = 'ACTIVE' ORDER BY ISSUE_DATE DESC";
+        String query = "SELECT * FROM TBL_STUDENT WHERE STATUS = 'ACTIVE' ORDER BY CARD_ID ASC";
+
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
@@ -234,7 +235,7 @@ public boolean updateStudent(Student s) {
             "FROM TBL_ISSUE i " +
             "JOIN TBL_BOOK_INFORMATION b ON b.ACCESS_NO = i.ACCESSION_NO " +
             "WHERE i.CARD_ID = ? " +
-            "ORDER BY i.ISSUE_DATE DESC";
+            "ORDER BY i.ISSUE_DATE ASC";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

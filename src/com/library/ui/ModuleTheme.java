@@ -90,6 +90,48 @@ public final class ModuleTheme {
         btn.setFont(getFont(Font.BOLD, 12));
     }
 
+    /**
+     * Creates a modern rounded button with a subtle shadow-like border.
+     */
+    public static JButton createRoundedButton(String text, Color bg, Color fg) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel().isPressed()) {
+                    g2.setColor(bg.darker());
+                } else if (getModel().isRollover()) {
+                    g2.setColor(bg.brighter());
+                } else {
+                    g2.setColor(bg);
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setForeground(fg);
+        btn.setFont(getFont(Font.BOLD, 12));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    /**
+     * Styles a panel to look like a modern "Card" with a subtle border and background.
+     */
+    public static void styleCard(JPanel panel) {
+        panel.setBackground(WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(230, 230, 230), 1),
+            new EmptyBorder(15, 15, 15, 15)
+        ));
+    }
+
     public static void stylePrimaryButtonOnBlue(JButton btn) {
         styleButton(btn, GREEN, WHITE, GREEN_DARK, WHITE);
         btn.setFont(getFont(Font.BOLD, 12));
@@ -110,11 +152,9 @@ public final class ModuleTheme {
         btn.setBackground(normalBg);
         btn.setForeground(normalFg);
         btn.setFocusPainted(false);
-        btn.setBorder(new EmptyBorder(6, 14, 6, 14));
         btn.setOpaque(true);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+        btn.setBorder(new EmptyBorder(6, 14, 6, 14));
 
         if (normalBg != null && !WHITE.equals(normalBg)) {
             btn.setForeground(WHITE);

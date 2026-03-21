@@ -19,10 +19,7 @@ public class AddBookPanel extends JPanel {
     private final JTextField txtCost = new JTextField();
     private final JTextField txtBillNo = new JTextField();
     private final JTextField txtBillDate = new JTextField();
-    private final JTextField txtSubject = new JTextField();
-    private final JTextField txtCourse = new JTextField();
-    private final JTextField txtYear = new JTextField();
-    private final JComboBox<String> cmbType = new JComboBox<>(new String[]{"BOOK", "REPORT", "PROJECT", "THESIS", "JOURNAL"});
+    private final JTextField txtTags = new JTextField();
     private final JTextField txtWithdrawnDate = new JTextField();
     private final JTextArea txtRemarks = new JTextArea(3, 20);
     private final JTextField txtAccessionPreview = new JTextField();
@@ -63,9 +60,16 @@ public class AddBookPanel extends JPanel {
         addRow(form, gbc, r++, "Class No", txtClassNo, "Book No (auto)", txtBookNo);
         addRow(form, gbc, r++, "Cost", txtCost, "Bill No", txtBillNo);
         addRow(form, gbc, r++, "Bill Date (yyyy-MM-dd)", txtBillDate, "Withdrawn Date (optional)", txtWithdrawnDate);
-        addRow(form, gbc, r++, "Subject", txtSubject, "Course", txtCourse);
-        addRow(form, gbc, r++, "Year", txtYear, "Category Type", cmbType);
-        addRow(form, gbc, r++, "Status (auto)", txtStatus, "Remarks", new JScrollPane(txtRemarks));
+        addRow(form, gbc, r++, "Tags (comma separated)", txtTags, "Status (auto)", txtStatus);
+        gbc.gridy = r++;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        form.add(label("Remarks"), gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 1;
+        form.add(new JScrollPane(txtRemarks), gbc);
+        gbc.gridwidth = 1; // reset
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         actions.setBackground(ModuleTheme.WHITE);
@@ -95,10 +99,7 @@ public class AddBookPanel extends JPanel {
         ModuleTheme.styleInput(txtCost);
         ModuleTheme.styleInput(txtBillNo);
         ModuleTheme.styleInput(txtBillDate);
-        ModuleTheme.styleInput(txtSubject);
-        ModuleTheme.styleInput(txtCourse);
-        ModuleTheme.styleInput(txtYear);
-        ModuleTheme.styleCombo(cmbType);
+        ModuleTheme.styleInput(txtTags);
         ModuleTheme.styleInput(txtWithdrawnDate);
         ModuleTheme.addDatePicker(txtBillDate);
         ModuleTheme.addDatePicker(txtWithdrawnDate);
@@ -157,10 +158,7 @@ public class AddBookPanel extends JPanel {
     public JTextField getTxtCost() { return txtCost; }
     public JTextField getTxtBillNo() { return txtBillNo; }
     public JTextField getTxtBillDate() { return txtBillDate; }
-    public JTextField getTxtSubject() { return txtSubject; }
-    public JTextField getTxtCourse() { return txtCourse; }
-    public JTextField getTxtYear() { return txtYear; }
-    public JComboBox<String> getCmbType() { return cmbType; }
+    public JTextField getTxtTags() { return txtTags; }
     public JTextField getTxtWithdrawnDate() { return txtWithdrawnDate; }
     public JTextArea getTxtRemarks() { return txtRemarks; }
     public JTextField getTxtAccessionPreview() { return txtAccessionPreview; }
@@ -188,10 +186,7 @@ public class AddBookPanel extends JPanel {
         txtCost.setText("");
         txtBillNo.setText("");
         txtBillDate.setText("");
-        txtSubject.setText("");
-        txtCourse.setText("");
-        txtYear.setText("");
-        cmbType.setSelectedIndex(0);
+        txtTags.setText("");
         txtWithdrawnDate.setText("");
         txtRemarks.setText("");
         txtStatus.setText("ACTIVE");

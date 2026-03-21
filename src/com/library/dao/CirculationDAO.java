@@ -165,7 +165,7 @@ public class CirculationDAO {
             "FROM TBL_ISSUE i " +
             "JOIN TBL_BOOK_INFORMATION b ON b.ACCESS_NO = i.ACCESSION_NO " +
             "WHERE i.CARD_ID = ? AND i.STATUS = 'ISSUED' " +
-            "ORDER BY i.ISSUE_DATE DESC, i.ISSUE_ID DESC";
+            "ORDER BY i.ISSUE_DATE ASC, i.ISSUE_ID ASC";
 
         List<IssueTransaction> out = new ArrayList<>();
         try (Connection conn = DBConnection.getConnection();

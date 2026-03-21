@@ -64,7 +64,7 @@ public class BillAccessionPanel extends JPanel {
         String[] cols = {
             "Title", "Author", "Qty", "Cost",
             "Edition", "Pub Year", "Pages", "Publisher", "Pub Place", "Class No", "Book No",
-            "Subject", "Course", "Year", "Type"
+            "Tags"
         };
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) {
@@ -122,8 +122,7 @@ public class BillAccessionPanel extends JPanel {
         for (BillItem b : items) {
             tableModel.addRow(new Object[]{
                 b.getTitle(), b.getAuthor(), b.getQuantity(), b.getUnitPrice(),
-                "1", "", "", "", "", "", "",
-                "", "", "", "BOOK"
+                "1", "", "", "", "", "", "", ""
             });
         }
     }
@@ -133,8 +132,7 @@ public class BillAccessionPanel extends JPanel {
         for (OrderDetail d : details) {
             tableModel.addRow(new Object[]{
                 d.getBookTitle(), d.getAuthor(), d.getQuantity(), "",
-                "1", "", "", d.getPublication(), "", "", "",
-                "", "", "", "BOOK"
+                "1", "", "", d.getPublication(), "", "", "", ""
             });
         }
     }
@@ -165,8 +163,7 @@ public class BillAccessionPanel extends JPanel {
 
             tableModel.addRow(new Object[]{
                 title, author, qty, "",
-                "1", "", "", pub, "", "", "",
-                "", "", "", "BOOK"
+                "1", "", "", pub, "", "", "", ""
             });
         }
     }
@@ -200,11 +197,7 @@ public class BillAccessionPanel extends JPanel {
                 String pubPlace = (String) tableModel.getValueAt(i, 8);
                 String classNo = (String) tableModel.getValueAt(i, 9);
                 String bookNo = (String) tableModel.getValueAt(i, 10);
-
-                String subject = (String) tableModel.getValueAt(i, 11);
-                String course = (String) tableModel.getValueAt(i, 12);
-                String yearTag = (String) tableModel.getValueAt(i, 13);
-                String type = (String) tableModel.getValueAt(i, 14);
+                String tags = (String) tableModel.getValueAt(i, 11);
 
                 if (classNo.trim().isEmpty() || bookNo.trim().isEmpty()) {
                     JOptionPane.showMessageDialog(this, "Class No and Book No are mandatory for row " + (i + 1), "Validation", JOptionPane.ERROR_MESSAGE);
@@ -230,7 +223,7 @@ public class BillAccessionPanel extends JPanel {
                         author, title, null, edition, publisher, pubPlace,
                         year, pages, "PURCHASED", classNo, bookNo, cost,
                         billNo, billDate, 
-                        subject, course, yearTag, type,
+                        tags,
                         null, "Added via Bill Import", "ACTIVE"
                     ));
                 }

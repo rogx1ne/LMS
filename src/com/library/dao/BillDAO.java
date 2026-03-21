@@ -72,7 +72,7 @@ public class BillDAO {
 
     public List<BillItem> getAllBills() {
         List<BillItem> out = new ArrayList<>();
-        String sql = "SELECT * FROM TBL_BILL ORDER BY B_DATE DESC, B_ID";
+        String sql = "SELECT * FROM TBL_BILL ORDER BY B_DATE ASC, B_ID ASC";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

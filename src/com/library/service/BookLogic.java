@@ -126,6 +126,10 @@ public final class BookLogic {
         return safe(raw).toUpperCase(Locale.ENGLISH);
     }
 
+    public static String normalizeTags(String raw) {
+        return safe(raw);
+    }
+
     public static String normalizeRemarks(String raw) {
         return safe(raw);
     }

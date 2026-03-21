@@ -136,7 +136,7 @@ public class OrderDAO {
 
     public List<OrderSummary> getAllOrderSummaries() {
         List<OrderSummary> out = new ArrayList<>();
-        String sql = "SELECT ORDER_ID, ORDER_DATE FROM TBL_ORDER_HEADER ORDER BY ORDER_DATE DESC, ORDER_ID DESC";
+        String sql = "SELECT ORDER_ID, ORDER_DATE FROM TBL_ORDER_HEADER ORDER BY ORDER_DATE ASC, ORDER_ID ASC";
         try (Connection conn = DBConnection.getConnection();
              Statement st = conn.createStatement();
              ResultSet rs = st.executeQuery(sql)) {

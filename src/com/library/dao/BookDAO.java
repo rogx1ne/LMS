@@ -38,8 +38,8 @@ public class BookDAO {
         String insertSql =
             "INSERT INTO TBL_BOOK_INFORMATION (" +
             "ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE, " +
-            "CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, BK_SUBJECT, BK_COURSE, BK_YEAR, BK_TYPE, WITHDRAWN, REMARKS, STATUS" +
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS" +
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         List<BookCopy> result = new ArrayList<>();
         try (Connection conn = DBConnection.getConnection()) {
@@ -74,13 +74,10 @@ public class BookDAO {
                         ps.setBigDecimal(13, draft.getCost());
                         ps.setString(14, draft.getBillNo());
                         ps.setDate(15, draft.getBillDate());
-                        ps.setString(16, draft.getSubject());
-                        ps.setString(17, draft.getCourse());
-                        ps.setString(18, draft.getYear());
-                        ps.setString(19, draft.getType());
-                        ps.setDate(20, draft.getWithdrawnDate());
-                        ps.setString(21, draft.getRemarks());
-                        ps.setString(22, draft.getStatus());
+                        ps.setString(16, draft.getTags());
+                        ps.setDate(17, draft.getWithdrawnDate());
+                        ps.setString(18, draft.getRemarks());
+                        ps.setString(19, draft.getStatus());
                         ps.executeUpdate();
                     }
 
@@ -90,7 +87,7 @@ public class BookDAO {
                         draft.getPublicationYear(), draft.getPages(), draft.getSource(),
                         draft.getClassNo(), draft.getBookNo(), draft.getCost(),
                         draft.getBillNo(), draft.getBillDate(), 
-                        draft.getSubject(), draft.getCourse(), draft.getYear(), draft.getType(),
+                        draft.getTags(),
                         draft.getWithdrawnDate(),
                         draft.getRemarks(), draft.getStatus()
                     ));
@@ -117,8 +114,8 @@ public class BookDAO {
         String insertSql =
             "INSERT INTO TBL_BOOK_INFORMATION (" +
             "ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE, " +
-            "CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, BK_SUBJECT, BK_COURSE, BK_YEAR, BK_TYPE, WITHDRAWN, REMARKS, STATUS" +
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS" +
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) throw new SQLException("DB connection is null.");
@@ -151,13 +148,10 @@ public class BookDAO {
                     ps.setBigDecimal(13, draft.getCost());
                     ps.setString(14, draft.getBillNo());
                     ps.setDate(15, draft.getBillDate());
-                    ps.setString(16, draft.getSubject());
-                    ps.setString(17, draft.getCourse());
-                    ps.setString(18, draft.getYear());
-                    ps.setString(19, draft.getType());
-                    ps.setDate(20, draft.getWithdrawnDate());
-                    ps.setString(21, draft.getRemarks());
-                    ps.setString(22, draft.getStatus());
+                    ps.setString(16, draft.getTags());
+                    ps.setDate(17, draft.getWithdrawnDate());
+                    ps.setString(18, draft.getRemarks());
+                    ps.setString(19, draft.getStatus());
                     ps.executeUpdate();
                 }
 
@@ -179,10 +173,7 @@ public class BookDAO {
                     draft.getCost(),
                     draft.getBillNo(),
                     draft.getBillDate(),
-                    draft.getSubject(),
-                    draft.getCourse(),
-                    draft.getYear(),
-                    draft.getType(),
+                    draft.getTags(),
                     draft.getWithdrawnDate(),
                     draft.getRemarks(),
                     draft.getStatus()
@@ -206,7 +197,7 @@ public class BookDAO {
         String sql =
             "UPDATE TBL_BOOK_INFORMATION SET AUTHOR_NAME=?, BK_TITLE=?, VOLUME=?, EDITION=?, PUBLISHER=?, PUB_PLACE=?, " +
             "PUB_YEAR=?, PAGES=?, SOURCE=?, CLASS_NO=?, BOOK_NO=?, U_PRICE=?, B_NO=?, B_DATE=?, " +
-            "BK_SUBJECT=?, BK_COURSE=?, BK_YEAR=?, BK_TYPE=?, " +
+            "TAGS=?, " +
             "WITHDRAWN=?, REMARKS=?, STATUS=? " +
             "WHERE ACCESS_NO=?";
 
@@ -237,14 +228,11 @@ public class BookDAO {
                     ps.setBigDecimal(12, b.getCost());
                     ps.setString(13, b.getBillNo());
                     ps.setDate(14, b.getBillDate());
-                    ps.setString(15, b.getSubject());
-                    ps.setString(16, b.getCourse());
-                    ps.setString(17, b.getYear());
-                    ps.setString(18, b.getType());
-                    ps.setDate(19, b.getWithdrawnDate());
-                    ps.setString(20, b.getRemarks());
-                    ps.setString(21, b.getStatus());
-                    ps.setString(22, b.getAccessionNo());
+                    ps.setString(15, b.getTags());
+                    ps.setDate(16, b.getWithdrawnDate());
+                    ps.setString(17, b.getRemarks());
+                    ps.setString(18, b.getStatus());
+                    ps.setString(19, b.getAccessionNo());
                     int rows = ps.executeUpdate();
                     conn.commit();
                     return rows > 0;
@@ -277,7 +265,7 @@ public class BookDAO {
 
     public List<BookCopy> getAllBookCopies() {
         List<BookCopy> out = new ArrayList<>();
-        String sql = "SELECT * FROM TBL_BOOK_INFORMATION ORDER BY ACCESS_NO DESC";
+        String sql = "SELECT * FROM TBL_BOOK_INFORMATION ORDER BY ACCESS_NO ASC";
         try (Connection conn = DBConnection.getConnection();
              Statement st = conn.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
@@ -423,10 +411,7 @@ public class BookDAO {
             rs.getBigDecimal("U_PRICE"),
             rs.getString("B_NO"),
             rs.getDate("B_DATE"),
-            rs.getString("BK_SUBJECT"),
-            rs.getString("BK_COURSE"),
-            rs.getString("BK_YEAR"),
-            rs.getString("BK_TYPE"),
+            rs.getString("TAGS"),
             rs.getDate("WITHDRAWN"),
             rs.getString("REMARKS"),
             rs.getString("STATUS")
