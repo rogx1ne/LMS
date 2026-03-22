@@ -21,6 +21,7 @@ import java.awt.Window;
 import java.io.File;
 import java.nio.file.Path;
 import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -273,7 +274,8 @@ public class ProcurementController {
     private void refreshOrderEntryDefaults() {
         if (!orderSchemaAvailable) return;
         orderEntryPanel.getTxtOrderId().setText(orderDAO.peekNextOrderId());
-        orderEntryPanel.getTxtOrderDate().setText(String.valueOf(orderDAO.getCurrentDbDate()));
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        orderEntryPanel.getTxtOrderDate().setText(sdf.format(orderDAO.getCurrentDbDate()));
         orderEntryPanel.getItemsModel().setRowCount(0);
         orderEntryPanel.getTxtReceiptPreview().setText("");
         lastOrderHeader = null;
@@ -337,11 +339,12 @@ public class ProcurementController {
     }
 
     private String buildReceiptText(OrderHeader header, Seller seller, List<OrderDetail> details) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         StringBuilder sb = new StringBuilder();
         sb.append("LIBRARY PROCUREMENT RECEIPT\n");
         sb.append("---------------------------------------------\n");
         sb.append("Order ID   : ").append(header.getOrderId()).append('\n');
-        sb.append("Order Date : ").append(header.getOrderDate()).append('\n');
+        sb.append("Order Date : ").append(header.getOrderDate() != null ? sdf.format(header.getOrderDate()) : "").append('\n');
         sb.append("Seller ID  : ").append(header.getSellerId()).append('\n');
         sb.append("Company    : ").append(seller == null ? "" : seller.getCompanyName()).append('\n');
         sb.append("Company Mail: ").append(seller == null ? "" : seller.getCompanyMail()).append('\n');
@@ -419,9 +422,10 @@ public class ProcurementController {
         DefaultTableModel model = orderViewPanel.getTableModel();
         model.setRowCount(0);
 
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         int i = 1;
         for (OrderSummary s : orderDAO.getAllOrderSummaries()) {
-            model.addRow(new Object[]{i++, s.getOrderId(), s.getOrderDate()});
+            model.addRow(new Object[]{i++, s.getOrderId(), s.getOrderDate() != null ? sdf.format(s.getOrderDate()) : ""});
         }
         applyOrderFilters();
     }
@@ -540,7 +544,8 @@ public class ProcurementController {
 
         try {
             String sellerId = String.valueOf(dialog.getCmbSellerId().getSelectedItem());
-            Date orderDate = Date.valueOf(LocalDate.parse(dialog.getTxtOrderDate().getText().trim()));
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            Date orderDate = Date.valueOf(LocalDate.parse(dialog.getTxtOrderDate().getText().trim(), dtf));
             List<OrderDetail> details = readOrderDetails(dialog.getModel(), orderId);
 
             validationService.validateOrder(sellerId, details);

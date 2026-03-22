@@ -24,8 +24,8 @@ import java.util.Map;
 
 public class ExcelService {
     private static final DataFormatter FORMATTER = new DataFormatter();
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-    private static final SimpleDateFormat TS_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
+    private static final SimpleDateFormat TS_FORMAT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
     public void exportRows(String sheetName, List<Map<String, Object>> rows, Path outputFile) throws IOException {
         try (Workbook workbook = new XSSFWorkbook()) {

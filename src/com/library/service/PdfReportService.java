@@ -36,7 +36,7 @@ public class PdfReportService {
         if (choice == -1) return;
 
         boolean isLandscape = (choice == 1);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd_MMM_yyyy");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd_MM_yyyy");
 
         JFileChooser fc = new JFileChooser();
         String defaultFileName = defaultFileNamePrefix + "_" + dateFormat.format(new java.util.Date()) + ".pdf";
@@ -51,30 +51,8 @@ public class PdfReportService {
                 PdfWriter.getInstance(doc, new FileOutputStream(fc.getSelectedFile()));
                 doc.open();
 
-                float bannerHeight = 0;
-
                 // --- ADD BANNER IMAGE ---
-                try {
-                    String imgPath = "lib/icons/header.png";
-                    Image img = Image.getInstance(imgPath);
-
-                    float pageWidth = doc.getPageSize().getWidth();
-                    float pageHeight = doc.getPageSize().getHeight();
-
-                    float scaler = (pageWidth / img.getWidth()) * 100;
-                    img.scalePercent(scaler);
-
-                    bannerHeight = img.getScaledHeight();
-                    img.setAbsolutePosition(0, pageHeight - bannerHeight);
-
-                    doc.add(img);
-                } catch (Exception e) {
-                    System.err.println("Header image not found: " + e.getMessage());
-                }
-
-                Paragraph spacer = new Paragraph(" ");
-                spacer.setSpacingAfter(bannerHeight + 3);
-                doc.add(spacer);
+                addBannerImage(doc);
 
                 // --- ADD HEADER ELEMENT (Logo, Date, Time) ---
                 doc.add(createPDFHeader());
@@ -127,6 +105,30 @@ public class PdfReportService {
         }
     }
 
+    public static void addBannerImage(Document doc) {
+        try {
+            String imgPath = "lib/icons/header.png";
+            Image img = Image.getInstance(imgPath);
+
+            float pageWidth = doc.getPageSize().getWidth();
+            float pageHeight = doc.getPageSize().getHeight();
+
+            float scaler = (pageWidth / img.getWidth()) * 100;
+            img.scalePercent(scaler);
+
+            float bannerHeight = img.getScaledHeight();
+            img.setAbsolutePosition(0, pageHeight - bannerHeight);
+
+            doc.add(img);
+
+            Paragraph spacer = new Paragraph(" ");
+            spacer.setSpacingAfter(bannerHeight + 3);
+            doc.add(spacer);
+        } catch (Exception e) {
+            System.err.println("Header image not found: " + e.getMessage());
+        }
+    }
+
     private Map<String, Integer> showFieldSelectionDialog(Component parent, JTable table) {
         int colCount = table.getColumnCount();
         String[] allColumns = new String[colCount];
@@ -163,7 +165,7 @@ public class PdfReportService {
         return selection.isEmpty() ? null : selection;
     }
 
-    private Element createPDFFooter() {
+    public static Element createPDFFooter() {
         PdfPTable footerTable = new PdfPTable(3);
         footerTable.setWidthPercentage(100);
         footerTable.setSpacingBefore(30);
@@ -204,12 +206,12 @@ public class PdfReportService {
         return footerTable;
     }
 
-    private Element createPDFHeader() {
+    public static Element createPDFHeader() {
         PdfPTable headerTable = new PdfPTable(3);
         headerTable.setWidthPercentage(100);
         headerTable.setSpacingAfter(3);
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
         Date now = new Date();
 

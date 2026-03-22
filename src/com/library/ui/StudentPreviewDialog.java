@@ -9,6 +9,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 public class StudentPreviewDialog extends JDialog {
@@ -102,7 +103,8 @@ public class StudentPreviewDialog extends JDialog {
         p.add(row("Book Limit", String.valueOf(s.getBookLimit())));
         p.add(row("Fee", String.valueOf(s.getFee())));
         p.add(row("Issued By", s.getIssuedBy()));
-        p.add(row("Issue Date", String.valueOf(s.getIssueDate())));
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        p.add(row("Issue Date", s.getIssueDate() != null ? sdf.format(s.getIssueDate()) : ""));
         p.add(row("Status", s.getStatus()));
 
         JTextArea addr = new JTextArea(s.getAddress());
@@ -129,15 +131,16 @@ public class StudentPreviewDialog extends JDialog {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
 
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         if (history != null) {
             for (BorrowRecord r : history) {
                 model.addRow(new Object[]{
                     r.getAccessNo(),
                     r.getBookTitle(),
                     r.getAuthorName(),
-                    r.getIssueDate(),
-                    r.getDueDate(),
-                    r.getReturnDate(),
+                    r.getIssueDate() != null ? sdf.format(r.getIssueDate()) : "",
+                    r.getDueDate() != null ? sdf.format(r.getDueDate()) : "",
+                    r.getReturnDate() != null ? sdf.format(r.getReturnDate()) : "",
                     r.getFineAmount()
                 });
             }

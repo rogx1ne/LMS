@@ -454,9 +454,11 @@ public class AdminDAO {
 
     private Date parseDate(Map<String, String> row, String key) throws SQLException {
         try {
-            return Date.valueOf(req(row, key));
+            String val = req(row, key);
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            return Date.valueOf(LocalDate.parse(val, dtf));
         } catch (Exception e) {
-            throw new SQLException("Invalid date for " + key + ". Expected yyyy-MM-dd");
+            throw new SQLException("Invalid date for " + key + ". Expected dd/MM/yyyy");
         }
     }
 
@@ -464,9 +466,10 @@ public class AdminDAO {
         String value = opt(row, key);
         if (value.isEmpty()) return null;
         try {
-            return Date.valueOf(value);
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            return Date.valueOf(LocalDate.parse(value, dtf));
         } catch (Exception e) {
-            throw new SQLException("Invalid date for " + key + ". Expected yyyy-MM-dd");
+            throw new SQLException("Invalid date for " + key + ". Expected dd/MM/yyyy");
         }
     }
 

@@ -24,18 +24,17 @@ public class BookPdfService {
         PdfWriter.getInstance(doc, new FileOutputStream(outputPath.toFile()));
         doc.open();
 
+        PdfReportService.addBannerImage(doc);
+        doc.add(PdfReportService.createPDFHeader());
+
         Font titleFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
         Font normal = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL);
         Font head = new Font(Font.FontFamily.HELVETICA, 9, Font.BOLD);
 
         Paragraph p = new Paragraph(title, titleFont);
         p.setAlignment(Element.ALIGN_CENTER);
-        p.setSpacingAfter(6);
+        p.setSpacingAfter(20);
         doc.add(p);
-
-        Paragraph generated = new Paragraph("Generated: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), normal);
-        generated.setSpacingAfter(10);
-        doc.add(generated);
 
         PdfPTable pdfTable = new PdfPTable(table.getColumnCount());
         pdfTable.setWidthPercentage(100);
@@ -44,6 +43,7 @@ public class BookPdfService {
             PdfPCell h = new PdfPCell(new Phrase(table.getColumnName(c), head));
             h.setHorizontalAlignment(Element.ALIGN_CENTER);
             h.setPadding(5);
+            h.setBackgroundColor(com.itextpdf.text.BaseColor.LIGHT_GRAY);
             pdfTable.addCell(h);
         }
 
@@ -57,6 +57,7 @@ public class BookPdfService {
         }
 
         doc.add(pdfTable);
+        doc.add(PdfReportService.createPDFFooter());
         doc.close();
     }
 }

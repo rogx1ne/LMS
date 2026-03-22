@@ -38,7 +38,7 @@ public class ProcOrderEditDialog extends JDialog {
         ModuleTheme.styleCombo(cmbSellerId);
         ModuleTheme.styleInput(txtOrderDate);
         ModuleTheme.addDatePicker(txtOrderDate);
-        txtOrderDate.setToolTipText("Click to select Order Date (yyyy-MM-dd)");
+        txtOrderDate.setToolTipText("Click to select Order Date (dd/MM/yyyy)");
 
         for (String id : sellerIds) cmbSellerId.addItem(id);
 
@@ -105,7 +105,9 @@ public class ProcOrderEditDialog extends JDialog {
         add(footer, BorderLayout.SOUTH);
 
         cmbSellerId.setSelectedItem(header.getSellerId());
-        txtOrderDate.setText(String.valueOf(header.getOrderDate()));
+        if (header.getOrderDate() != null) {
+            txtOrderDate.setText(new java.text.SimpleDateFormat("dd/MM/yyyy").format(header.getOrderDate()));
+        }
         for (OrderDetail d : details) {
             model.addRow(new Object[]{d.getBookTitle(), d.getAuthor(), d.getPublication(), d.getQuantity()});
         }

@@ -4,6 +4,7 @@ import com.library.model.BookCopy;
 
 import javax.swing.*;
 import java.awt.*;
+import java.text.SimpleDateFormat;
 
 public class BookEditDialog extends JDialog {
     private final JTextField txtAccessNo = new JTextField();
@@ -54,7 +55,7 @@ public class BookEditDialog extends JDialog {
         addRow(form, gbc, r++, "Pages", txtPages, "Source", txtSource);
         addRow(form, gbc, r++, "Class No", txtClassNo, "Book No", txtBookNo);
         addRow(form, gbc, r++, "Cost", txtCost, "Bill No", txtBillNo);
-        addRow(form, gbc, r++, "Bill Date (yyyy-MM-dd)", txtBillDate, "Withdrawn Date", txtWithdrawn);
+        addRow(form, gbc, r++, "Bill Date (dd/MM/yyyy)", txtBillDate, "Withdrawn Date", txtWithdrawn);
         addRow(form, gbc, r++, "Tags (comma separated)", txtTags, "Status", cmbStatus);
         
         gbc.gridy = r++;
@@ -138,9 +139,10 @@ public class BookEditDialog extends JDialog {
         txtBookNo.setText(b.getBookNo());
         txtCost.setText(String.valueOf(b.getCost()));
         txtBillNo.setText(b.getBillNo());
-        txtBillDate.setText(b.getBillDate() == null ? "" : String.valueOf(b.getBillDate()));
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        txtBillDate.setText(b.getBillDate() == null ? "" : sdf.format(b.getBillDate()));
         txtTags.setText(b.getTags());
-        txtWithdrawn.setText(b.getWithdrawnDate() == null ? "" : String.valueOf(b.getWithdrawnDate()));
+        txtWithdrawn.setText(b.getWithdrawnDate() == null ? "" : sdf.format(b.getWithdrawnDate()));
         txtRemarks.setText(b.getRemarks());
         cmbStatus.setSelectedItem(b.getStatus());
     }

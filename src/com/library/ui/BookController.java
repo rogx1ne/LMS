@@ -18,6 +18,7 @@ import javax.swing.RowFilter;
 import java.awt.Window;
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -152,6 +153,7 @@ public class BookController {
         DefaultTableModel model = registerPanel.getTableModel();
         model.setRowCount(0);
 
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         for (BookCopy b : dao.getAllBookCopies()) {
             model.addRow(new Object[]{
                 b.getAccessionNo(),
@@ -168,9 +170,9 @@ public class BookController {
                 b.getBookNo(),
                 b.getCost(),
                 b.getBillNo(),
-                b.getBillDate(),
+                b.getBillDate() != null ? sdf.format(b.getBillDate()) : "",
                 b.getTags(),
-                b.getWithdrawnDate(),
+                b.getWithdrawnDate() != null ? sdf.format(b.getWithdrawnDate()) : "",
                 b.getRemarks(),
                 b.getStatus()
             });
@@ -392,10 +394,11 @@ public class BookController {
         if (s.isEmpty()) return null;
 
         try {
-            LocalDate ld = LocalDate.parse(s);
-            return Date.valueOf(ld);
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            LocalDate ld = LocalDate.parse(s, dtf);
+            return java.sql.Date.valueOf(ld);
         } catch (Exception e) {
-            throw new ValidationException(fieldName + " must be in yyyy-MM-dd format.");
+            throw new ValidationException(fieldName + " must be in dd/MM/yyyy format.");
         }
     }
 

@@ -436,7 +436,7 @@ public class StudentController {
                 drawCardField(g2, "Phone:", String.valueOf(s.getPhone()), textX, textY + lineHeight*5);
                 drawCardField(g2, "Book Limit:", String.valueOf(s.getBookLimit()), textX, textY + lineHeight*6);
 
-                SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy");
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
                 String dateStr = (s.getIssueDate() != null) ? sdf.format(s.getIssueDate()) : sdf.format(new Date());
                 drawCardField(g2, "Issued:", dateStr, textX, textY + lineHeight*7);
 
@@ -481,7 +481,7 @@ public class StudentController {
     private void refreshTable() {
         view.getTableModel().setRowCount(0);
         List<Student> list = dao.getActiveStudents();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
         int sno = 1;
         for(Student s : list) {
@@ -552,8 +552,9 @@ public class StudentController {
         if (fromStr.isEmpty() || toStr.isEmpty()) return null;
 
         try {
-            LocalDate f1 = LocalDate.parse(fromStr);
-            LocalDate t1 = LocalDate.parse(toStr);
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            LocalDate f1 = LocalDate.parse(fromStr, dtf);
+            LocalDate t1 = LocalDate.parse(toStr, dtf);
             final LocalDate f = f1.isBefore(t1) ? f1 : t1;
             final LocalDate t = f1.isBefore(t1) ? t1 : f1;
 
@@ -565,7 +566,7 @@ public class StudentController {
                     String s = v.toString().trim();
                     if (s.isEmpty()) return false;
                     try {
-                        LocalDate d = LocalDate.parse(s);
+                        LocalDate d = LocalDate.parse(s, dtf);
                         return (!d.isBefore(f)) && (!d.isAfter(t));
                     } catch (Exception ignored) {
                         return false;
@@ -604,7 +605,7 @@ public class StudentController {
 
     private String formatDate(java.util.Date d) {
         if (d == null) return "";
-        return new SimpleDateFormat("yyyy-MM-dd").format(d);
+        return new SimpleDateFormat("dd/MM/yyyy").format(d);
     }
 
     private void resetFilters() {

@@ -12,7 +12,7 @@ public class DatePickerDialog extends JDialog {
     private final JLabel lblMonthYear;
     private final JPanel pnlDays;
     private Date selectedDate;
-    private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
     public DatePickerDialog(Window owner, Date initialDate) {
         super(owner, "Select Date", ModalityType.APPLICATION_MODAL);
@@ -143,7 +143,7 @@ public class DatePickerDialog extends JDialog {
         Date start = null;
         if (initialDate != null && !initialDate.isEmpty()) {
             try {
-                start = new SimpleDateFormat("yyyy-MM-dd").parse(initialDate);
+                start = new SimpleDateFormat("dd/MM/yyyy").parse(initialDate);
             } catch (Exception ignored) {}
         }
         DatePickerDialog dialog = new DatePickerDialog(owner, start);

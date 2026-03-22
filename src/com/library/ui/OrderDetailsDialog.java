@@ -20,7 +20,8 @@ public class OrderDetailsDialog extends JDialog {
         JPanel top = new JPanel(new GridLayout(2, 2, 8, 4));
         top.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         top.add(new JLabel("Order ID: " + header.getOrderId()));
-        top.add(new JLabel("Order Date: " + header.getOrderDate()));
+        String dateStr = header.getOrderDate() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(header.getOrderDate()) : "";
+        top.add(new JLabel("Order Date: " + dateStr));
         top.add(new JLabel("Seller ID: " + header.getSellerId()));
         top.add(new JLabel("Seller: " + sellerInfo));
 

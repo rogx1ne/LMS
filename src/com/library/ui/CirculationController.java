@@ -58,8 +58,9 @@ public class CirculationController {
     private void refreshIssueDefaults() {
         issuePanel.getTxtIssueId().setText(schemaAvailable ? circulationDAO.peekNextIssueId() : "SCHEMA_MISSING");
         LocalDate issueDate = LocalDate.now();
-        issuePanel.getTxtIssueDate().setText(issueDate.toString());
-        issuePanel.getTxtDueDate().setText(circulationService.calculateDueDate(issueDate).toString());
+        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        issuePanel.getTxtIssueDate().setText(issueDate.format(dtf));
+        issuePanel.getTxtDueDate().setText(circulationService.calculateDueDate(issueDate).format(dtf));
         issuePanel.getTxtIssuedBy().setText(CurrentUserContext.getUserId());
     }
 
@@ -72,12 +73,13 @@ public class CirculationController {
                 CurrentUserContext.getUserId()
             );
 
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
             String message =
                 "Issued Successfully\n" +
                 "Issue ID: " + txn.getIssueId() + "\n" +
                 "Card ID: " + txn.getCardId() + "\n" +
                 "Accession No: " + txn.getAccessionNo() + "\n" +
-                "Due Date: " + txn.getDueDate();
+                "Due Date: " + (txn.getDueDate() != null ? txn.getDueDate().toLocalDate().format(dtf) : "");
             issuePanel.getTxtMessage().setText(message);
             JOptionPane.showMessageDialog(modulePanel, message, "Book Issued", JOptionPane.INFORMATION_MESSAGE);
 
@@ -112,6 +114,7 @@ public class CirculationController {
             DefaultTableModel model = returnPanel.getTableModel();
             model.setRowCount(0);
 
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
             int i = 1;
             for (IssueTransaction t : txns) {
                 model.addRow(new Object[]{
@@ -120,8 +123,8 @@ public class CirculationController {
                     t.getAccessionNo(),
                     t.getBookTitle(),
                     t.getAuthorName(),
-                    t.getIssueDate(),
-                    t.getDueDate(),
+                    t.getIssueDate() != null ? t.getIssueDate().toLocalDate().format(dtf) : "",
+                    t.getDueDate() != null ? t.getDueDate().toLocalDate().format(dtf) : "",
                     t.getIssuedBy()
                 });
             }
@@ -146,12 +149,13 @@ public class CirculationController {
         String issueId = String.valueOf(returnPanel.getTableModel().getValueAt(modelRow, 1));
 
         try {
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
             IssueReturnResult result = circulationDAO.returnBook(issueId);
             String message =
                 "Return Processed\n" +
                 "Issue ID: " + result.getIssueId() + "\n" +
                 "Accession No: " + result.getAccessionNo() + "\n" +
-                "Return Date: " + result.getReturnDate() + "\n" +
+                "Return Date: " + (result.getReturnDate() != null ? result.getReturnDate().toLocalDate().format(dtf) : "") + "\n" +
                 "Fine: Rs. " + result.getFine();
             JOptionPane.showMessageDialog(modulePanel, message, "Book Returned", JOptionPane.INFORMATION_MESSAGE);
 

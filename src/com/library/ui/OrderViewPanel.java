@@ -38,7 +38,7 @@ public class OrderViewPanel extends JPanel {
 
         gbc.gridx = 0; gbc.gridy = 0; filter.add(new JLabel("Order ID:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1; filter.add(fltOrderId, gbc);
-        gbc.gridx = 2; gbc.weightx = 0; filter.add(new JLabel("Order Date (yyyy-MM-dd):"), gbc);
+        gbc.gridx = 2; gbc.weightx = 0; filter.add(new JLabel("Order Date (dd/MM/yyyy):"), gbc);
         gbc.gridx = 3; gbc.weightx = 1; filter.add(fltOrderDate, gbc);
         gbc.gridx = 4; gbc.weightx = 0; filter.add(btnRefresh, gbc);
 

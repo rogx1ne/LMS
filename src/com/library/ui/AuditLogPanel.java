@@ -36,8 +36,8 @@ public class AuditLogPanel extends JPanel {
         ModuleTheme.stylePrimaryButton(btnSearch);
         ModuleTheme.styleSubtleButton(btnReset);
 
-        txtFromDate.setToolTipText("yyyy-MM-dd");
-        txtToDate.setToolTipText("yyyy-MM-dd");
+        txtFromDate.setToolTipText("dd/MM/yyyy");
+        txtToDate.setToolTipText("dd/MM/yyyy");
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 7, 5, 7);

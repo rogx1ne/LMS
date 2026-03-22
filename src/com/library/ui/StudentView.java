@@ -210,8 +210,8 @@ public class StudentView extends JPanel {
         cal.add(java.util.Calendar.YEAR, -10);
         cal.set(java.util.Calendar.MONTH, java.util.Calendar.JANUARY);
         cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
-        fltFromDate.setText(new java.text.SimpleDateFormat("yyyy-MM-dd").format(cal.getTime()));
-        fltToDate.setText(new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date()));
+        fltFromDate.setText(new java.text.SimpleDateFormat("dd/MM/yyyy").format(cal.getTime()));
+        fltToDate.setText(new java.text.SimpleDateFormat("dd/MM/yyyy").format(new java.util.Date()));
 
         btnResetFilters = new JButton("Reset");
         btnResetFilters.setBackground(Color.WHITE);

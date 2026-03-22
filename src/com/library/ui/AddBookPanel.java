@@ -59,7 +59,7 @@ public class AddBookPanel extends JPanel {
         addRow(form, gbc, r++, "Pages", txtPages, "Source", cmbSource);
         addRow(form, gbc, r++, "Class No", txtClassNo, "Book No (auto)", txtBookNo);
         addRow(form, gbc, r++, "Cost", txtCost, "Bill No", txtBillNo);
-        addRow(form, gbc, r++, "Bill Date (yyyy-MM-dd)", txtBillDate, "Withdrawn Date (optional)", txtWithdrawnDate);
+        addRow(form, gbc, r++, "Bill Date (dd/MM/yyyy)", txtBillDate, "Withdrawn Date (optional)", txtWithdrawnDate);
         addRow(form, gbc, r++, "Tags (comma separated)", txtTags, "Status (auto)", txtStatus);
         gbc.gridy = r++;
         gbc.gridx = 0;
@@ -104,7 +104,7 @@ public class AddBookPanel extends JPanel {
         ModuleTheme.addDatePicker(txtBillDate);
         ModuleTheme.addDatePicker(txtWithdrawnDate);
 
-        txtBillDate.setToolTipText("Click to select Bill Date (yyyy-MM-dd)");
+        txtBillDate.setToolTipText("Click to select Bill Date (dd/MM/yyyy)");
         txtWithdrawnDate.setToolTipText("Click to select Withdrawn Date (optional)");
 
         setupValidation();

@@ -40,9 +40,10 @@ public class AdminService {
         String date = normalize(raw);
         if (date.isEmpty()) return null;
         try {
-            return Date.valueOf(LocalDate.parse(date));
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            return java.sql.Date.valueOf(LocalDate.parse(date, dtf));
         } catch (Exception e) {
-            throw new ValidationException("Date must be in yyyy-MM-dd format.");
+            throw new ValidationException("Date must be in dd/MM/yyyy format.");
         }
     }
 

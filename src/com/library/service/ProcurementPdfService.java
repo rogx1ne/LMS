@@ -27,17 +27,17 @@ public class ProcurementPdfService {
         PdfWriter.getInstance(doc, new FileOutputStream(outputPath.toFile()));
         doc.open();
 
+        PdfReportService.addBannerImage(doc);
+        doc.add(PdfReportService.createPDFHeader());
+
         Font titleFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
         Font normal = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL);
         Font head = new Font(Font.FontFamily.HELVETICA, 9, Font.BOLD);
 
         Paragraph p = new Paragraph(title, titleFont);
         p.setAlignment(Element.ALIGN_CENTER);
-        p.setSpacingAfter(6);
+        p.setSpacingAfter(20);
         doc.add(p);
-
-        doc.add(new Paragraph("Generated: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), normal));
-        doc.add(new Paragraph(" "));
 
         PdfPTable pdfTable = new PdfPTable(table.getColumnCount());
         pdfTable.setWidthPercentage(100);
@@ -46,6 +46,7 @@ public class ProcurementPdfService {
             PdfPCell h = new PdfPCell(new Phrase(table.getColumnName(c), head));
             h.setHorizontalAlignment(Element.ALIGN_CENTER);
             h.setPadding(5);
+            h.setBackgroundColor(com.itextpdf.text.BaseColor.LIGHT_GRAY);
             pdfTable.addCell(h);
         }
 
@@ -59,6 +60,7 @@ public class ProcurementPdfService {
         }
 
         doc.add(pdfTable);
+        doc.add(PdfReportService.createPDFFooter());
         doc.close();
     }
 
@@ -67,13 +69,16 @@ public class ProcurementPdfService {
         PdfWriter.getInstance(doc, new FileOutputStream(outputPath.toFile()));
         doc.open();
 
+        PdfReportService.addBannerImage(doc);
+        doc.add(PdfReportService.createPDFHeader());
+
         Font titleFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
         Font head = new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD);
         Font normal = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL);
 
         Paragraph title = new Paragraph("Library Procurement Order Receipt", titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
-        title.setSpacingAfter(10);
+        title.setSpacingAfter(20);
         doc.add(title);
 
         doc.add(new Paragraph("Order ID: " + header.getOrderId(), head));
@@ -104,6 +109,7 @@ public class ProcurementPdfService {
         }
 
         doc.add(table);
+        doc.add(PdfReportService.createPDFFooter());
         doc.close();
     }
 

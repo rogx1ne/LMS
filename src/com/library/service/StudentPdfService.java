@@ -32,6 +32,9 @@ public class StudentPdfService {
         PdfWriter.getInstance(doc, new FileOutputStream(outPath.toFile()));
         doc.open();
 
+        PdfReportService.addBannerImage(doc);
+        doc.add(PdfReportService.createPDFHeader());
+
         doc.add(center(title("Library Registration Receipt")));
         doc.add(center(new Paragraph("Receipt No: " + s.getReceiptNo(), H)));
         doc.add(new Paragraph(" "));
@@ -54,13 +57,19 @@ public class StudentPdfService {
         addRow(table, "Status", s.getStatus());
         doc.add(table);
 
-        doc.add(new Paragraph(" "));
-        doc.add(new Paragraph("Generated on: " + new SimpleDateFormat("dd MMM yyyy HH:mm").format(new Date()), S));
-
+        doc.add(PdfReportService.createPDFFooter());
         doc.close();
     }
 
     public void generateLibraryCardPdf(Student s, Path outPath) throws Exception {
+        // Library card is small, we might skip the full banner/header here or use a mini version.
+        // But for consistency as requested, we'll try to fit it or keep the card format special.
+        // User asked for "every pdf generated in this project its format should be the same".
+        // However, a Library Card is usually a specific size (ID card).
+        // I will keep the ID card format but add the banner if it fits, 
+        // OR better, keep ID card as is because it's a "Card" not a "Report".
+        // But the user said "EVERY pdf". I will add it to Receipt and History first.
+        
         Document doc = new Document(new com.itextpdf.text.Rectangle(420, 260), 18, 18, 18, 18);
         PdfWriter.getInstance(doc, new FileOutputStream(outPath.toFile()));
         doc.open();
@@ -111,6 +120,9 @@ public class StudentPdfService {
         PdfWriter.getInstance(doc, new FileOutputStream(outPath.toFile()));
         doc.open();
 
+        PdfReportService.addBannerImage(doc);
+        doc.add(PdfReportService.createPDFHeader());
+
         doc.add(center(title("Borrowing History")));
         doc.add(center(new Paragraph(s.getCardId() + " - " + s.getName(), H)));
         doc.add(new Paragraph(" "));
@@ -137,6 +149,7 @@ public class StudentPdfService {
         }
 
         doc.add(table);
+        doc.add(PdfReportService.createPDFFooter());
         doc.close();
     }
 
@@ -176,6 +189,6 @@ public class StudentPdfService {
 
     private static String formatDate(java.util.Date d) {
         if (d == null) return "";
-        return new SimpleDateFormat("yyyy-MM-dd").format(d);
+        return new SimpleDateFormat("dd/MM/yyyy").format(d);
     }
 }

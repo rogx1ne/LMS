@@ -12,6 +12,7 @@ import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -193,7 +194,8 @@ public class BillEntryPanel extends JPanel {
         try {
             String bid = txtBillNo.getText().trim();
             String sid = (String) cmbSeller.getSelectedItem();
-            Date dt = Date.valueOf(txtBillDate.getText().trim());
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            Date dt = Date.valueOf(LocalDate.parse(txtBillDate.getText().trim(), dtf));
             int tax = Integer.parseInt(txtTax.getText().trim());
             BigDecimal gt = new BigDecimal(txtGrandTotal.getText().trim());
 
