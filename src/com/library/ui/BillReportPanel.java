@@ -55,8 +55,14 @@ public class BillReportPanel extends JPanel {
         sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
 
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(
+            table,
+            () -> txtFilter.getText().trim().isEmpty() ? "No Bills available." : "Record Not Found"
+        ));
+        scroll.getViewport().setBackground(ModuleTheme.TABLE_BG);
+
         add(top, BorderLayout.NORTH);
-        add(new JScrollPane(ModuleTheme.createEmptyStateLayer(table, "No Bills found matching your filters.")), BorderLayout.CENTER);
+        add(scroll, BorderLayout.CENTER);
 
         // --- ACTIONS ---
         btnRefresh.addActionListener(e -> refreshData());

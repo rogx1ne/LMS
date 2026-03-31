@@ -155,6 +155,10 @@ public class ProcurementController {
             );
             Seller seller = validationService.validateSeller(raw);
 
+            if (!confirmSellerAction("Confirm Seller Add", "Add Seller", seller)) {
+                return;
+            }
+
             if (sellerDAO.addSeller(seller)) {
                 JOptionPane.showMessageDialog(module, "Seller added successfully.");
                 sellerPanel.clearForm();
@@ -189,6 +193,9 @@ public class ProcurementController {
                 sellerPanel.getTxtAddress().getText()
             );
             Seller seller = validationService.validateSeller(raw);
+            if (!confirmSellerAction("Confirm Seller Update", "Save Seller", seller)) {
+                return;
+            }
             if (sellerDAO.updateSeller(seller)) {
                 JOptionPane.showMessageDialog(module, "Seller updated.");
                 refreshSellerTable();
@@ -291,6 +298,9 @@ public class ProcurementController {
                 orderEntryPanel.getTxtPublication().getText(),
                 orderEntryPanel.getTxtQty().getText()
             );
+            if (!confirmOrderItemAction(module, "Confirm Publication Item", "Add Item", item)) {
+                return;
+            }
             orderEntryPanel.getItemsModel().addRow(new Object[]{
                 item.getBookTitle(), item.getAuthor(), item.getPublication(), item.getQuantity()
             });
@@ -304,6 +314,16 @@ public class ProcurementController {
         int viewRow = orderEntryPanel.getItemsTable().getSelectedRow();
         if (viewRow < 0) return;
         int row = orderEntryPanel.getItemsTable().convertRowIndexToModel(viewRow);
+        OrderDetail item = new OrderDetail(
+            null,
+            String.valueOf(orderEntryPanel.getItemsModel().getValueAt(row, 0)),
+            String.valueOf(orderEntryPanel.getItemsModel().getValueAt(row, 1)),
+            String.valueOf(orderEntryPanel.getItemsModel().getValueAt(row, 2)),
+            Integer.parseInt(String.valueOf(orderEntryPanel.getItemsModel().getValueAt(row, 3)))
+        );
+        if (!confirmOrderItemAction(module, "Confirm Item Removal", "Remove Item", item)) {
+            return;
+        }
         orderEntryPanel.getItemsModel().removeRow(row);
     }
 
@@ -314,7 +334,11 @@ public class ProcurementController {
 
         try {
             validationService.validateOrder(sellerId, details);
-            OrderHeader created = orderDAO.createOrder(sellerId, orderDAO.getCurrentDbDate(), details);
+            Date orderDate = orderDAO.getCurrentDbDate();
+            if (!confirmOrderAction("Confirm Order Placement", "Place Order", orderEntryPanel.getTxtOrderId().getText().trim(), sellerId, orderDate, details)) {
+                return;
+            }
+            OrderHeader created = orderDAO.createOrder(sellerId, orderDate, details);
             Seller seller = sellerDAO.getSellerById(sellerId);
 
             lastOrderHeader = created;
@@ -522,6 +546,9 @@ public class ProcurementController {
                     dialog.getTxtPublication().getText(),
                     dialog.getTxtQty().getText()
                 );
+                if (!confirmOrderItemAction(dialog, "Confirm Publication Item", "Add Item", item)) {
+                    return;
+                }
                 dialog.getModel().addRow(new Object[]{item.getBookTitle(), item.getAuthor(), item.getPublication(), item.getQuantity()});
                 dialog.getTxtTitle().setText("");
                 dialog.getTxtAuthor().setText("");
@@ -536,6 +563,16 @@ public class ProcurementController {
             int vRow = dialog.getTable().getSelectedRow();
             if (vRow < 0) return;
             int mRow = dialog.getTable().convertRowIndexToModel(vRow);
+            OrderDetail item = new OrderDetail(
+                orderId,
+                String.valueOf(dialog.getModel().getValueAt(mRow, 0)),
+                String.valueOf(dialog.getModel().getValueAt(mRow, 1)),
+                String.valueOf(dialog.getModel().getValueAt(mRow, 2)),
+                Integer.parseInt(String.valueOf(dialog.getModel().getValueAt(mRow, 3)))
+            );
+            if (!confirmOrderItemAction(dialog, "Confirm Item Removal", "Remove Item", item)) {
+                return;
+            }
             dialog.getModel().removeRow(mRow);
         });
 
@@ -549,6 +586,9 @@ public class ProcurementController {
             List<OrderDetail> details = readOrderDetails(dialog.getModel(), orderId);
 
             validationService.validateOrder(sellerId, details);
+            if (!confirmOrderAction("Confirm Order Update", "Save Order", orderId, sellerId, orderDate, details)) {
+                return;
+            }
             if (orderDAO.updateOrderReplaceDetails(orderId, sellerId, orderDate, details)) {
                 JOptionPane.showMessageDialog(module, "Order updated successfully.");
                 refreshOrderViewTable();
@@ -622,5 +662,52 @@ public class ProcurementController {
         @Override public void insertUpdate(DocumentEvent e) { callback.run(); }
         @Override public void removeUpdate(DocumentEvent e) { callback.run(); }
         @Override public void changedUpdate(DocumentEvent e) { callback.run(); }
+    }
+
+    private boolean confirmSellerAction(String title, String actionLabel, Seller seller) {
+        return ModuleTheme.confirmPreview(
+            module,
+            title,
+            actionLabel,
+            "Seller ID: " + seller.getSellerId(),
+            "Company: " + seller.getCompanyName(),
+            "Company Contact: " + seller.getCompanyContactNo(),
+            "Company Email: " + seller.getCompanyMail(),
+            "Contact Person: " + seller.getContactPerson(),
+            "Contact Number: " + seller.getContactPersonNo(),
+            "Contact Email: " + seller.getContactPersonMail(),
+            "Address: " + seller.getAddress()
+        );
+    }
+
+    private boolean confirmOrderItemAction(java.awt.Component parent, String title, String actionLabel, OrderDetail item) {
+        return ModuleTheme.confirmPreview(
+            parent,
+            title,
+            actionLabel,
+            "Book Title: " + item.getBookTitle(),
+            "Author: " + item.getAuthor(),
+            "Publication: " + item.getPublication(),
+            "Quantity: " + item.getQuantity()
+        );
+    }
+
+    private boolean confirmOrderAction(String title, String actionLabel, String orderId, String sellerId, Date orderDate, List<OrderDetail> details) {
+        List<String> lines = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        lines.add("Order ID: " + orderId);
+        lines.add("Seller ID: " + sellerId);
+        lines.add("Order Date: " + (orderDate == null ? "" : sdf.format(orderDate)));
+        lines.add("Items:");
+        int i = 1;
+        for (OrderDetail detail : details) {
+            lines.add(
+                i++ + ". " + detail.getBookTitle()
+                    + " | " + detail.getAuthor()
+                    + " | " + detail.getPublication()
+                    + " | Qty: " + detail.getQuantity()
+            );
+        }
+        return ModuleTheme.confirmPreview(module, title, actionLabel, lines.toArray(new String[0]));
     }
 }

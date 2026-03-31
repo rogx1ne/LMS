@@ -76,7 +76,10 @@ public class AuditLogPanel extends JPanel {
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        JScrollPane scroll = new JScrollPane(table);
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(
+            table,
+            () -> hasActiveFilters() ? "Record Not Found" : "No audit logs available."
+        ));
         scroll.getViewport().setBackground(ModuleTheme.TABLE_BG);
 
         add(filter, BorderLayout.NORTH);
@@ -99,4 +102,12 @@ public class AuditLogPanel extends JPanel {
     public DefaultTableModel getTableModel() { return tableModel; }
     public JTable getTable() { return table; }
     public TableRowSorter<DefaultTableModel> getSorter() { return sorter; }
+
+    private boolean hasActiveFilters() {
+        Object module = cmbModule.getSelectedItem();
+        return !txtUserId.getText().trim().isEmpty()
+            || !txtFromDate.getText().trim().isEmpty()
+            || !txtToDate.getText().trim().isEmpty()
+            || (module != null && !"All".equals(String.valueOf(module)));
+    }
 }

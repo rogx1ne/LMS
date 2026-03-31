@@ -7,7 +7,9 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 
 public class ReturnPanel extends JPanel {
-    private final JTextField txtCardIdSearch = new JTextField();
+    private final JTextField txtBorrowerSearch = new JTextField();
+    private final JComboBox<String> cmbBorrowerType = new JComboBox<>(new String[]{"All", "STUDENT", "FACULTY"});
+    private final JComboBox<String> cmbInspectionCondition = new JComboBox<>(new String[]{"GOOD", "DAMAGED", "LOST"});
     private final JButton btnSearch = new JButton("Search");
     private final JButton btnReset = new JButton("Reset");
     private final JButton btnProcessReturn = new JButton("Process Return");
@@ -16,7 +18,7 @@ public class ReturnPanel extends JPanel {
     private final JTable table;
     private final TableRowSorter<DefaultTableModel> sorter;
 
-    private final JLabel lblCount = new JLabel("Issued Books: 0");
+    private final JLabel lblCount = new JLabel("Open Issues: 0");
 
     public ReturnPanel() {
         setLayout(new BorderLayout(0, 8));
@@ -27,7 +29,9 @@ public class ReturnPanel extends JPanel {
         searchPanel.setBackground(ModuleTheme.WHITE);
         searchPanel.setBorder(ModuleTheme.sectionBorder("Search Issued Books"));
 
-        ModuleTheme.styleInput(txtCardIdSearch);
+        ModuleTheme.styleInput(txtBorrowerSearch);
+        ModuleTheme.styleCombo(cmbBorrowerType);
+        ModuleTheme.styleCombo(cmbInspectionCondition);
         ModuleTheme.styleSubtleButton(btnReset);
         ModuleTheme.stylePrimaryButton(btnSearch);
 
@@ -38,21 +42,27 @@ public class ReturnPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 0;
-        searchPanel.add(label("Card ID"), gbc);
+        searchPanel.add(label("Borrower"), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 1;
-        searchPanel.add(txtCardIdSearch, gbc);
+        searchPanel.add(txtBorrowerSearch, gbc);
 
         gbc.gridx = 2;
         gbc.weightx = 0;
-        searchPanel.add(btnReset, gbc);
+        searchPanel.add(label("Type"), gbc);
 
         gbc.gridx = 3;
+        searchPanel.add(cmbBorrowerType, gbc);
+
+        gbc.gridx = 4;
+        searchPanel.add(btnReset, gbc);
+
+        gbc.gridx = 5;
         searchPanel.add(btnSearch, gbc);
 
         tableModel = new DefaultTableModel(
-            new String[]{"S.No", "Issue ID", "Accession No", "Book Title", "Author", "Issue Date", "Due Date", "Issued By"},
+            new String[]{"S.No", "Issue ID", "Borrower Type", "Card ID", "Borrower Name", "Contact", "Accession No", "Book Title", "Author", "Issue Date", "Due Date", "Issued By"},
             0
         ) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
@@ -64,7 +74,10 @@ public class ReturnPanel extends JPanel {
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        JScrollPane scrollPane = new JScrollPane(table);
+        JScrollPane scrollPane = new JScrollPane(ModuleTheme.createEmptyStateLayer(
+            table,
+            () -> hasActiveFilters() ? "Record Not Found" : "No issued books to display."
+        ));
         scrollPane.getViewport().setBackground(ModuleTheme.TABLE_BG);
         scrollPane.setBorder(ModuleTheme.sectionBorder("Current Issues"));
 
@@ -76,6 +89,8 @@ public class ReturnPanel extends JPanel {
         JPanel actionWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         actionWrap.setBackground(ModuleTheme.WHITE);
         ModuleTheme.styleAccentButton(btnProcessReturn);
+        actionWrap.add(label("Inspection"));
+        actionWrap.add(cmbInspectionCondition);
         actionWrap.add(btnProcessReturn);
         footer.add(actionWrap, BorderLayout.EAST);
 
@@ -91,7 +106,15 @@ public class ReturnPanel extends JPanel {
         return l;
     }
 
-    public JTextField getTxtCardIdSearch() { return txtCardIdSearch; }
+    private boolean hasActiveFilters() {
+        Object borrowerType = cmbBorrowerType.getSelectedItem();
+        return !txtBorrowerSearch.getText().trim().isEmpty()
+            || (borrowerType != null && !"All".equals(String.valueOf(borrowerType)));
+    }
+
+    public JTextField getTxtBorrowerSearch() { return txtBorrowerSearch; }
+    public JComboBox<String> getCmbBorrowerType() { return cmbBorrowerType; }
+    public JComboBox<String> getCmbInspectionCondition() { return cmbInspectionCondition; }
     public JButton getBtnSearch() { return btnSearch; }
     public JButton getBtnReset() { return btnReset; }
     public JButton getBtnProcessReturn() { return btnProcessReturn; }

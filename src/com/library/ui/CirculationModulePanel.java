@@ -8,6 +8,7 @@ import java.awt.*;
 public class CirculationModulePanel extends JPanel {
     private final IssuePanel issuePanel = new IssuePanel();
     private final ReturnPanel returnPanel = new ReturnPanel();
+    private final CirculationReportPanel reportPanel = new CirculationReportPanel();
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentPanel = new JPanel(cardLayout);
@@ -22,17 +23,21 @@ public class CirculationModulePanel extends JPanel {
 
         JButton navIssue = ModuleTheme.createNavButton("ISSUE BOOK");
         JButton navReturn = ModuleTheme.createNavButton("RETURN BOOK");
+        JButton navReport = ModuleTheme.createNavButton("CIRCULATION REPORT");
 
         header.add(navIssue);
         header.add(navReturn);
+        header.add(navReport);
 
         contentPanel.setBackground(ModuleTheme.WHITE);
         contentPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         contentPanel.add(issuePanel, "ISSUE");
         contentPanel.add(returnPanel, "RETURN");
+        contentPanel.add(reportPanel, "REPORT");
 
         navIssue.addActionListener(e -> cardLayout.show(contentPanel, "ISSUE"));
         navReturn.addActionListener(e -> cardLayout.show(contentPanel, "RETURN"));
+        navReport.addActionListener(e -> cardLayout.show(contentPanel, "REPORT"));
 
         add(header, BorderLayout.NORTH);
         add(contentPanel, BorderLayout.CENTER);
@@ -41,6 +46,7 @@ public class CirculationModulePanel extends JPanel {
 
     public IssuePanel getIssuePanel() { return issuePanel; }
     public ReturnPanel getReturnPanel() { return returnPanel; }
+    public CirculationReportPanel getReportPanel() { return reportPanel; }
 
     public void showSection(String key) {
         if (key == null) return;
@@ -50,6 +56,9 @@ public class CirculationModulePanel extends JPanel {
                 break;
             case "RETURN":
                 cardLayout.show(contentPanel, "RETURN");
+                break;
+            case "REPORT":
+                cardLayout.show(contentPanel, "REPORT");
                 break;
             default:
                 break;

@@ -106,6 +106,10 @@ public class BookController {
                 }
             }
 
+            if (!confirmBookAction("Confirm Book Copy", "Add Book Copy", addPanel.getTxtAccessionPreview().getText(), draft)) {
+                return;
+            }
+
             BookCopy created = dao.addBookCopy(draft);
             JOptionPane.showMessageDialog(module, "Book copy saved. Accession No: " + created.getAccessionNo());
 
@@ -126,8 +130,7 @@ public class BookController {
         String title = BookLogic.normalizeTitle(addPanel.getTxtTitle().getText());
         Integer volume = BookLogic.validateVolumeNullable(addPanel.getTxtVolume().getText());
         int edition = BookLogic.validateEdition(addPanel.getTxtEdition().getText());
-        String publisher = BookLogic.normalizePublisher(addPanel.getTxtPublisher().getText());
-        String pubPlace = BookLogic.normalizePublicationPlace(addPanel.getTxtPubPlace().getText());
+        BookLogic.PublicationParts publication = BookLogic.splitPublication(addPanel.getTxtPublication().getText());
         int pubYear = BookLogic.validatePublicationYear(addPanel.getTxtPubYear().getText());
         int pages = BookLogic.validatePages(addPanel.getTxtPages().getText());
         String source = BookLogic.normalizeSource(String.valueOf(addPanel.getCmbSource().getSelectedItem()));
@@ -144,7 +147,7 @@ public class BookController {
         String status = BookLogic.deriveStatus(withdrawnDate == null ? null : withdrawnDate.toLocalDate());
 
         return new BookCopy(
-            null, author, title, volume, edition, publisher, pubPlace, pubYear, pages, source,
+            null, author, title, volume, edition, publication.getPublisher(), publication.getPlace(), pubYear, pages, source,
             classNo, bookNo, cost, billNo, billDate, tags, withdrawnDate, remarks, status
         );
     }
@@ -161,8 +164,7 @@ public class BookController {
                 b.getTitle(),
                 b.getVolume(),
                 b.getEdition(),
-                b.getPublisher(),
-                b.getPublicationPlace(),
+                BookLogic.formatPublication(b.getPublisher(), b.getPublicationPlace()),
                 b.getPublicationYear(),
                 b.getPages(),
                 b.getSource(),
@@ -204,6 +206,9 @@ public class BookController {
 
         try {
             BookCopy updated = buildBookFromEditDialog(dialog);
+            if (!confirmBookAction("Confirm Book Update", "Save Changes", updated.getAccessionNo(), updated)) {
+                return;
+            }
             if (dao.updateBookCopy(updated)) {
                 JOptionPane.showMessageDialog(module, "Updated successfully.");
                 refreshAccessionTable();
@@ -225,8 +230,7 @@ public class BookController {
         String title = BookLogic.normalizeTitle(d.getTitle());
         Integer volume = BookLogic.validateVolumeNullable(d.getVolume());
         int edition = BookLogic.validateEdition(d.getEdition());
-        String publisher = BookLogic.normalizePublisher(d.getPublisher());
-        String pubPlace = BookLogic.normalizePublicationPlace(d.getPubPlace());
+        BookLogic.PublicationParts publication = BookLogic.splitPublication(d.getPublication());
         int pubYear = BookLogic.validatePublicationYear(d.getPubYear());
         int pages = BookLogic.validatePages(d.getPages());
         String source = BookLogic.normalizeSource(d.getSource());
@@ -247,7 +251,7 @@ public class BookController {
         }
 
         return new BookCopy(
-            accession, author, title, volume, edition, publisher, pubPlace, pubYear, pages, source,
+            accession, author, title, volume, edition, publication.getPublisher(), publication.getPlace(), pubYear, pages, source,
             classNo, bookNo, cost, billNo, billDate, tags, withdrawnDate, remarks, status
         );
     }
@@ -303,7 +307,7 @@ public class BookController {
         registerPanel.getFltAuthor().getDocument().addDocumentListener(dl);
         registerPanel.getFltTitle().getDocument().addDocumentListener(dl);
         registerPanel.getFltVolume().getDocument().addDocumentListener(dl);
-        registerPanel.getFltPublisher().getDocument().addDocumentListener(dl);
+        registerPanel.getFltPublication().getDocument().addDocumentListener(dl);
         registerPanel.getFltYear().getDocument().addDocumentListener(dl);
         registerPanel.getFltBillNo().getDocument().addDocumentListener(dl);
         registerPanel.getFltSource().addActionListener(e -> applyFilters());
@@ -312,13 +316,14 @@ public class BookController {
     private void applyFilters() {
         List<RowFilter<Object, Object>> filters = new ArrayList<>();
         
-        // Unified Global Search (Title, Author, Tags)
+        // Unified Global Search (Title, Author, Publication, Tags)
         String global = registerPanel.getFltGlobalSearch().getText().trim();
         if (!global.isEmpty()) {
             List<RowFilter<Object, Object>> orFilters = new ArrayList<>();
             orFilters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(global), 1)); // Author
             orFilters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(global), 2)); // Title
-            orFilters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(global), 15)); // Tags
+            orFilters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(global), 5)); // Publication
+            orFilters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(global), 14)); // Tags
             filters.add(RowFilter.orFilter(orFilters));
         }
 
@@ -327,13 +332,13 @@ public class BookController {
         addRegexFilter(filters, registerPanel.getFltAuthor().getText(), 1);
         addRegexFilter(filters, registerPanel.getFltTitle().getText(), 2);
         addRegexFilter(filters, registerPanel.getFltVolume().getText(), 3);
-        addRegexFilter(filters, registerPanel.getFltPublisher().getText(), 5);
-        addRegexFilter(filters, registerPanel.getFltYear().getText(), 7);
-        addRegexFilter(filters, registerPanel.getFltBillNo().getText(), 13);
+        addRegexFilter(filters, registerPanel.getFltPublication().getText(), 5);
+        addRegexFilter(filters, registerPanel.getFltYear().getText(), 6);
+        addRegexFilter(filters, registerPanel.getFltBillNo().getText(), 12);
 
         String source = String.valueOf(registerPanel.getFltSource().getSelectedItem());
         if (!"All".equals(source)) {
-            filters.add(RowFilter.regexFilter("^" + Pattern.quote(source) + "$", 9));
+            filters.add(RowFilter.regexFilter("^" + Pattern.quote(source) + "$", 8));
         }
 
         registerPanel.getSorter().setRowFilter(filters.isEmpty() ? null : RowFilter.andFilter(filters));
@@ -355,7 +360,7 @@ public class BookController {
         registerPanel.getFltAuthor().setText("");
         registerPanel.getFltTitle().setText("");
         registerPanel.getFltVolume().setText("");
-        registerPanel.getFltPublisher().setText("");
+        registerPanel.getFltPublication().setText("");
         registerPanel.getFltYear().setText("");
         registerPanel.getFltBillNo().setText("");
         registerPanel.getFltSource().setSelectedIndex(0);
@@ -408,5 +413,35 @@ public class BookController {
         @Override public void insertUpdate(DocumentEvent e) { callback.run(); }
         @Override public void removeUpdate(DocumentEvent e) { callback.run(); }
         @Override public void changedUpdate(DocumentEvent e) { callback.run(); }
+    }
+
+    private boolean confirmBookAction(String title, String actionLabel, String accessionNo, BookCopy book) {
+        return ModuleTheme.confirmPreview(
+            module,
+            title,
+            actionLabel,
+            "Accession No: " + value(accessionNo),
+            "Title: " + value(book.getTitle()),
+            "Author: " + value(book.getAuthorName()),
+            "Edition: " + book.getEdition(),
+            "Publication: " + BookLogic.formatPublication(book.getPublisher(), book.getPublicationPlace()),
+            "Publication Year: " + book.getPublicationYear(),
+            "Source: " + value(book.getSource()),
+            "Class No: " + value(book.getClassNo()),
+            "Book No: " + value(book.getBookNo()),
+            "Cost: " + value(book.getCost()),
+            "Bill No: " + value(book.getBillNo()),
+            "Bill Date: " + formatDate(book.getBillDate()),
+            "Status: " + value(book.getStatus()),
+            "Remarks: " + value(book.getRemarks())
+        );
+    }
+
+    private String formatDate(Date date) {
+        return date == null ? "" : new SimpleDateFormat("dd/MM/yyyy").format(date);
+    }
+
+    private String value(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 }

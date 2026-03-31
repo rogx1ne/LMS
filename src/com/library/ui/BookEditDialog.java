@@ -1,6 +1,7 @@
 package com.library.ui;
 
 import com.library.model.BookCopy;
+import com.library.service.BookLogic;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,8 +13,7 @@ public class BookEditDialog extends JDialog {
     private final JTextField txtTitle = new JTextField();
     private final JTextField txtVolume = new JTextField();
     private final JTextField txtEdition = new JTextField();
-    private final JTextField txtPublisher = new JTextField();
-    private final JTextField txtPubPlace = new JTextField();
+    private final JTextField txtPublication = new JTextField();
     private final JTextField txtPubYear = new JTextField();
     private final JTextField txtPages = new JTextField();
     private final JTextField txtSource = new JTextField();
@@ -41,6 +41,7 @@ public class BookEditDialog extends JDialog {
         ModuleTheme.styleInput(txtWithdrawn);
         ModuleTheme.addDatePicker(txtBillDate);
         ModuleTheme.addDatePicker(txtWithdrawn);
+        txtPublication.setToolTipText("Enter as: Publisher, Place");
 
         JPanel form = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -50,8 +51,8 @@ public class BookEditDialog extends JDialog {
         int r = 0;
         addRow(form, gbc, r++, "Accession No", txtAccessNo, "Author", txtAuthor);
         addRow(form, gbc, r++, "Title", txtTitle, "Volume", txtVolume);
-        addRow(form, gbc, r++, "Edition", txtEdition, "Publisher", txtPublisher);
-        addRow(form, gbc, r++, "Pub Place", txtPubPlace, "Pub Year", txtPubYear);
+        addRow(form, gbc, r++, "Edition", txtEdition, "Pub Year", txtPubYear);
+        addWideRow(form, gbc, r++, "Publication (Publisher, Place)", txtPublication);
         addRow(form, gbc, r++, "Pages", txtPages, "Source", txtSource);
         addRow(form, gbc, r++, "Class No", txtClassNo, "Book No", txtBookNo);
         addRow(form, gbc, r++, "Cost", txtCost, "Bill No", txtBillNo);
@@ -91,8 +92,7 @@ public class BookEditDialog extends JDialog {
         ModuleTheme.styleInput(txtTitle);
         ModuleTheme.styleInput(txtVolume);
         ModuleTheme.styleInput(txtEdition);
-        ModuleTheme.styleInput(txtPublisher);
-        ModuleTheme.styleInput(txtPubPlace);
+        ModuleTheme.styleInput(txtPublication);
         ModuleTheme.styleInput(txtPubYear);
         ModuleTheme.styleInput(txtPages);
         ModuleTheme.styleInput(txtSource);
@@ -124,14 +124,26 @@ public class BookEditDialog extends JDialog {
         panel.add(c2, gbc);
     }
 
+    private void addWideRow(JPanel panel, GridBagConstraints gbc, int row, String label, JComponent component) {
+        gbc.gridy = row;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        panel.add(new JLabel(label), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 1;
+        panel.add(component, gbc);
+        gbc.gridwidth = 1;
+    }
+
     private void bind(BookCopy b) {
         txtAccessNo.setText(b.getAccessionNo());
         txtAuthor.setText(b.getAuthorName());
         txtTitle.setText(b.getTitle());
         txtVolume.setText(b.getVolume() == null ? "" : String.valueOf(b.getVolume()));
         txtEdition.setText(String.valueOf(b.getEdition()));
-        txtPublisher.setText(b.getPublisher());
-        txtPubPlace.setText(b.getPublicationPlace());
+        txtPublication.setText(BookLogic.formatPublication(b.getPublisher(), b.getPublicationPlace()));
         txtPubYear.setText(String.valueOf(b.getPublicationYear()));
         txtPages.setText(String.valueOf(b.getPages()));
         txtSource.setText(b.getSource());
@@ -154,8 +166,7 @@ public class BookEditDialog extends JDialog {
     public String getTitle() { return txtTitle.getText().trim(); }
     public String getVolume() { return txtVolume.getText().trim(); }
     public String getEdition() { return txtEdition.getText().trim(); }
-    public String getPublisher() { return txtPublisher.getText().trim(); }
-    public String getPubPlace() { return txtPubPlace.getText().trim(); }
+    public String getPublication() { return txtPublication.getText().trim(); }
     public String getPubYear() { return txtPubYear.getText().trim(); }
     public String getPages() { return txtPages.getText().trim(); }
     public String getSource() { return txtSource.getText().trim(); }

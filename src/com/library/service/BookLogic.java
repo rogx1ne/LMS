@@ -74,6 +74,35 @@ public final class BookLogic {
         return s;
     }
 
+    public static PublicationParts splitPublication(String raw) throws ValidationException {
+        String value = safe(raw);
+        if (value.isEmpty()) {
+            throw new ValidationException("Publication is required. Use format: Publisher, Place.");
+        }
+
+        String[] separators = {",", " - ", " | ", ";"};
+        for (String separator : separators) {
+            int idx = value.lastIndexOf(separator);
+            if (idx <= 0 || idx >= value.length() - separator.length()) {
+                continue;
+            }
+
+            String publisher = normalizePublisher(value.substring(0, idx));
+            String place = normalizePublicationPlace(value.substring(idx + separator.length()));
+            return new PublicationParts(publisher, place);
+        }
+
+        throw new ValidationException("Publication must be entered as Publisher, Place.");
+    }
+
+    public static String formatPublication(String publisher, String place) {
+        String normalizedPublisher = safe(publisher);
+        String normalizedPlace = safe(place);
+        if (normalizedPublisher.isEmpty()) return normalizedPlace;
+        if (normalizedPlace.isEmpty()) return normalizedPublisher;
+        return normalizedPublisher + ", " + normalizedPlace;
+    }
+
     public static int validatePublicationYear(String raw) throws ValidationException {
         int y = parsePositiveInt(raw, "Year of Publication");
         int current = LocalDate.now().getYear();
@@ -162,5 +191,18 @@ public final class BookLogic {
 
     private static String safe(String s) {
         return s == null ? "" : s.trim();
+    }
+
+    public static final class PublicationParts {
+        private final String publisher;
+        private final String place;
+
+        public PublicationParts(String publisher, String place) {
+            this.publisher = publisher;
+            this.place = place;
+        }
+
+        public String getPublisher() { return publisher; }
+        public String getPlace() { return place; }
     }
 }

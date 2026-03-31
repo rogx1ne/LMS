@@ -12,7 +12,7 @@ public class AccessionRegisterPanel extends JPanel {
     private final JTextField fltAuthor = new JTextField();
     private final JTextField fltTitle = new JTextField();
     private final JTextField fltVolume = new JTextField();
-    private final JTextField fltPublisher = new JTextField();
+    private final JTextField fltPublication = new JTextField();
     private final JTextField fltYear = new JTextField();
     private final JComboBox<String> fltSource = new JComboBox<>(new String[]{"All", "PURCHASE", "DONATION", "GIFT", "EXCHANGE"});
     private final JTextField fltBillNo = new JTextField();
@@ -63,7 +63,7 @@ public class AccessionRegisterPanel extends JPanel {
         addFilter(filters, gbc, "Book Title:", fltTitle, 4, 1);
         addFilter(filters, gbc, "Volume:", fltVolume, 6, 1);
 
-        addFilter(filters, gbc, "Publisher:", fltPublisher, 0, 2);
+        addFilter(filters, gbc, "Publication:", fltPublication, 0, 2);
         addFilter(filters, gbc, "Pub Year:", fltYear, 2, 2);
         addFilter(filters, gbc, "Source:", fltSource, 4, 2);
         addFilter(filters, gbc, "Bill No:", fltBillNo, 6, 2);
@@ -76,7 +76,7 @@ public class AccessionRegisterPanel extends JPanel {
         filters.add(btnRefresh, gbc);
 
         String[] cols = {
-            "Accession No", "Author Name", "Book Title", "Volume", "Edition", "Publisher", "Publisher Place",
+            "Accession No", "Author Name", "Book Title", "Volume", "Edition", "Publication",
             "Pub Year", "Pages", "Source", "Class No", "Book No", "Cost", "Bill No", "Bill Date",
             "Tags",
             "Withdrawn Date", "Remarks", "Status"
@@ -89,12 +89,15 @@ public class AccessionRegisterPanel extends JPanel {
         table = new JTable(tableModel);
         ModuleTheme.styleTable(table);
         table.setAutoCreateRowSorter(true);
-        ModuleTheme.applyStatusRenderer(table, 18); // Updated index for Status
+        ModuleTheme.applyStatusRenderer(table, 17);
 
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(table, "No Books found in Accession Register."));
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(
+            table,
+            () -> hasActiveFilters() ? "Record Not Found" : "No Books found in Accession Register."
+        ));
         scroll.getViewport().setBackground(ModuleTheme.TABLE_BG);
 
         JPanel footer = new JPanel(new BorderLayout());
@@ -123,7 +126,7 @@ public class AccessionRegisterPanel extends JPanel {
         ModuleTheme.styleInput(fltAuthor);
         ModuleTheme.styleInput(fltTitle);
         ModuleTheme.styleInput(fltVolume);
-        ModuleTheme.styleInput(fltPublisher);
+        ModuleTheme.styleInput(fltPublication);
         ModuleTheme.styleInput(fltYear);
         ModuleTheme.styleInput(fltBillNo);
         ModuleTheme.styleCombo(fltSource);
@@ -146,6 +149,18 @@ public class AccessionRegisterPanel extends JPanel {
         return l;
     }
 
+    private boolean hasActiveFilters() {
+        return !fltGlobalSearch.getText().trim().isEmpty()
+            || !fltAccessNo.getText().trim().isEmpty()
+            || !fltAuthor.getText().trim().isEmpty()
+            || !fltTitle.getText().trim().isEmpty()
+            || !fltVolume.getText().trim().isEmpty()
+            || !fltPublication.getText().trim().isEmpty()
+            || !fltYear.getText().trim().isEmpty()
+            || !fltBillNo.getText().trim().isEmpty()
+            || fltSource.getSelectedIndex() > 0;
+    }
+
     public void updateTotalCount(int count) {
         lblTotal.setText("Total Records: " + count);
     }
@@ -155,7 +170,7 @@ public class AccessionRegisterPanel extends JPanel {
     public JTextField getFltAuthor() { return fltAuthor; }
     public JTextField getFltTitle() { return fltTitle; }
     public JTextField getFltVolume() { return fltVolume; }
-    public JTextField getFltPublisher() { return fltPublisher; }
+    public JTextField getFltPublication() { return fltPublication; }
     public JTextField getFltYear() { return fltYear; }
     public JComboBox<String> getFltSource() { return fltSource; }
     public JTextField getFltBillNo() { return fltBillNo; }

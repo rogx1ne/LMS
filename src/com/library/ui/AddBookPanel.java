@@ -9,8 +9,7 @@ public class AddBookPanel extends JPanel {
     private final JTextField txtTitle = new JTextField();
     private final JTextField txtVolume = new JTextField();
     private final JTextField txtEdition = new JTextField();
-    private final JTextField txtPublisher = new JTextField();
-    private final JTextField txtPubPlace = new JTextField();
+    private final JTextField txtPublication = new JTextField();
     private final JTextField txtPubYear = new JTextField();
     private final JTextField txtPages = new JTextField();
     private final JComboBox<String> cmbSource = new JComboBox<>(new String[]{"PURCHASE", "DONATION", "GIFT", "EXCHANGE"});
@@ -54,8 +53,8 @@ public class AddBookPanel extends JPanel {
         int r = 0;
         addRow(form, gbc, r++, "Accession No (auto)", txtAccessionPreview, "Author Name", txtAuthor);
         addRow(form, gbc, r++, "Book Title", txtTitle, "Volume", txtVolume);
-        addRow(form, gbc, r++, "Edition", txtEdition, "Publisher", txtPublisher);
-        addRow(form, gbc, r++, "Publisher Place", txtPubPlace, "Publication Year", txtPubYear);
+        addRow(form, gbc, r++, "Edition", txtEdition, "Publication Year", txtPubYear);
+        addWideRow(form, gbc, r++, "Publication (Publisher, Place)", txtPublication);
         addRow(form, gbc, r++, "Pages", txtPages, "Source", cmbSource);
         addRow(form, gbc, r++, "Class No", txtClassNo, "Book No (auto)", txtBookNo);
         addRow(form, gbc, r++, "Cost", txtCost, "Bill No", txtBillNo);
@@ -90,8 +89,7 @@ public class AddBookPanel extends JPanel {
         ModuleTheme.styleInput(txtTitle);
         ModuleTheme.styleInput(txtVolume);
         ModuleTheme.styleInput(txtEdition);
-        ModuleTheme.styleInput(txtPublisher);
-        ModuleTheme.styleInput(txtPubPlace);
+        ModuleTheme.styleInput(txtPublication);
         ModuleTheme.styleInput(txtPubYear);
         ModuleTheme.styleInput(txtPages);
         ModuleTheme.styleInput(txtClassNo);
@@ -106,6 +104,7 @@ public class AddBookPanel extends JPanel {
 
         txtBillDate.setToolTipText("Click to select Bill Date (dd/MM/yyyy)");
         txtWithdrawnDate.setToolTipText("Click to select Withdrawn Date (optional)");
+        txtPublication.setToolTipText("Enter as: Publisher, Place");
 
         setupValidation();
     }
@@ -113,6 +112,7 @@ public class AddBookPanel extends JPanel {
     private void setupValidation() {
         ModuleTheme.addValidation(txtAuthor, s -> !s.trim().isEmpty());
         ModuleTheme.addValidation(txtTitle, s -> !s.trim().isEmpty());
+        ModuleTheme.addValidation(txtPublication, s -> !s.trim().isEmpty());
         ModuleTheme.addValidation(txtCost, s -> s.trim().matches("\\d+(\\.\\d+)?"));
         ModuleTheme.addValidation(txtBillNo, s -> !s.trim().isEmpty());
     }
@@ -137,6 +137,20 @@ public class AddBookPanel extends JPanel {
         form.add(c2, gbc);
     }
 
+    private void addWideRow(JPanel form, GridBagConstraints gbc, int row, String labelText, JComponent component) {
+        gbc.gridy = row;
+
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        form.add(label(labelText), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 1;
+        form.add(component, gbc);
+        gbc.gridwidth = 1;
+    }
+
     private JLabel label(String text) {
         JLabel l = new JLabel(text);
         l.setFont(new Font("Segoe UI", Font.BOLD, 11));
@@ -148,8 +162,7 @@ public class AddBookPanel extends JPanel {
     public JTextField getTxtTitle() { return txtTitle; }
     public JTextField getTxtVolume() { return txtVolume; }
     public JTextField getTxtEdition() { return txtEdition; }
-    public JTextField getTxtPublisher() { return txtPublisher; }
-    public JTextField getTxtPubPlace() { return txtPubPlace; }
+    public JTextField getTxtPublication() { return txtPublication; }
     public JTextField getTxtPubYear() { return txtPubYear; }
     public JTextField getTxtPages() { return txtPages; }
     public JComboBox<String> getCmbSource() { return cmbSource; }
@@ -176,8 +189,7 @@ public class AddBookPanel extends JPanel {
         txtTitle.setText("");
         txtVolume.setText("");
         txtEdition.setText("");
-        txtPublisher.setText("");
-        txtPubPlace.setText("");
+        txtPublication.setText("");
         txtPubYear.setText("");
         txtPages.setText("");
         cmbSource.setSelectedIndex(0);

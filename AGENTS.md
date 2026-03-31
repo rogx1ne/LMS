@@ -36,3 +36,8 @@ This guide is for developers and AI agents working on the Library Management Sys
 - **Compilation:** `./run.sh` must be clean.
 - **Database:** Schema changes must be reflected in `script.sql` and `dummy.sql`.
 - **Audit:** All sensitive writes (Deletes, Updates, User creation) must be logged via `AuditLogger`.
+
+## 6. Change Logging
+- **Project Log Required:** After any code change, schema update, UI update, or structural refactor, update `PROJECT_LOG.md` in the same turn.
+- **Log Format:** Each entry must include the date, affected module/files, a short summary of what changed, and a small representative snippet or SQL/code fragment showing the exact nature of the change.
+- **Purpose:** The log is the canonical quick-reference for understanding what was changed without reconstructing it from diffs alone.

@@ -62,7 +62,10 @@ public class StockPanel extends JPanel {
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        JScrollPane scroll = new JScrollPane(table);
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(
+            table,
+            () -> txtSearch.getText().trim().isEmpty() ? "No stock records available." : "Record Not Found"
+        ));
         scroll.getViewport().setBackground(ModuleTheme.TABLE_BG);
         centerPanel.add(scroll, BorderLayout.CENTER);
 

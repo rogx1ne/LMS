@@ -52,7 +52,10 @@ public class OrderViewPanel extends JPanel {
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(table, "No Orders found matching your filters."));
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(
+            table,
+            () -> hasActiveFilters() ? "Record Not Found" : "No Orders available."
+        ));
         scroll.getViewport().setBackground(ModuleTheme.TABLE_BG);
 
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -75,4 +78,8 @@ public class OrderViewPanel extends JPanel {
     public JTable getTable() { return table; }
     public DefaultTableModel getTableModel() { return tableModel; }
     public TableRowSorter<DefaultTableModel> getSorter() { return sorter; }
+
+    private boolean hasActiveFilters() {
+        return !fltOrderId.getText().trim().isEmpty() || !fltOrderDate.getText().trim().isEmpty();
+    }
 }

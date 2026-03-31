@@ -266,6 +266,10 @@ public class StudentController {
                     view.getInputStatus()
                 );
 
+                if (!confirmStudentAction("Confirm Student Update", "Update Student", updated, false)) {
+                    return;
+                }
+
                 if (dao.updateStudent(updated)) {
                     JOptionPane.showMessageDialog(view, "Updated Successfully!");
                     refreshTable();
@@ -278,6 +282,26 @@ public class StudentController {
 
             if (dao.isRollTakenInCourseSession(roll, course, session, null)) {
                 throw new ValidationException("Roll No already exists for this course and session.");
+            }
+
+            Student draft = new Student(
+                null,
+                roll,
+                name,
+                phone,
+                addr.trim(),
+                course,
+                session,
+                null,
+                CurrentUserContext.getDisplayName(),
+                new java.sql.Date(System.currentTimeMillis()),
+                limit,
+                fee,
+                "ACTIVE"
+            );
+
+            if (!confirmStudentAction("Confirm Student Registration", "Register Student", draft, true)) {
+                return;
             }
 
             Student created = dao.registerStudent(
@@ -691,5 +715,26 @@ public class StudentController {
                 nextFocus.requestFocusInWindow();
             }
         });
+    }
+
+    private boolean confirmStudentAction(String title, String actionLabel, Student student, boolean createMode) {
+        return ModuleTheme.confirmPreview(
+            view,
+            title,
+            actionLabel,
+            createMode ? "Card ID: Auto-generated on save" : "Card ID: " + student.getCardId(),
+            createMode ? "Receipt No: Auto-generated on save" : "Receipt No: " + student.getReceiptNo(),
+            "Name: " + student.getName(),
+            "Course: " + student.getCourse(),
+            "Session: " + student.getSession(),
+            "Roll No: " + student.getRoll(),
+            "Phone: " + student.getPhone(),
+            "Address: " + student.getAddress(),
+            "Book Limit: " + student.getBookLimit(),
+            "Fee: " + student.getFee(),
+            "Issued By: " + student.getIssuedBy(),
+            "Issue Date: " + formatDate(student.getIssueDate()),
+            "Status: " + student.getStatus()
+        );
     }
 }

@@ -109,6 +109,20 @@ public class AdminController {
             String email = adminService.validateEmail(userPanel.getTxtEmail().getText());
             String phone = adminService.validatePhone(userPanel.getTxtPhone().getText());
 
+            if (!ModuleTheme.confirmPreview(
+                modulePanel,
+                "Confirm User Creation",
+                "Create User",
+                "User ID: " + userPanel.getTxtUserId().getText().trim(),
+                "Name: " + name,
+                "Email: " + email,
+                "Phone: " + phone,
+                "Role: LIBRARIAN",
+                "Status: ACTIVE"
+            )) {
+                return;
+            }
+
             User created = adminDAO.createUser(name, password, email, phone, CurrentUserContext.getUserId());
             JOptionPane.showMessageDialog(modulePanel, "User created: " + created.getUserId(), "Success", JOptionPane.INFORMATION_MESSAGE);
 
@@ -145,14 +159,16 @@ public class AdminController {
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(
+        if (!ModuleTheme.confirmPreview(
             modulePanel,
-            "Deactivate user " + userId + "?",
-            "Confirm Deactivation",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE
-        );
-        if (confirm != JOptionPane.YES_OPTION) return;
+            "Confirm User Deactivation",
+            "Deactivate User",
+            "User ID: " + userId,
+            "Name: " + String.valueOf(userPanel.getTableModel().getValueAt(row, 1)),
+            "Email: " + String.valueOf(userPanel.getTableModel().getValueAt(row, 2)),
+            "Phone: " + String.valueOf(userPanel.getTableModel().getValueAt(row, 3)),
+            "Current Status: " + status
+        )) return;
 
         if (adminDAO.deactivateUser(userId, CurrentUserContext.getUserId())) {
             JOptionPane.showMessageDialog(modulePanel, "User deactivated.");

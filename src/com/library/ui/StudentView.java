@@ -46,6 +46,8 @@ public class StudentView extends JPanel {
     private JTextField fltCardId, fltName, fltRoll, fltIssueBy;
     private JComboBox<String> fltSession, fltCourse, fltBookLimit;
     private JTextField fltFromDate, fltToDate;
+    private String defaultFltFromDate;
+    private String defaultFltToDate;
 
     // --- COLORS (Updated) ---
     private static final Color COLOR_BLUE_DARK = new Color(31, 62, 109);
@@ -210,8 +212,10 @@ public class StudentView extends JPanel {
         cal.add(java.util.Calendar.YEAR, -10);
         cal.set(java.util.Calendar.MONTH, java.util.Calendar.JANUARY);
         cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
-        fltFromDate.setText(new java.text.SimpleDateFormat("dd/MM/yyyy").format(cal.getTime()));
-        fltToDate.setText(new java.text.SimpleDateFormat("dd/MM/yyyy").format(new java.util.Date()));
+        defaultFltFromDate = new java.text.SimpleDateFormat("dd/MM/yyyy").format(cal.getTime());
+        defaultFltToDate = new java.text.SimpleDateFormat("dd/MM/yyyy").format(new java.util.Date());
+        fltFromDate.setText(defaultFltFromDate);
+        fltToDate.setText(defaultFltToDate);
 
         btnResetFilters = new JButton("Reset");
         btnResetFilters.setBackground(Color.WHITE);
@@ -259,6 +263,7 @@ public class StudentView extends JPanel {
         table.setSelectionForeground(Color.BLACK);
         table.setShowGrid(true);
         table.setGridColor(Color.LIGHT_GRAY);
+        table.setFillsViewportHeight(true);
 
         // Table Header Styling
         table.getTableHeader().setBackground(COLOR_TABLE_HEADER); // Greenish Header
@@ -270,7 +275,10 @@ public class StudentView extends JPanel {
         ModuleTheme.applyStatusRenderer(table, 10);
 
         // ScrollPane Viewport (Fills empty space with green)
-        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(table, "No Students found matching your criteria."));
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(
+            table,
+            () -> hasActiveFilters() ? "Record Not Found" : "No Students available."
+        ));
         scroll.getViewport().setBackground(COLOR_LIGHT_GREEN_BG);
 
         // Footer Actions
@@ -405,6 +413,28 @@ public class StudentView extends JPanel {
 
     public JButton getSaveButton() {
         return btnSaveForm;
+    }
+
+    private boolean hasActiveFilters() {
+        return !fltCardId.getText().trim().isEmpty()
+            || !fltName.getText().trim().isEmpty()
+            || !fltRoll.getText().trim().isEmpty()
+            || !fltIssueBy.getText().trim().isEmpty()
+            || !isAllSelected(fltCourse)
+            || !isAllSelected(fltSession)
+            || !isAllSelected(fltBookLimit)
+            || isDateFilterActive(fltFromDate, defaultFltFromDate)
+            || isDateFilterActive(fltToDate, defaultFltToDate);
+    }
+
+    private boolean isAllSelected(JComboBox<String> box) {
+        Object selected = box.getSelectedItem();
+        return selected == null || "All".equals(String.valueOf(selected));
+    }
+
+    private boolean isDateFilterActive(JTextField field, String defaultValue) {
+        String value = field.getText().trim();
+        return !value.isEmpty() && !value.equals(defaultValue);
     }
 
     // ==========================================

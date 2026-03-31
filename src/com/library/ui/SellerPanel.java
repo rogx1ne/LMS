@@ -53,7 +53,10 @@ public class SellerPanel extends JPanel {
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        JScrollPane scroll = new JScrollPane(table);
+        JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(
+            table,
+            () -> hasActiveFilters() ? "Record Not Found" : "No Sellers available."
+        ));
         scroll.getViewport().setBackground(ModuleTheme.TABLE_BG);
 
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -193,6 +196,12 @@ public class SellerPanel extends JPanel {
     public JTable getTable() { return table; }
     public DefaultTableModel getTableModel() { return tableModel; }
     public TableRowSorter<DefaultTableModel> getSorter() { return sorter; }
+
+    private boolean hasActiveFilters() {
+        return !fltSellerId.getText().trim().isEmpty()
+            || !fltCompany.getText().trim().isEmpty()
+            || !fltContactPerson.getText().trim().isEmpty();
+    }
 
     public void clearForm() {
         txtCompanyName.setText("");

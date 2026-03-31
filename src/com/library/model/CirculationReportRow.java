@@ -1,8 +1,9 @@
 package com.library.model;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 
-public class IssueTransaction {
+public class CirculationReportRow {
     private final String issueId;
     private final String borrowerType;
     private final String cardId;
@@ -15,11 +16,11 @@ public class IssueTransaction {
     private final Date dueDate;
     private final Date returnDate;
     private final String returnCondition;
-    private final Double fine;
+    private final BigDecimal fine;
     private final String issuedBy;
     private final String status;
 
-    public IssueTransaction(
+    public CirculationReportRow(
         String issueId,
         String borrowerType,
         String cardId,
@@ -32,7 +33,7 @@ public class IssueTransaction {
         Date dueDate,
         Date returnDate,
         String returnCondition,
-        Double fine,
+        BigDecimal fine,
         String issuedBy,
         String status
     ) {
@@ -65,7 +66,7 @@ public class IssueTransaction {
     public Date getDueDate() { return dueDate; }
     public Date getReturnDate() { return returnDate; }
     public String getReturnCondition() { return returnCondition; }
-    public Double getFine() { return fine; }
+    public BigDecimal getFine() { return fine; }
     public String getIssuedBy() { return issuedBy; }
     public String getStatus() { return status; }
 }

@@ -6,6 +6,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.util.function.Supplier;
 
 public final class ModuleTheme {
     public static final Color BLUE_DARK = new Color(31, 62, 109);
@@ -187,6 +188,7 @@ public final class ModuleTheme {
         table.setShowGrid(true);
         table.setGridColor(new Color(230, 230, 230));
         table.setFont(getFont(Font.PLAIN, 12));
+        table.setFillsViewportHeight(true);
 
         javax.swing.table.JTableHeader header = table.getTableHeader();
         header.setBackground(TABLE_HEAD);
@@ -239,15 +241,28 @@ public final class ModuleTheme {
     }
 
     public static <T extends JComponent> JLayer<T> createEmptyStateLayer(T component, String message) {
+        return createEmptyStateLayer(component, () -> message);
+    }
+
+    public static <T extends JComponent> JLayer<T> createEmptyStateLayer(T component, Supplier<String> messageSupplier) {
         return new JLayer<>(component, new javax.swing.plaf.LayerUI<T>() {
             @Override
             public void paint(Graphics g, JComponent c) {
                 super.paint(g, c);
                 boolean isEmpty = false;
                 if (component instanceof JTable) {
-                    isEmpty = ((JTable) component).getRowCount() == 0;
+                    JTable table = (JTable) component;
+                    if (table.getRowSorter() != null) {
+                        isEmpty = table.getRowSorter().getViewRowCount() == 0;
+                    } else {
+                        isEmpty = table.getModel().getRowCount() == 0;
+                    }
                 }
                 if (isEmpty) {
+                    String message = messageSupplier.get();
+                    if (message == null || message.trim().isEmpty()) {
+                        return;
+                    }
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     g2.setColor(new Color(150, 150, 150));
@@ -316,6 +331,56 @@ public final class ModuleTheme {
             toast.dispose();
             ((Timer)e.getSource()).stop();
         }).start();
+    }
+
+    public static boolean confirmPreview(Component parent, String title, String actionLabel, String... detailLines) {
+        JTextArea preview = new JTextArea();
+        preview.setEditable(false);
+        preview.setFocusable(false);
+        preview.setLineWrap(true);
+        preview.setWrapStyleWord(true);
+        preview.setFont(getFont(Font.PLAIN, 12));
+        preview.setBackground(WHITE);
+        preview.setForeground(BLACK);
+        preview.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Please review the details below before proceeding.\n\n");
+        if (detailLines != null) {
+            for (String line : detailLines) {
+                if (line == null || line.trim().isEmpty()) continue;
+                sb.append(line).append('\n');
+            }
+        }
+        preview.setText(sb.toString());
+        preview.setCaretPosition(0);
+
+        JScrollPane scroll = new JScrollPane(preview);
+        scroll.setPreferredSize(new Dimension((int) (520 * currentScale), (int) (280 * currentScale)));
+        scroll.setBorder(new LineBorder(new Color(220, 220, 220)));
+
+        JPanel panel = new JPanel(new BorderLayout(0, 8));
+        panel.setBackground(WHITE);
+
+        JLabel prompt = new JLabel("Do you want to proceed?");
+        prompt.setFont(getFont(Font.BOLD, 13));
+        prompt.setForeground(BLUE_DARK);
+
+        panel.add(prompt, BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
+
+        Object[] options = {actionLabel, "Cancel"};
+        int choice = JOptionPane.showOptionDialog(
+            parent,
+            panel,
+            title,
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+        return choice == 0;
     }
 
     /**
