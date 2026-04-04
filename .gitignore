@@ -30,5 +30,8 @@ bin/
 .env
 .env.local
 
+### Local build artifacts ###
+/LMS-Setup.jar
+
 ### Mac OS ###
 .DS_Store
