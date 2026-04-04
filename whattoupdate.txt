@@ -1,0 +1,5 @@
+Add a date filter in circulation Report have a from date to to date format
+
+also make a time filter which will tell how many now books were added in the library in book register
+
+and now keep a normal search bar and have an advanced search option which will have to be toggled to use it, else a normal search bar is sufficient, apply it everywhere the search of records are theres

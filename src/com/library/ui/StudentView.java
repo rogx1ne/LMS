@@ -43,7 +43,10 @@ public class StudentView extends JPanel {
     private JButton btnPdf, btnEdit, btnResetFilters;
 
     // --- FILTER FIELDS ---
-    private JTextField fltCardId, fltName, fltRoll, fltIssueBy;
+    private JTextField fltName; // Simple search (always visible)
+    private JCheckBox chkAdvancedSearch;
+    private JPanel advancedFiltersPanel;
+    private JTextField fltCardId, fltRoll, fltIssueBy;
     private JComboBox<String> fltSession, fltCourse, fltBookLimit;
     private JTextField fltFromDate, fltToDate;
     private String defaultFltFromDate;
@@ -188,14 +191,53 @@ public class StudentView extends JPanel {
         pnlView.setBorder(new EmptyBorder(10, 20, 10, 20));
 
         // --- FILTERS (WHITE BACKGROUND) ---
-        JPanel pnlFilters = new JPanel(new GridBagLayout());
-        pnlFilters.setBackground(COLOR_WHITE); // Explicitly White
+        JPanel pnlFilters = new JPanel(new BorderLayout(0, 5));
+        pnlFilters.setBackground(COLOR_WHITE);
         pnlFilters.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(Color.LIGHT_GRAY), "Search & Filters", TitledBorder.LEFT, TitledBorder.TOP, new Font("Segoe UI", Font.BOLD, 11), Color.BLACK));
 
-        fltCardId = createFilterField(100);
-        fltName = createFilterField(100);
+        // --- SIMPLE SEARCH PANEL (Always visible) ---
+        JPanel simplePanel = new JPanel(new GridBagLayout());
+        simplePanel.setBackground(COLOR_WHITE);
+        
+        fltName = createFilterField(200);
+        chkAdvancedSearch = new JCheckBox("Advanced Search");
+        chkAdvancedSearch.setBackground(COLOR_WHITE);
+        chkAdvancedSearch.setForeground(COLOR_BLUE_DARK);
+        chkAdvancedSearch.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        
+        btnResetFilters = new JButton("Reset");
+        btnResetFilters.setBackground(Color.WHITE);
+        btnResetFilters.setForeground(Color.BLACK);
 
+        GridBagConstraints sgbc = new GridBagConstraints();
+        sgbc.insets = new Insets(5, 5, 5, 15);
+        sgbc.anchor = GridBagConstraints.WEST;
+        
+        sgbc.gridx = 0; sgbc.gridy = 0;
+        JLabel lblName = new JLabel("Student Name:");
+        lblName.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblName.setForeground(COLOR_BLUE_DARK);
+        simplePanel.add(lblName, sgbc);
+        
+        sgbc.gridx = 1; 
+        simplePanel.add(fltName, sgbc);
+        
+        sgbc.gridx = 2;
+        simplePanel.add(chkAdvancedSearch, sgbc);
+        
+        sgbc.gridx = 3;
+        simplePanel.add(btnResetFilters, sgbc);
+        
+        sgbc.gridx = 4; sgbc.weightx = 1.0; sgbc.fill = GridBagConstraints.HORIZONTAL;
+        simplePanel.add(new JLabel(""), sgbc);
+
+        // --- ADVANCED FILTERS PANEL (Collapsible) ---
+        advancedFiltersPanel = new JPanel(new GridBagLayout());
+        advancedFiltersPanel.setBackground(COLOR_WHITE);
+        advancedFiltersPanel.setVisible(false);
+        
+        fltCardId = createFilterField(100);
         fltRoll = createFilterField(100);
         fltIssueBy = createFilterField(100);
         fltCourse = new JComboBox<>(new String[]{"All", "BCA", "MCA", "BBA"});
@@ -217,37 +259,38 @@ public class StudentView extends JPanel {
         fltFromDate.setText(defaultFltFromDate);
         fltToDate.setText(defaultFltToDate);
 
-        btnResetFilters = new JButton("Reset");
-        btnResetFilters.setBackground(Color.WHITE);
-        btnResetFilters.setForeground(Color.BLACK);
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 15); 
-        gbc.fill = GridBagConstraints.NONE; // Changed from HORIZONTAL
-        gbc.anchor = GridBagConstraints.WEST; // Added anchor
+        GridBagConstraints agbc = new GridBagConstraints();
+        agbc.insets = new Insets(5, 5, 5, 15); 
+        agbc.fill = GridBagConstraints.NONE;
+        agbc.anchor = GridBagConstraints.WEST;
 
         // Row 1
-        gbc.gridy = 0;
-        addFilterLabel(pnlFilters, "Card ID:", 0, 0, gbc);   gbc.gridx = 1; pnlFilters.add(fltCardId, gbc);
-        addFilterLabel(pnlFilters, "Name:", 2, 0, gbc);      gbc.gridx = 3; pnlFilters.add(fltName, gbc);
-        addFilterLabel(pnlFilters, "Roll:", 4, 0, gbc);      gbc.gridx = 5; pnlFilters.add(fltRoll, gbc);
-        addFilterLabel(pnlFilters, "Course:", 6, 0, gbc);    gbc.gridx = 7; pnlFilters.add(fltCourse, gbc);
+        agbc.gridy = 0;
+        addFilterLabel(advancedFiltersPanel, "Card ID:", 0, 0, agbc);   agbc.gridx = 1; advancedFiltersPanel.add(fltCardId, agbc);
+        addFilterLabel(advancedFiltersPanel, "Roll:", 2, 0, agbc);      agbc.gridx = 3; advancedFiltersPanel.add(fltRoll, agbc);
+        addFilterLabel(advancedFiltersPanel, "Course:", 4, 0, agbc);    agbc.gridx = 5; advancedFiltersPanel.add(fltCourse, agbc);
+        addFilterLabel(advancedFiltersPanel, "Session:", 6, 0, agbc);   agbc.gridx = 7; advancedFiltersPanel.add(fltSession, agbc);
 
         // Row 2
-        gbc.gridy = 1;
-        addFilterLabel(pnlFilters, "From:", 0, 1, gbc);      gbc.gridx = 1; pnlFilters.add(fltFromDate, gbc);
-        addFilterLabel(pnlFilters, "To:", 2, 1, gbc);        gbc.gridx = 3; pnlFilters.add(fltToDate, gbc);
-        addFilterLabel(pnlFilters, "Session:", 4, 1, gbc);   gbc.gridx = 5; pnlFilters.add(fltSession, gbc);
-        addFilterLabel(pnlFilters, "Issued By:", 6, 1, gbc); gbc.gridx = 7; pnlFilters.add(fltIssueBy, gbc);
-
-        gbc.gridy = 2;
-        addFilterLabel(pnlFilters, "Book Limit:", 0, 2, gbc); gbc.gridx = 1; pnlFilters.add(fltBookLimit, gbc);
-        gbc.gridx = 7; pnlFilters.add(btnResetFilters, gbc);
+        agbc.gridy = 1;
+        addFilterLabel(advancedFiltersPanel, "From Date:", 0, 1, agbc);      agbc.gridx = 1; advancedFiltersPanel.add(fltFromDate, agbc);
+        addFilterLabel(advancedFiltersPanel, "To Date:", 2, 1, agbc);        agbc.gridx = 3; advancedFiltersPanel.add(fltToDate, agbc);
+        addFilterLabel(advancedFiltersPanel, "Issued By:", 4, 1, agbc);      agbc.gridx = 5; advancedFiltersPanel.add(fltIssueBy, agbc);
+        addFilterLabel(advancedFiltersPanel, "Book Limit:", 6, 1, agbc);     agbc.gridx = 7; advancedFiltersPanel.add(fltBookLimit, agbc);
 
         // --- FILLER TO PUSH EVERYTHING LEFT ---
-        gbc.gridx = 8; gbc.gridy = 0; gbc.weightx = 1.0; gbc.fill = GridBagConstraints.HORIZONTAL;
-        pnlFilters.add(new JLabel(""), gbc);
-        // --------------------------------------
+        agbc.gridx = 8; agbc.gridy = 0; agbc.weightx = 1.0; agbc.fill = GridBagConstraints.HORIZONTAL;
+        advancedFiltersPanel.add(new JLabel(""), agbc);
+        
+        // Toggle advanced search visibility
+        chkAdvancedSearch.addActionListener(e -> {
+            advancedFiltersPanel.setVisible(chkAdvancedSearch.isSelected());
+            pnlFilters.revalidate();
+            pnlFilters.repaint();
+        });
+        
+        pnlFilters.add(simplePanel, BorderLayout.NORTH);
+        pnlFilters.add(advancedFiltersPanel, BorderLayout.SOUTH);
 
         // --- TABLE (LIGHT GREEN BACKGROUND + BLACK TEXT) ---
         String[] cols = {"S.No", "Card ID", "Name", "Course", "Roll No", "Session", "Issue Date", "Issued By", "Book Limit", "Fee", "Status"};

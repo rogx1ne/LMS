@@ -58,6 +58,8 @@ public class CirculationController {
 
         reportPanel.getTxtSearch().getDocument().addDocumentListener(new SimpleDocumentListener(this::applyReportFilters));
         reportPanel.getCmbStatus().addActionListener(e -> applyReportFilters());
+        reportPanel.getTxtFromDate().addPropertyChangeListener("text", e -> applyReportFilters());
+        reportPanel.getTxtToDate().addPropertyChangeListener("text", e -> applyReportFilters());
         reportPanel.getBtnRefresh().addActionListener(e -> refreshCirculationReport());
         reportPanel.getBtnPdf().addActionListener(e ->
             reportService.exportToPdf(modulePanel, reportPanel.getTable(), "Circulation Report", "Circulation_Report")
@@ -336,8 +338,53 @@ public class CirculationController {
             filters.add(RowFilter.regexFilter("^" + Pattern.quote(status) + "$", 14));
         }
 
+        String fromDateStr = reportPanel.getTxtFromDate().getText().trim();
+        String toDateStr = reportPanel.getTxtToDate().getText().trim();
+        if (!fromDateStr.isEmpty() || !toDateStr.isEmpty()) {
+            filters.add(new RowFilter<Object, Object>() {
+                @Override
+                public boolean include(Entry<? extends Object, ? extends Object> entry) {
+                    String issueDate = String.valueOf(entry.getValue(8));
+                    return isWithinDateRange(issueDate, fromDateStr, toDateStr);
+                }
+            });
+        }
+
         reportPanel.getSorter().setRowFilter(filters.isEmpty() ? null : RowFilter.andFilter(filters));
         reportPanel.updateTotalCount(reportPanel.getSorter().getViewRowCount());
+    }
+
+    private boolean isWithinDateRange(String dateStr, String fromDateStr, String toDateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return true;
+        }
+        if (fromDateStr.isEmpty() && toDateStr.isEmpty()) {
+            return true;
+        }
+        
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            sdf.setLenient(false);
+            java.util.Date date = sdf.parse(dateStr);
+            
+            if (!fromDateStr.isEmpty()) {
+                java.util.Date fromDate = sdf.parse(fromDateStr);
+                if (date.before(fromDate)) {
+                    return false;
+                }
+            }
+            
+            if (!toDateStr.isEmpty()) {
+                java.util.Date toDate = sdf.parse(toDateStr);
+                if (date.after(toDate)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private boolean ensureSchema() {

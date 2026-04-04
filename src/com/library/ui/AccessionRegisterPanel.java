@@ -8,6 +8,9 @@ import java.awt.*;
 
 public class AccessionRegisterPanel extends JPanel {
     private final JTextField fltGlobalSearch = new JTextField();
+    private final JCheckBox chkAdvancedSearch = new JCheckBox("Advanced Search");
+    private final JPanel advancedPanel = new JPanel(new GridBagLayout());
+    
     private final JTextField fltAccessNo = new JTextField();
     private final JTextField fltAuthor = new JTextField();
     private final JTextField fltTitle = new JTextField();
@@ -16,6 +19,8 @@ public class AccessionRegisterPanel extends JPanel {
     private final JTextField fltYear = new JTextField();
     private final JComboBox<String> fltSource = new JComboBox<>(new String[]{"All", "PURCHASE", "DONATION", "GIFT", "EXCHANGE"});
     private final JTextField fltBillNo = new JTextField();
+    private final JTextField fltFromDate = new JTextField(10);
+    private final JTextField fltToDate = new JTextField(10);
 
     private final JButton btnRefresh = new JButton("Reset");
     private final JButton btnEdit = new JButton("Edit / Update");
@@ -31,49 +36,76 @@ public class AccessionRegisterPanel extends JPanel {
         setBorder(new EmptyBorder(8, 8, 8, 8));
         setBackground(ModuleTheme.WHITE);
 
-        JPanel filters = new JPanel(new GridBagLayout());
+        JPanel filters = new JPanel(new BorderLayout(0, 5));
         filters.setBackground(ModuleTheme.WHITE);
         filters.setBorder(ModuleTheme.sectionBorder("Search & Filters"));
 
         styleFilters();
 
+        // Simple Search Panel (Always visible)
+        JPanel simplePanel = new JPanel(new GridBagLayout());
+        simplePanel.setBackground(ModuleTheme.WHITE);
+        
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 7, 5, 7);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Row 0: Global Search (Full width)
+        // Row 0: Global Search
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 1;
         gbc.weightx = 0;
         JLabel lblSearch = new JLabel("Unified Search (Title/Author/Tags):");
         lblSearch.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblSearch.setForeground(ModuleTheme.BLUE_DARK);
-        filters.add(lblSearch, gbc);
+        simplePanel.add(lblSearch, gbc);
 
         gbc.gridx = 1;
-        gbc.gridwidth = 7;
         gbc.weightx = 1;
-        filters.add(fltGlobalSearch, gbc);
+        simplePanel.add(fltGlobalSearch, gbc);
 
-        // Row 1 & 2: Individual Column Filters
-        gbc.gridwidth = 1; // reset
-        addFilter(filters, gbc, "Accession No:", fltAccessNo, 0, 1);
-        addFilter(filters, gbc, "Author:", fltAuthor, 2, 1);
-        addFilter(filters, gbc, "Book Title:", fltTitle, 4, 1);
-        addFilter(filters, gbc, "Volume:", fltVolume, 6, 1);
-
-        addFilter(filters, gbc, "Publication:", fltPublication, 0, 2);
-        addFilter(filters, gbc, "Pub Year:", fltYear, 2, 2);
-        addFilter(filters, gbc, "Source:", fltSource, 4, 2);
-        addFilter(filters, gbc, "Bill No:", fltBillNo, 6, 2);
-
-        gbc.gridx = 7;
-        gbc.gridy = 3;
-        gbc.gridwidth = 1;
+        gbc.gridx = 2;
         gbc.weightx = 0;
+        chkAdvancedSearch.setBackground(ModuleTheme.WHITE);
+        chkAdvancedSearch.setForeground(ModuleTheme.BLUE_DARK);
+        chkAdvancedSearch.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        simplePanel.add(chkAdvancedSearch, gbc);
+
+        gbc.gridx = 3;
         ModuleTheme.styleSubtleButton(btnRefresh);
-        filters.add(btnRefresh, gbc);
+        simplePanel.add(btnRefresh, gbc);
+
+        // Advanced Search Panel (Collapsible)
+        advancedPanel.setBackground(ModuleTheme.WHITE);
+        advancedPanel.setVisible(false);
+
+        GridBagConstraints agbc = new GridBagConstraints();
+        agbc.insets = new Insets(5, 7, 5, 7);
+        agbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Row 1: Column-specific filters
+        agbc.gridwidth = 1;
+        addFilter(advancedPanel, agbc, "Accession No:", fltAccessNo, 0, 0);
+        addFilter(advancedPanel, agbc, "Author:", fltAuthor, 2, 0);
+        addFilter(advancedPanel, agbc, "Book Title:", fltTitle, 4, 0);
+        addFilter(advancedPanel, agbc, "Volume:", fltVolume, 6, 0);
+
+        addFilter(advancedPanel, agbc, "Publication:", fltPublication, 0, 1);
+        addFilter(advancedPanel, agbc, "Pub Year:", fltYear, 2, 1);
+        addFilter(advancedPanel, agbc, "Source:", fltSource, 4, 1);
+        addFilter(advancedPanel, agbc, "Bill No:", fltBillNo, 6, 1);
+
+        addFilter(advancedPanel, agbc, "Bill From Date:", fltFromDate, 0, 2);
+        addFilter(advancedPanel, agbc, "Bill To Date:", fltToDate, 2, 2);
+
+        // Toggle advanced search visibility
+        chkAdvancedSearch.addActionListener(e -> {
+            advancedPanel.setVisible(chkAdvancedSearch.isSelected());
+            filters.revalidate();
+            filters.repaint();
+        });
+
+        filters.add(simplePanel, BorderLayout.NORTH);
+        filters.add(advancedPanel, BorderLayout.SOUTH);
 
         String[] cols = {
             "Accession No", "Author Name", "Book Title", "Volume", "Edition", "Publication",
@@ -130,6 +162,12 @@ public class AccessionRegisterPanel extends JPanel {
         ModuleTheme.styleInput(fltYear);
         ModuleTheme.styleInput(fltBillNo);
         ModuleTheme.styleCombo(fltSource);
+        ModuleTheme.styleInput(fltFromDate);
+        ModuleTheme.styleInput(fltToDate);
+        ModuleTheme.addDatePicker(fltFromDate);
+        ModuleTheme.addDatePicker(fltToDate);
+        fltFromDate.setToolTipText("Bill From Date (dd/MM/yyyy)");
+        fltToDate.setToolTipText("Bill To Date (dd/MM/yyyy)");
     }
 
     private void addFilter(JPanel panel, GridBagConstraints gbc, String label, JComponent cmp, int x, int y) {
@@ -158,6 +196,8 @@ public class AccessionRegisterPanel extends JPanel {
             || !fltPublication.getText().trim().isEmpty()
             || !fltYear.getText().trim().isEmpty()
             || !fltBillNo.getText().trim().isEmpty()
+            || !fltFromDate.getText().trim().isEmpty()
+            || !fltToDate.getText().trim().isEmpty()
             || fltSource.getSelectedIndex() > 0;
     }
 
@@ -174,6 +214,8 @@ public class AccessionRegisterPanel extends JPanel {
     public JTextField getFltYear() { return fltYear; }
     public JComboBox<String> getFltSource() { return fltSource; }
     public JTextField getFltBillNo() { return fltBillNo; }
+    public JTextField getFltFromDate() { return fltFromDate; }
+    public JTextField getFltToDate() { return fltToDate; }
 
     public JButton getBtnRefresh() { return btnRefresh; }
     public JButton getBtnEdit() { return btnEdit; }

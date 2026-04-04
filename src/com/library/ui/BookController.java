@@ -311,6 +311,8 @@ public class BookController {
         registerPanel.getFltYear().getDocument().addDocumentListener(dl);
         registerPanel.getFltBillNo().getDocument().addDocumentListener(dl);
         registerPanel.getFltSource().addActionListener(e -> applyFilters());
+        registerPanel.getFltFromDate().addPropertyChangeListener("text", e -> applyFilters());
+        registerPanel.getFltToDate().addPropertyChangeListener("text", e -> applyFilters());
     }
 
     private void applyFilters() {
@@ -341,8 +343,54 @@ public class BookController {
             filters.add(RowFilter.regexFilter("^" + Pattern.quote(source) + "$", 8));
         }
 
+        // Date Range Filter for Bill Date (column 13)
+        String fromDateStr = registerPanel.getFltFromDate().getText().trim();
+        String toDateStr = registerPanel.getFltToDate().getText().trim();
+        if (!fromDateStr.isEmpty() || !toDateStr.isEmpty()) {
+            filters.add(new RowFilter<Object, Object>() {
+                @Override
+                public boolean include(Entry<? extends Object, ? extends Object> entry) {
+                    String billDate = String.valueOf(entry.getValue(13));
+                    return isWithinDateRange(billDate, fromDateStr, toDateStr);
+                }
+            });
+        }
+
         registerPanel.getSorter().setRowFilter(filters.isEmpty() ? null : RowFilter.andFilter(filters));
         registerPanel.updateTotalCount(registerPanel.getTable().getRowCount());
+    }
+
+    private boolean isWithinDateRange(String dateStr, String fromDateStr, String toDateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty() || "null".equals(dateStr)) {
+            return fromDateStr.isEmpty() && toDateStr.isEmpty();
+        }
+        if (fromDateStr.isEmpty() && toDateStr.isEmpty()) {
+            return true;
+        }
+        
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            sdf.setLenient(false);
+            java.util.Date date = sdf.parse(dateStr);
+            
+            if (!fromDateStr.isEmpty()) {
+                java.util.Date fromDate = sdf.parse(fromDateStr);
+                if (date.before(fromDate)) {
+                    return false;
+                }
+            }
+            
+            if (!toDateStr.isEmpty()) {
+                java.util.Date toDate = sdf.parse(toDateStr);
+                if (date.after(toDate)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private void applyStockFilter() {
@@ -363,6 +411,8 @@ public class BookController {
         registerPanel.getFltPublication().setText("");
         registerPanel.getFltYear().setText("");
         registerPanel.getFltBillNo().setText("");
+        registerPanel.getFltFromDate().setText("");
+        registerPanel.getFltToDate().setText("");
         registerPanel.getFltSource().setSelectedIndex(0);
         applyFilters();
 
