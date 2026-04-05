@@ -11,8 +11,25 @@ Use this file to record every code, schema, UI, or structural change made to the
 
 ## Entries
 
+### 2026-04-05 (Latest)
+- Area: Bug fix - User creation & forgot password
+- Files: `src/com/library/dao/AdminDAO.java`, `src/com/library/dao/UserDAO.java`, `BUG_FIX_REPORT.md` (new)
+- Summary: Fixed critical bugs preventing user creation and forgot password functionality. Root cause: Oracle CHAR(5) padding on USER_ID column caused regex mismatch and string comparison failures. Applied TRIM() to all USER_ID queries in login/authentication flows. Added 8 modified methods across 2 DAO files with consistent TRIM handling for database-to-Java comparisons.
+- Snippet:
+```java
+// Before (FAILS for padded CHAR values like 'U001 '):
+WHERE REGEXP_LIKE(USER_ID, '^U[0-9]{3}$')
+WHERE USER_ID = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'
+
+// After (WORKS with TRIM):
+WHERE REGEXP_LIKE(TRIM(USER_ID), '^U[0-9]{3}$')
+WHERE TRIM(USER_ID) = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'
+
+// Result: User creation now generates U001, U002, U003... correctly
+// Forgot password now finds users by ID successfully
+```
+
 ### 2026-04-05
-- Area: Build/Packaging
 - Files: `LMS-Setup.jar`, `package-setup.sh`
 - Summary: Rebuilt installer JAR to include all audit logging changes across Circulation, Student, Book, and Procurement modules. All 18 modified Java files recompiled and packaged. JAR is ready for production deployment.
 - Snippet:

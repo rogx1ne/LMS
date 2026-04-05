@@ -12,7 +12,7 @@ public class UserDAO {
     // 1. VALIDATE LOGIN
     public boolean validateLogin(String userId, String password) {
         if (userId == null || userId.trim().isEmpty() || password == null || password.trim().isEmpty()) return false;
-        String query = "SELECT PSWD FROM TBL_CREDENTIALS WHERE USER_ID = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
+        String query = "SELECT PSWD FROM TBL_CREDENTIALS WHERE TRIM(USER_ID) = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return false;
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -34,11 +34,11 @@ public class UserDAO {
     }
 
     public String getDisplayName(String userId) {
-        String query = "SELECT NAME FROM TBL_CREDENTIALS WHERE USER_ID = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
+        String query = "SELECT NAME FROM TBL_CREDENTIALS WHERE TRIM(USER_ID) = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return null;
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
-                pstmt.setString(1, userId);
+                pstmt.setString(1, userId.trim());
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) return rs.getString("NAME");
                 }
@@ -55,9 +55,9 @@ public class UserDAO {
             if (conn == null) return fallback;
             if (!roleColumnExists(conn)) return fallback;
 
-            String query = "SELECT NVL(ROLE, 'LIBRARIAN') AS ROLE FROM TBL_CREDENTIALS WHERE USER_ID = ?";
+            String query = "SELECT NVL(ROLE, 'LIBRARIAN') AS ROLE FROM TBL_CREDENTIALS WHERE TRIM(USER_ID) = ?";
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
-                pstmt.setString(1, userId);
+                pstmt.setString(1, userId.trim());
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         String role = rs.getString("ROLE");
@@ -94,8 +94,8 @@ public class UserDAO {
 
     // NEW: Generate the next ID automatically (e.g., U001 -> U002)
     public String generateNextUserId() {
-        String query = "SELECT NVL(MAX(TO_NUMBER(SUBSTR(USER_ID, 2))), 0) AS MAX_ID " +
-                       "FROM TBL_CREDENTIALS WHERE REGEXP_LIKE(USER_ID, '^U[0-9]{3}$')";
+        String query = "SELECT NVL(MAX(TO_NUMBER(SUBSTR(TRIM(USER_ID), 2))), 0) AS MAX_ID " +
+                       "FROM TBL_CREDENTIALS WHERE REGEXP_LIKE(TRIM(USER_ID), '^U[0-9]{3}$')";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return "U001";
             try (Statement stmt = conn.createStatement();
@@ -114,12 +114,12 @@ public class UserDAO {
     public boolean resetPassword(String userId, String email, long phone, String newPassword) {
         String query =
             "UPDATE TBL_CREDENTIALS SET PSWD = ? " +
-            "WHERE USER_ID = ? AND EMAIL = ? AND PHNO = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
+            "WHERE TRIM(USER_ID) = ? AND EMAIL = ? AND PHNO = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return false;
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
                 pstmt.setString(1, PasswordHasher.hashPassword(newPassword));
-                pstmt.setString(2, userId);
+                pstmt.setString(2, userId.trim());
                 pstmt.setString(3, email);
                 pstmt.setLong(4, phone);
                 return pstmt.executeUpdate() > 0;
@@ -131,11 +131,11 @@ public class UserDAO {
     }
 
     public String getActiveUserEmail(String userId) {
-        String query = "SELECT EMAIL FROM TBL_CREDENTIALS WHERE USER_ID = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
+        String query = "SELECT EMAIL FROM TBL_CREDENTIALS WHERE TRIM(USER_ID) = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return null;
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
-                pstmt.setString(1, userId);
+                pstmt.setString(1, userId.trim());
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) return rs.getString("EMAIL");
                 }
@@ -147,12 +147,12 @@ public class UserDAO {
     }
 
     public boolean updatePasswordByUserId(String userId, String newPassword) {
-        String query = "UPDATE TBL_CREDENTIALS SET PSWD = ? WHERE USER_ID = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
+        String query = "UPDATE TBL_CREDENTIALS SET PSWD = ? WHERE TRIM(USER_ID) = ? AND NVL(STATUS,'ACTIVE') = 'ACTIVE'";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return false;
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
                 pstmt.setString(1, PasswordHasher.hashPassword(newPassword));
-                pstmt.setString(2, userId);
+                pstmt.setString(2, userId.trim());
                 return pstmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -166,7 +166,7 @@ public class UserDAO {
 
         String sql =
             "SELECT USER_ID, NAME, EMAIL, PHNO, NVL(STATUS,'ACTIVE') AS STATUS " +
-            "FROM TBL_CREDENTIALS WHERE USER_ID = ?";
+            "FROM TBL_CREDENTIALS WHERE TRIM(USER_ID) = ?";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return null;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -174,7 +174,7 @@ public class UserDAO {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (!rs.next()) return null;
                     return new UserProfile(
-                        rs.getString("USER_ID"),
+                        rs.getString("USER_ID").trim(),
                         rs.getString("NAME"),
                         rs.getString("EMAIL"),
                         rs.getLong("PHNO"),
@@ -199,10 +199,10 @@ public class UserDAO {
     }
 
     private void upgradePasswordHash(Connection conn, String userId, String rawPassword) {
-        String sql = "UPDATE TBL_CREDENTIALS SET PSWD = ? WHERE USER_ID = ?";
+        String sql = "UPDATE TBL_CREDENTIALS SET PSWD = ? WHERE TRIM(USER_ID) = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, PasswordHasher.hashPassword(rawPassword));
-            ps.setString(2, userId);
+            ps.setString(2, userId.trim());
             ps.executeUpdate();
         } catch (SQLException ignored) {
         }

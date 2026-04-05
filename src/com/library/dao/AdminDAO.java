@@ -51,8 +51,8 @@ public class AdminDAO {
     }
 
     public String nextUserId(Connection conn) throws SQLException {
-        String sql = "SELECT NVL(MAX(TO_NUMBER(SUBSTR(USER_ID, 2))), 0) AS MAX_ID " +
-                     "FROM TBL_CREDENTIALS WHERE REGEXP_LIKE(USER_ID, '^U[0-9]{3}$')";
+        String sql = "SELECT NVL(MAX(TO_NUMBER(SUBSTR(TRIM(USER_ID), 2))), 0) AS MAX_ID " +
+                     "FROM TBL_CREDENTIALS WHERE REGEXP_LIKE(TRIM(USER_ID), '^U[0-9]{3}$')";
         try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             rs.next();
@@ -103,13 +103,13 @@ public class AdminDAO {
     }
 
     public boolean deactivateUser(String userId, String performedBy) {
-        String sql = "UPDATE TBL_CREDENTIALS SET STATUS = 'INACTIVE' WHERE USER_ID = ? AND STATUS = 'ACTIVE'";
+        String sql = "UPDATE TBL_CREDENTIALS SET STATUS = 'INACTIVE' WHERE TRIM(USER_ID) = ? AND STATUS = 'ACTIVE'";
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return false;
             boolean oldAuto = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, userId);
+                ps.setString(1, userId.trim());
                 int rows = ps.executeUpdate();
                 if (rows > 0) {
                     AuditLogger.logAction(conn, performedBy, "Admin", "Deactivated user " + userId);
@@ -138,7 +138,7 @@ public class AdminDAO {
                  ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {
                 out.add(new User(
-                    rs.getString("USER_ID"),
+                    rs.getString("USER_ID").trim(),
                     rs.getString("NAME"),
                     rs.getString("PSWD"),
                     rs.getString("EMAIL"),
