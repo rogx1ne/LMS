@@ -481,4 +481,76 @@ public class AdminDAO {
         }
         return null;
     }
+
+    /**
+     * Fetches data from all supported tables for export.
+     * @return Map of UI table name to list of rows
+     * @throws SQLException if fetch fails
+     */
+    public Map<String, List<Map<String, Object>>> fetchAllTablesData() throws SQLException {
+        Map<String, List<Map<String, Object>>> result = new LinkedHashMap<>();
+        
+        for (String uiTableName : getSupportedTableNames()) {
+            List<Map<String, Object>> data = fetchTableData(uiTableName);
+            result.put(uiTableName, data);
+        }
+        
+        return result;
+    }
+
+    /**
+     * Imports data for all tables from a map structure.
+     * @param tablesData Map of UI table name to list of rows
+     * @param performedBy User ID performing the import
+     * @return Total number of rows inserted across all tables
+     * @throws SQLException if import fails (transaction will be rolled back)
+     */
+    public int importAllTables(Map<String, List<Map<String, String>>> tablesData, String performedBy) throws SQLException {
+        int totalInserted = 0;
+        
+        try (Connection conn = DBConnection.getConnection()) {
+            if (conn == null) throw new SQLException("DB connection is null.");
+            boolean oldAuto = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            
+            try {
+                // Import each table
+                for (Map.Entry<String, List<Map<String, String>>> entry : tablesData.entrySet()) {
+                    String uiTableName = entry.getKey();
+                    List<Map<String, String>> rows = entry.getValue();
+                    
+                    if (rows == null || rows.isEmpty()) {
+                        continue;
+                    }
+                    
+                    String tableName = resolveImportTarget(uiTableName);
+                    int inserted;
+                    
+                    if ("TBL_STUDENT".equals(tableName)) {
+                        inserted = importStudents(conn, rows);
+                    } else if ("TBL_BOOK_INFORMATION".equals(tableName)) {
+                        inserted = importBooks(conn, rows);
+                    } else if ("TBL_ORDER_HEADER".equals(tableName)) {
+                        inserted = importOrders(conn, rows);
+                    } else {
+                        throw new SQLException("Unsupported table: " + tableName);
+                    }
+                    
+                    totalInserted += inserted;
+                    AuditLogger.logAction(conn, performedBy, "Admin", 
+                        "Imported " + inserted + " rows into " + tableName);
+                }
+                
+                conn.commit();
+                return totalInserted;
+                
+            } catch (Exception e) {
+                conn.rollback();
+                if (e instanceof SQLException) throw (SQLException) e;
+                throw new SQLException(e.getMessage(), e);
+            } finally {
+                conn.setAutoCommit(oldAuto);
+            }
+        }
+    }
 }

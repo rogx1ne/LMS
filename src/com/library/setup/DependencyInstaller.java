@@ -178,11 +178,13 @@ public class DependencyInstaller {
         
         JLabel lblTitle = new JLabel("Install " + dependency);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblTitle.setForeground(new Color(40, 40, 40));
         mainPanel.add(lblTitle, BorderLayout.NORTH);
         
         JTextArea txtLog = new JTextArea();
         txtLog.setFont(new Font("Monospaced", Font.PLAIN, 11));
         txtLog.setEditable(false);
+        txtLog.setForeground(new Color(40, 40, 40));
         JScrollPane scroll = new JScrollPane(txtLog);
         mainPanel.add(scroll, BorderLayout.CENTER);
         

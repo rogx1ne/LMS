@@ -9,6 +9,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,6 +22,9 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 public class ExcelService {
     private static final DataFormatter FORMATTER = new DataFormatter();
@@ -123,5 +127,121 @@ public class ExcelService {
     private String readCellText(Cell cell) {
         if (cell == null) return "";
         return FORMATTER.formatCellValue(cell);
+    }
+
+    /**
+     * Exports multiple tables to a ZIP file, each table as a separate Excel file.
+     * @param tablesData Map of table name to list of rows
+     * @param outputZipFile Path to output ZIP file
+     * @param dateStamp Date stamp to include in Excel filenames
+     * @throws IOException if export fails
+     */
+    public void exportMultipleTablesToZip(Map<String, List<Map<String, Object>>> tablesData, 
+                                           Path outputZipFile, String dateStamp) throws IOException {
+        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(outputZipFile))) {
+            for (Map.Entry<String, List<Map<String, Object>>> entry : tablesData.entrySet()) {
+                String tableName = entry.getKey();
+                List<Map<String, Object>> rows = entry.getValue();
+                
+                // Create Excel file in memory
+                byte[] excelBytes = createExcelBytes(tableName, rows);
+                
+                // Add to ZIP
+                String excelFileName = tableName + "_" + dateStamp + ".xlsx";
+                ZipEntry zipEntry = new ZipEntry(excelFileName);
+                zos.putNextEntry(zipEntry);
+                zos.write(excelBytes);
+                zos.closeEntry();
+            }
+        }
+    }
+
+    /**
+     * Imports multiple tables from a ZIP file containing Excel files.
+     * @param inputZipFile Path to input ZIP file
+     * @return Map of table name (extracted from filename) to list of row data
+     * @throws IOException if import fails
+     */
+    public Map<String, List<Map<String, String>>> importFromZip(Path inputZipFile) throws IOException {
+        Map<String, List<Map<String, String>>> result = new LinkedHashMap<>();
+        
+        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(inputZipFile))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entry.isDirectory() || !entry.getName().toLowerCase().endsWith(".xlsx")) {
+                    zis.closeEntry();
+                    continue;
+                }
+                
+                // Extract table name from filename (e.g., "Students_2026-04-05.xlsx" -> "Students")
+                String fileName = entry.getName();
+                int lastSlash = fileName.lastIndexOf('/');
+                if (lastSlash >= 0) fileName = fileName.substring(lastSlash + 1);
+                int underscore = fileName.indexOf('_');
+                String tableName = underscore > 0 ? fileName.substring(0, underscore) : 
+                                   fileName.replace(".xlsx", "").replace(".XLSX", "");
+                
+                // Read Excel data from ZIP entry
+                List<Map<String, String>> rows = readRowsFromStream(zis);
+                result.put(tableName, rows);
+                
+                zis.closeEntry();
+            }
+        }
+        
+        return result;
+    }
+
+    /**
+     * Creates an Excel file as byte array in memory.
+     */
+    private byte[] createExcelBytes(String sheetName, List<Map<String, Object>> rows) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            
+            Sheet sheet = workbook.createSheet(sheetName == null || sheetName.trim().isEmpty() ? "Data" : sheetName.trim());
+            
+            List<String> headers = resolveHeaders(rows);
+            writeHeader(sheet, headers, workbook);
+            writeRows(sheet, headers, rows);
+            autoSize(sheet, headers.size());
+            
+            workbook.write(baos);
+            return baos.toByteArray();
+        }
+    }
+
+    /**
+     * Reads Excel rows from an input stream (used for ZIP entries).
+     */
+    private List<Map<String, String>> readRowsFromStream(InputStream inputStream) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook(inputStream)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Row headerRow = sheet.getRow(sheet.getFirstRowNum());
+            if (headerRow == null) return new ArrayList<>();
+
+            List<String> headers = new ArrayList<>();
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                headers.add(readCellText(headerRow.getCell(i)).trim());
+            }
+
+            List<Map<String, String>> rows = new ArrayList<>();
+            for (int r = headerRow.getRowNum() + 1; r <= sheet.getLastRowNum(); r++) {
+                Row row = sheet.getRow(r);
+                if (row == null) continue;
+
+                Map<String, String> data = new LinkedHashMap<>();
+                boolean hasValue = false;
+                for (int c = 0; c < headers.size(); c++) {
+                    String header = headers.get(c);
+                    if (header == null || header.trim().isEmpty()) continue;
+                    String value = readCellText(row.getCell(c)).trim();
+                    if (!value.isEmpty()) hasValue = true;
+                    data.put(header.trim(), value);
+                }
+                if (hasValue) rows.add(data);
+            }
+            return rows;
+        }
     }
 }

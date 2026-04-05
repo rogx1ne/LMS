@@ -90,6 +90,12 @@ public class AdminController {
 
         dataPanel.getBtnExport().addActionListener(e -> exportToExcel());
         dataPanel.getBtnImport().addActionListener(e -> importFromExcel());
+        
+        // Mode change listeners to update table combo visibility
+        dataPanel.getRbExportSelective().addActionListener(e -> updateTableComboVisibility());
+        dataPanel.getRbExportAll().addActionListener(e -> updateTableComboVisibility());
+        dataPanel.getRbImportSelective().addActionListener(e -> updateTableComboVisibility());
+        dataPanel.getRbImportAll().addActionListener(e -> updateTableComboVisibility());
 
         auditPanel.getBtnSearch().addActionListener(e -> refreshAuditTable());
         auditPanel.getBtnReset().addActionListener(e -> {
@@ -182,6 +188,16 @@ public class AdminController {
 
     private void exportToExcel() {
         if (!ensureSchema()) return;
+        
+        // Check if exporting all tables or selective
+        if (dataPanel.getRbExportAll().isSelected()) {
+            exportAllTablesToZip();
+        } else {
+            exportSelectiveTableToExcel();
+        }
+    }
+
+    private void exportSelectiveTableToExcel() {
         String selected = String.valueOf(dataPanel.getCmbTable().getSelectedItem());
         if (selected == null || selected.trim().isEmpty()) {
             JOptionPane.showMessageDialog(modulePanel, "Select a table first.");
@@ -215,8 +231,53 @@ public class AdminController {
         }
     }
 
+    private void exportAllTablesToZip() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("LMS_AllTables_" + LocalDate.now() + ".zip"));
+        if (chooser.showSaveDialog(modulePanel) != JFileChooser.APPROVE_OPTION) return;
+
+        Path zipPath = chooser.getSelectedFile().toPath();
+        try {
+            Map<String, List<Map<String, Object>>> allTablesData = adminDAO.fetchAllTablesData();
+            String dateStamp = LocalDate.now().toString();
+            excelService.exportMultipleTablesToZip(allTablesData, zipPath, dateStamp);
+
+            int totalRows = 0;
+            for (List<Map<String, Object>> rows : allTablesData.values()) {
+                totalRows += rows.size();
+            }
+
+            if (schemaAvailable) {
+                AuditLogger.logAction(
+                    CurrentUserContext.getUserId(),
+                    "Admin",
+                    "Exported all tables (" + allTablesData.size() + " tables, " + totalRows + " total rows) to " + zipPath.getFileName()
+                );
+            }
+
+            dataPanel.getTxtResult().setText(
+                "Export successful.\nMode: All Tables\nTables: " + allTablesData.size() + 
+                "\nTotal Rows: " + totalRows + "\nFile: " + zipPath
+            );
+            refreshAuditTable();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(modulePanel, "Export failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void importFromExcel() {
         if (!ensureSchema()) return;
+        
+        // Check if importing all tables or selective
+        if (dataPanel.getRbImportAll().isSelected()) {
+            importAllTablesFromZip();
+        } else {
+            importSelectiveTableFromExcel();
+        }
+    }
+
+    private void importSelectiveTableFromExcel() {
         String selected = String.valueOf(dataPanel.getCmbTable().getSelectedItem());
         if (selected == null || selected.trim().isEmpty()) {
             JOptionPane.showMessageDialog(modulePanel, "Select a table first.");
@@ -232,6 +293,26 @@ public class AdminController {
             int inserted = adminDAO.importRows(selected, rows, CurrentUserContext.getUserId());
             dataPanel.getTxtResult().setText(
                 "Import successful.\nTable: " + selected + "\nRows inserted: " + inserted + "\nSource: " + file
+            );
+            refreshAuditTable();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(modulePanel, "Import failed (rolled back): " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void importAllTablesFromZip() {
+        JFileChooser chooser = new JFileChooser();
+        if (chooser.showOpenDialog(modulePanel) != JFileChooser.APPROVE_OPTION) return;
+        Path zipFile = chooser.getSelectedFile().toPath();
+
+        try {
+            Map<String, List<Map<String, String>>> allTablesData = excelService.importFromZip(zipFile);
+            int totalInserted = adminDAO.importAllTables(allTablesData, CurrentUserContext.getUserId());
+            
+            dataPanel.getTxtResult().setText(
+                "Import successful.\nMode: All Tables\nTables processed: " + allTablesData.size() + 
+                "\nTotal rows inserted: " + totalInserted + "\nSource: " + zipFile
             );
             refreshAuditTable();
         } catch (Exception ex) {
@@ -316,6 +397,13 @@ public class AdminController {
         if (schemaAvailable) return true;
         showSchemaWarningOnce();
         return false;
+    }
+
+    private void updateTableComboVisibility() {
+        // Table combo is only needed when either export or import is in selective mode
+        boolean selectiveMode = dataPanel.getRbExportSelective().isSelected() || 
+                                dataPanel.getRbImportSelective().isSelected();
+        dataPanel.getCmbTable().setEnabled(selectiveMode);
     }
 
     private void showSchemaWarningOnce() {

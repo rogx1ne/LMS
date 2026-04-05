@@ -5,6 +5,7 @@ import com.library.model.AvailableBookRow;
 import com.library.model.CirculationReportRow;
 import com.library.model.IssueReturnResult;
 import com.library.model.IssueTransaction;
+import com.library.service.AuditLogger;
 import com.library.service.CirculationService;
 import com.library.service.ValidationException;
 
@@ -165,6 +166,17 @@ public class CirculationDAO {
                     if (rows != 1) throw new ValidationException("Book status changed by another process. Retry.");
                 }
 
+                // Audit log the issue transaction
+                String borrowerInfo = CirculationService.BORROWER_STUDENT.equals(borrowerType) 
+                    ? "Student " + cardId + " (" + borrowerName + ")" 
+                    : "Faculty " + borrowerName;
+                AuditLogger.logAction(
+                    conn,
+                    issuedBy,
+                    "Circulation",
+                    "Issued book " + accessionNo + " (" + bookTitle + ") to " + borrowerInfo + " - Issue ID: " + issueId
+                );
+
                 conn.commit();
                 return new IssueTransaction(
                     issueId,
@@ -216,7 +228,7 @@ public class CirculationDAO {
         return out;
     }
 
-    public IssueReturnResult returnBook(String rawIssueId, String rawReturnCondition) throws SQLException, ValidationException {
+    public IssueReturnResult returnBook(String rawIssueId, String rawReturnCondition, String performedBy) throws SQLException, ValidationException {
         String issueId = circulationService.normalizeIssueId(rawIssueId);
         String returnCondition = circulationService.normalizeReturnCondition(rawReturnCondition);
 
@@ -295,6 +307,15 @@ public class CirculationDAO {
                     int rows = ps.executeUpdate();
                     if (rows != 1) throw new SQLException("Failed to update book return status.");
                 }
+
+                // Audit log the return transaction
+                AuditLogger.logAction(
+                    conn,
+                    performedBy,
+                    "Circulation",
+                    "Returned book " + accessionNo + " - Issue ID: " + issueId + 
+                    ", Condition: " + returnCondition + ", Fine: " + totalFine
+                );
 
                 conn.commit();
                 return new IssueReturnResult(issueId, accessionNo, returnDate, returnCondition, lateFine, inspectionFine, totalFine);

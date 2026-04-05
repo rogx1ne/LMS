@@ -4,6 +4,7 @@ import com.library.database.DBConnection;
 import com.library.model.OrderDetail;
 import com.library.model.OrderHeader;
 import com.library.model.OrderSummary;
+import com.library.service.AuditLogger;
 import com.library.service.ProcurementIdGenerator;
 
 import java.sql.Connection;
@@ -41,7 +42,7 @@ public class OrderDAO {
         }
     }
 
-    public OrderHeader createOrder(String sellerId, Date orderDate, List<OrderDetail> details) throws SQLException {
+    public OrderHeader createOrder(String sellerId, Date orderDate, List<OrderDetail> details, String performedBy) throws SQLException {
         String insertHeader = "INSERT INTO TBL_ORDER_HEADER (ORDER_ID, S_ID, ORDER_DATE) VALUES (?, ?, ?)";
         String insertDetail = "INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY) VALUES (?, ?, ?, ?, ?)";
 
@@ -72,6 +73,11 @@ public class OrderDAO {
                     ps.executeBatch();
                 }
 
+                AuditLogger.logAction(
+                    conn, performedBy, "Procurement",
+                    "Created purchase order " + orderId + " (Seller: " + sellerId + ", Items: " + details.size() + ")"
+                );
+
                 conn.commit();
                 return new OrderHeader(orderId, sellerId, dt);
             } catch (SQLException e) {
@@ -83,7 +89,7 @@ public class OrderDAO {
         }
     }
 
-    public boolean updateOrderReplaceDetails(String orderId, String sellerId, Date orderDate, List<OrderDetail> details) {
+    public boolean updateOrderReplaceDetails(String orderId, String sellerId, Date orderDate, List<OrderDetail> details, String performedBy) {
         String updateHeader = "UPDATE TBL_ORDER_HEADER SET S_ID=?, ORDER_DATE=? WHERE ORDER_ID=?";
         String deleteDetails = "DELETE FROM TBL_ORDER_DETAILS WHERE ORDER_ID=?";
         String insertDetail = "INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY) VALUES (?, ?, ?, ?, ?)";
@@ -120,6 +126,7 @@ public class OrderDAO {
                     ps.executeBatch();
                 }
 
+                AuditLogger.logAction(conn, performedBy, "Procurement", "Updated order " + orderId + " with " + details.size() + " items");
                 conn.commit();
                 return true;
             } catch (SQLException e) {

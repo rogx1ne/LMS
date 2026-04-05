@@ -5,6 +5,14 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class DataImportExportPanel extends JPanel {
+    private final ButtonGroup exportModeGroup = new ButtonGroup();
+    private final JRadioButton rbExportAll = new JRadioButton("All Tables (ZIP)", false);
+    private final JRadioButton rbExportSelective = new JRadioButton("Selective Table", true);
+    
+    private final ButtonGroup importModeGroup = new ButtonGroup();
+    private final JRadioButton rbImportAll = new JRadioButton("All Tables (ZIP)", false);
+    private final JRadioButton rbImportSelective = new JRadioButton("Selective Table", true);
+    
     private final JComboBox<String> cmbTable = new JComboBox<>();
     private final JButton btnExport = new JButton("Export To Excel");
     private final JButton btnImport = new JButton("Import From Excel");
@@ -15,33 +23,73 @@ public class DataImportExportPanel extends JPanel {
         setBackground(ModuleTheme.WHITE);
         setBorder(new EmptyBorder(8, 8, 8, 8));
 
-        JPanel controls = new JPanel(new GridBagLayout());
-        controls.setBackground(ModuleTheme.WHITE);
-        controls.setBorder(ModuleTheme.sectionBorder("Data Import / Export"));
-
+        // Setup radio button groups
+        exportModeGroup.add(rbExportAll);
+        exportModeGroup.add(rbExportSelective);
+        importModeGroup.add(rbImportAll);
+        importModeGroup.add(rbImportSelective);
+        
+        // Style components
         ModuleTheme.styleCombo(cmbTable);
         ModuleTheme.stylePrimaryButton(btnExport);
         ModuleTheme.styleAccentButton(btnImport);
+        styleRadioButton(rbExportAll);
+        styleRadioButton(rbExportSelective);
+        styleRadioButton(rbImportAll);
+        styleRadioButton(rbImportSelective);
+
+        JPanel controls = new JPanel(new GridBagLayout());
+        controls.setBackground(ModuleTheme.WHITE);
+        controls.setBorder(ModuleTheme.sectionBorder("Data Import / Export"));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 7, 5, 7);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        // Export Mode Row
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.weightx = 0;
+        controls.add(label("Export Mode"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0;
+        controls.add(rbExportSelective, gbc);
+
+        gbc.gridx = 2;
+        controls.add(rbExportAll, gbc);
+
+        gbc.gridx = 3;
+        gbc.weightx = 0;
+        controls.add(btnExport, gbc);
+
+        // Import Mode Row
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        controls.add(label("Import Mode"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0;
+        controls.add(rbImportSelective, gbc);
+
+        gbc.gridx = 2;
+        controls.add(rbImportAll, gbc);
+
+        gbc.gridx = 3;
+        gbc.weightx = 0;
+        controls.add(btnImport, gbc);
+
+        // Table Selection Row
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         gbc.weightx = 0;
         controls.add(label("Select Table"), gbc);
 
         gbc.gridx = 1;
+        gbc.gridwidth = 3;
         gbc.weightx = 1;
         controls.add(cmbTable, gbc);
-
-        gbc.gridx = 2;
-        gbc.weightx = 0;
-        controls.add(btnExport, gbc);
-
-        gbc.gridx = 3;
-        controls.add(btnImport, gbc);
 
         JPanel output = new JPanel(new BorderLayout());
         output.setBackground(ModuleTheme.WHITE);
@@ -65,6 +113,16 @@ public class DataImportExportPanel extends JPanel {
         return l;
     }
 
+    private void styleRadioButton(JRadioButton rb) {
+        rb.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        rb.setBackground(ModuleTheme.WHITE);
+        rb.setForeground(ModuleTheme.BLUE_DARK);
+    }
+
+    public JRadioButton getRbExportAll() { return rbExportAll; }
+    public JRadioButton getRbExportSelective() { return rbExportSelective; }
+    public JRadioButton getRbImportAll() { return rbImportAll; }
+    public JRadioButton getRbImportSelective() { return rbImportSelective; }
     public JComboBox<String> getCmbTable() { return cmbTable; }
     public JButton getBtnExport() { return btnExport; }
     public JButton getBtnImport() { return btnImport; }

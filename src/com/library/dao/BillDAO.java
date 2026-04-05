@@ -2,6 +2,7 @@ package com.library.dao;
 
 import com.library.database.DBConnection;
 import com.library.model.BillItem;
+import com.library.service.AuditLogger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -12,7 +13,7 @@ import java.util.List;
 
 public class BillDAO {
 
-    public void createBill(List<BillItem> items) throws SQLException {
+    public void createBill(List<BillItem> items, String performedBy) throws SQLException {
         String sql = "INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -34,6 +35,14 @@ public class BillDAO {
                     ps.addBatch();
                 }
                 ps.executeBatch();
+                
+                // Audit log bill creation
+                String billId = items.isEmpty() ? "N/A" : items.get(0).getBillId();
+                AuditLogger.logAction(
+                    conn, performedBy, "Procurement",
+                    "Created bill " + billId + " (" + items.size() + " items)"
+                );
+                
                 conn.commit();
             } catch (SQLException e) {
                 conn.rollback();

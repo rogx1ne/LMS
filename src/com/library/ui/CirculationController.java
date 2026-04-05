@@ -227,7 +227,7 @@ public class CirculationController {
 
         try {
             java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            IssueReturnResult result = circulationDAO.returnBook(issueId, inspectionCondition);
+            IssueReturnResult result = circulationDAO.returnBook(issueId, inspectionCondition, CurrentUserContext.getUserId());
             String inventoryAction =
                 CirculationService.RETURN_CONDITION_GOOD.equals(result.getReturnCondition())
                     ? "Inventory Action: Book restored to library circulation."

@@ -6,6 +6,7 @@ import com.library.model.OrderDetail;
 import com.library.model.OrderHeader;
 import com.library.model.OrderSummary;
 import com.library.model.Seller;
+import com.library.service.CurrentUserContext;
 import com.library.service.PdfReportService;
 import com.library.service.ProcurementEmailService;
 import com.library.service.ProcurementPdfService;
@@ -159,7 +160,7 @@ public class ProcurementController {
                 return;
             }
 
-            if (sellerDAO.addSeller(seller)) {
+            if (sellerDAO.addSeller(seller, CurrentUserContext.getUserId())) {
                 JOptionPane.showMessageDialog(module, "Seller added successfully.");
                 sellerPanel.clearForm();
                 refreshSellerPreviewId();
@@ -196,7 +197,7 @@ public class ProcurementController {
             if (!confirmSellerAction("Confirm Seller Update", "Save Seller", seller)) {
                 return;
             }
-            if (sellerDAO.updateSeller(seller)) {
+            if (sellerDAO.updateSellerAudited(seller, CurrentUserContext.getUserId())) {
                 JOptionPane.showMessageDialog(module, "Seller updated.");
                 refreshSellerTable();
                 refreshSellerIdCombo();
@@ -338,7 +339,7 @@ public class ProcurementController {
             if (!confirmOrderAction("Confirm Order Placement", "Place Order", orderEntryPanel.getTxtOrderId().getText().trim(), sellerId, orderDate, details)) {
                 return;
             }
-            OrderHeader created = orderDAO.createOrder(sellerId, orderDate, details);
+            OrderHeader created = orderDAO.createOrder(sellerId, orderDate, details, CurrentUserContext.getUserId());
             Seller seller = sellerDAO.getSellerById(sellerId);
 
             lastOrderHeader = created;
@@ -589,7 +590,7 @@ public class ProcurementController {
             if (!confirmOrderAction("Confirm Order Update", "Save Order", orderId, sellerId, orderDate, details)) {
                 return;
             }
-            if (orderDAO.updateOrderReplaceDetails(orderId, sellerId, orderDate, details)) {
+            if (orderDAO.updateOrderReplaceDetails(orderId, sellerId, orderDate, details, CurrentUserContext.getUserId())) {
                 JOptionPane.showMessageDialog(module, "Order updated successfully.");
                 refreshOrderViewTable();
             } else {

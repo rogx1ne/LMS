@@ -7,6 +7,7 @@ import com.library.model.BillItem;
 import com.library.model.BookCopy;
 import com.library.model.OrderDetail;
 import com.library.model.OrderHeader;
+import com.library.service.CurrentUserContext;
 import com.library.service.ExcelService;
 
 import javax.swing.*;
@@ -229,7 +230,7 @@ public class BillAccessionPanel extends JPanel {
                 }
             }
 
-            List<BookCopy> saved = bookDAO.addBookCopies(toInsert);
+            List<BookCopy> saved = bookDAO.addBookCopies(toInsert, CurrentUserContext.getUserId());
             JOptionPane.showMessageDialog(this, "Successfully added " + saved.size() + " book copies to the Accession Register.", "Success", JOptionPane.INFORMATION_MESSAGE);
             tableModel.setRowCount(0);
             txtOrderId.setText("");

@@ -2,6 +2,7 @@ package com.library.dao;
 
 import com.library.database.DBConnection;
 import com.library.model.Seller;
+import com.library.service.AuditLogger;
 import com.library.service.ProcurementIdGenerator;
 
 import java.sql.Connection;
@@ -47,22 +48,38 @@ public class SellerDAO {
         }
     }
 
-    public boolean addSeller(Seller seller) {
+    public boolean addSeller(Seller seller, String performedBy) {
         String sql =
             "INSERT INTO TBL_SELLER (S_ID, COMPANY_NAME, COMPANY_CONTACT_NO, COMPANY_MAIL, CONTACT_PERSON, CONTACT_PERSON_NO, CONTACT_PERSON_MAIL, ADDR) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, seller.getSellerId());
-            ps.setString(2, seller.getCompanyName());
-            ps.setString(3, seller.getCompanyContactNo());
-            ps.setString(4, seller.getCompanyMail());
-            ps.setString(5, seller.getContactPerson());
-            ps.setString(6, seller.getContactPersonNo());
-            ps.setString(7, seller.getContactPersonMail());
-            ps.setString(8, seller.getAddress());
-            return ps.executeUpdate() > 0;
+        try (Connection conn = DBConnection.getConnection()) {
+            if (conn == null) return false;
+            boolean oldAuto = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, seller.getSellerId());
+                ps.setString(2, seller.getCompanyName());
+                ps.setString(3, seller.getCompanyContactNo());
+                ps.setString(4, seller.getCompanyMail());
+                ps.setString(5, seller.getContactPerson());
+                ps.setString(6, seller.getContactPersonNo());
+                ps.setString(7, seller.getContactPersonMail());
+                ps.setString(8, seller.getAddress());
+                int rows = ps.executeUpdate();
+                if (rows > 0) {
+                    AuditLogger.logAction(conn, performedBy, "Procurement", "Added seller " + seller.getSellerId() + " (" + seller.getCompanyName() + ")");
+                    conn.commit();
+                } else {
+                    conn.rollback();
+                }
+                return rows > 0;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAuto);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -85,6 +102,44 @@ public class SellerDAO {
             ps.setString(7, seller.getAddress());
             ps.setString(8, seller.getSellerId());
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateSellerAudited(Seller seller, String performedBy) {
+        String sql =
+            "UPDATE TBL_SELLER SET COMPANY_NAME=?, COMPANY_CONTACT_NO=?, COMPANY_MAIL=?, CONTACT_PERSON=?, CONTACT_PERSON_NO=?, CONTACT_PERSON_MAIL=?, ADDR=? " +
+            "WHERE S_ID=?";
+
+        try (Connection conn = DBConnection.getConnection()) {
+            if (conn == null) return false;
+            boolean oldAuto = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, seller.getCompanyName());
+                ps.setString(2, seller.getCompanyContactNo());
+                ps.setString(3, seller.getCompanyMail());
+                ps.setString(4, seller.getContactPerson());
+                ps.setString(5, seller.getContactPersonNo());
+                ps.setString(6, seller.getContactPersonMail());
+                ps.setString(7, seller.getAddress());
+                ps.setString(8, seller.getSellerId());
+                int rows = ps.executeUpdate();
+                if (rows > 0) {
+                    AuditLogger.logAction(conn, performedBy, "Procurement", "Updated seller " + seller.getSellerId());
+                    conn.commit();
+                } else {
+                    conn.rollback();
+                }
+                return rows > 0;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAuto);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             return false;

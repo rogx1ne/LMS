@@ -17,6 +17,7 @@ public class SetupWizard extends JFrame {
     private static final Color COLOR_SUCCESS = new Color(34, 139, 34);
     private static final Color COLOR_WARNING = new Color(255, 140, 0);
     private static final Color COLOR_ERROR = new Color(220, 20, 60);
+    private static final Color COLOR_TEXT_DARK = new Color(40, 40, 40);  // Dark text for visibility
     
     private CardLayout cardLayout;
     private JPanel contentPanel;
@@ -169,6 +170,7 @@ public class SetupWizard extends JFrame {
         
         JLabel lblInfo = new JLabel("Select where you want to install the Library Management System:");
         lblInfo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblInfo.setForeground(COLOR_TEXT_DARK);
         gbc.gridy = 1;
         formPanel.add(lblInfo, gbc);
         
@@ -237,6 +239,7 @@ public class SetupWizard extends JFrame {
         txtSummary.setEditable(false);
         txtSummary.setFont(new Font("Monospaced", Font.PLAIN, 12));
         txtSummary.setText(environment.getSummary());
+        txtSummary.setForeground(COLOR_TEXT_DARK);
         txtSummary.setBackground(new Color(245, 245, 245));
         txtSummary.setBorder(new EmptyBorder(15, 15, 15, 15));
         
@@ -332,33 +335,34 @@ public class SetupWizard extends JFrame {
         JPasswordField txtPassword = new JPasswordField(20);
         
         gbc.gridx = 0; gbc.gridy = 0;
-        formPanel.add(new JLabel("Host:"), gbc);
+        formPanel.add(createFormLabel("Host:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtHost, gbc);
         
         gbc.gridx = 0; gbc.gridy = 1;
-        formPanel.add(new JLabel("Port:"), gbc);
+        formPanel.add(createFormLabel("Port:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtPort, gbc);
         
         gbc.gridx = 0; gbc.gridy = 2;
-        formPanel.add(new JLabel("SID:"), gbc);
+        formPanel.add(createFormLabel("SID:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtSid, gbc);
         
         gbc.gridx = 0; gbc.gridy = 3;
-        formPanel.add(new JLabel("Username:"), gbc);
+        formPanel.add(createFormLabel("Username:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtUsername, gbc);
         
         gbc.gridx = 0; gbc.gridy = 4;
-        formPanel.add(new JLabel("Password:"), gbc);
+        formPanel.add(createFormLabel("Password:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtPassword, gbc);
         
         JTextArea txtLog = new JTextArea(10, 40);
         txtLog.setEditable(false);
         txtLog.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        txtLog.setForeground(COLOR_TEXT_DARK);
         JScrollPane scrollLog = new JScrollPane(txtLog);
         
         JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
@@ -478,17 +482,17 @@ public class SetupWizard extends JFrame {
         });
         
         gbc.gridx = 0; gbc.gridy = 0;
-        formPanel.add(new JLabel("Username:"), gbc);
+        formPanel.add(createFormLabel("Username:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtUsername, gbc);
         
         gbc.gridx = 0; gbc.gridy = 1;
-        formPanel.add(new JLabel("Password:"), gbc);
+        formPanel.add(createFormLabel("Password:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtPassword, gbc);
         
         gbc.gridx = 0; gbc.gridy = 2;
-        formPanel.add(new JLabel("Confirm Password:"), gbc);
+        formPanel.add(createFormLabel("Confirm Password:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtConfirmPassword, gbc);
         
@@ -496,12 +500,12 @@ public class SetupWizard extends JFrame {
         formPanel.add(lblPasswordStrength, gbc);
         
         gbc.gridx = 0; gbc.gridy = 4;
-        formPanel.add(new JLabel("Full Name:"), gbc);
+        formPanel.add(createFormLabel("Full Name:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtFullName, gbc);
         
         gbc.gridx = 0; gbc.gridy = 5;
-        formPanel.add(new JLabel("Email (Optional):"), gbc);
+        formPanel.add(createFormLabel("Email (Optional):"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtEmail, gbc);
         
@@ -512,6 +516,7 @@ public class SetupWizard extends JFrame {
         JLabel lblInfo = new JLabel("<html>This account will have full administrative privileges.<br/>" +
                                      "You can create additional users after installation.</html>");
         lblInfo.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
+        lblInfo.setForeground(COLOR_TEXT_DARK);
         centerPanel.add(lblInfo, BorderLayout.CENTER);
         
         JPanel topPanel = new JPanel(new BorderLayout(0, 20));
@@ -630,6 +635,7 @@ public class SetupWizard extends JFrame {
         txtSummary.setEditable(false);
         txtSummary.setOpaque(false);
         txtSummary.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtSummary.setForeground(COLOR_TEXT_DARK);
         txtSummary.setText(
             "Library Management System has been successfully installed.\n\n" +
             "Installation Directory: " + (installLocation != null ? installLocation.getAbsolutePath() : "N/A") + "\n\n" +
@@ -693,6 +699,7 @@ public class SetupWizard extends JFrame {
         
         JLabel lblMessage = new JLabel(message);
         lblMessage.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblMessage.setForeground(COLOR_TEXT_DARK);
         
         JPanel centerPanel = new JPanel(new GridLayout(2, 1, 0, 20));
         centerPanel.setBackground(Color.WHITE);
@@ -840,6 +847,20 @@ public class SetupWizard extends JFrame {
             installLog.append(message);
             installLog.setCaretPosition(installLog.getDocument().getLength());
         });
+    }
+    
+    private JLabel createFormLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        label.setForeground(COLOR_TEXT_DARK);
+        return label;
+    }
+    
+    private JLabel createInfoLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        label.setForeground(COLOR_TEXT_DARK);
+        return label;
     }
     
     private void styleButton(JButton btn, Color bg) {

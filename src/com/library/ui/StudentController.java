@@ -270,7 +270,7 @@ public class StudentController {
                     return;
                 }
 
-                if (dao.updateStudent(updated)) {
+                if (dao.updateStudent(updated, CurrentUserContext.getUserId())) {
                     JOptionPane.showMessageDialog(view, "Updated Successfully!");
                     refreshTable();
                     view.showCard("LIST");

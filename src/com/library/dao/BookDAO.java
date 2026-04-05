@@ -4,6 +4,7 @@ import com.library.database.DBConnection;
 import com.library.model.BookCopy;
 import com.library.model.BookCopyStatusRow;
 import com.library.model.BookStockItem;
+import com.library.service.AuditLogger;
 import com.library.service.BookIdGenerator;
 
 import java.sql.Connection;
@@ -28,7 +29,7 @@ public class BookDAO {
         }
     }
 
-    public List<BookCopy> addBookCopies(List<BookCopy> drafts) throws SQLException {
+    public List<BookCopy> addBookCopies(List<BookCopy> drafts, String performedBy) throws SQLException {
         String mergeCatalogSql =
             "MERGE INTO TBL_BOOK_CATALOG c " +
             "USING (SELECT ? AS AUTHOR_NAME, ? AS BK_TITLE, ? AS EDITION FROM dual) src " +
@@ -93,6 +94,15 @@ public class BookDAO {
                     ));
                 }
 
+                // Audit log bulk book addition
+                AuditLogger.logAction(
+                    conn,
+                    performedBy,
+                    "Book",
+                    "Added " + result.size() + " book copies (Bill: " + 
+                    (drafts.isEmpty() ? "N/A" : drafts.get(0).getBillNo()) + ")"
+                );
+
                 conn.commit();
                 return result;
             } catch (SQLException e) {
@@ -104,7 +114,7 @@ public class BookDAO {
         }
     }
 
-    public BookCopy addBookCopy(BookCopy draft) throws SQLException {
+    public BookCopy addBookCopy(BookCopy draft, String performedBy) throws SQLException {
         String mergeCatalogSql =
             "MERGE INTO TBL_BOOK_CATALOG c " +
             "USING (SELECT ? AS AUTHOR_NAME, ? AS BK_TITLE, ? AS EDITION FROM dual) src " +
@@ -155,6 +165,14 @@ public class BookDAO {
                     ps.executeUpdate();
                 }
 
+                // Audit log book addition
+                AuditLogger.logAction(
+                    conn,
+                    performedBy,
+                    "Book",
+                    "Added book " + accessionNo + " (" + draft.getTitle() + " by " + draft.getAuthorName() + ")"
+                );
+
                 conn.commit();
 
                 return new BookCopy(
@@ -187,7 +205,7 @@ public class BookDAO {
         }
     }
 
-    public boolean updateBookCopy(BookCopy b) {
+    public boolean updateBookCopy(BookCopy b, String performedBy) {
         String mergeCatalogSql =
             "MERGE INTO TBL_BOOK_CATALOG c " +
             "USING (SELECT ? AS AUTHOR_NAME, ? AS BK_TITLE, ? AS EDITION FROM dual) src " +
@@ -234,6 +252,17 @@ public class BookDAO {
                     ps.setString(18, b.getStatus());
                     ps.setString(19, b.getAccessionNo());
                     int rows = ps.executeUpdate();
+                    
+                    if (rows > 0) {
+                        // Audit log book update
+                        AuditLogger.logAction(
+                            conn,
+                            performedBy,
+                            "Book",
+                            "Updated book " + b.getAccessionNo() + " (" + b.getTitle() + ")"
+                        );
+                    }
+                    
                     conn.commit();
                     return rows > 0;
                 }

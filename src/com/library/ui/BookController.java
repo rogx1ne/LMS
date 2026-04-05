@@ -110,7 +110,7 @@ public class BookController {
                 return;
             }
 
-            BookCopy created = dao.addBookCopy(draft);
+            BookCopy created = dao.addBookCopy(draft, CurrentUserContext.getUserId());
             JOptionPane.showMessageDialog(module, "Book copy saved. Accession No: " + created.getAccessionNo());
 
             addPanel.clearForm();
@@ -209,7 +209,7 @@ public class BookController {
             if (!confirmBookAction("Confirm Book Update", "Save Changes", updated.getAccessionNo(), updated)) {
                 return;
             }
-            if (dao.updateBookCopy(updated)) {
+            if (dao.updateBookCopy(updated, CurrentUserContext.getUserId())) {
                 JOptionPane.showMessageDialog(module, "Updated successfully.");
                 refreshAccessionTable();
                 refreshStockTable(false);

@@ -3,6 +3,7 @@ package com.library.dao;
 import com.library.database.DBConnection;
 import com.library.model.BorrowRecord;
 import com.library.model.Student;
+import com.library.service.AuditLogger;
 import com.library.service.StudentIdGenerator;
 import java.sql.*;
 import java.util.ArrayList;
@@ -93,6 +94,14 @@ public class StudentDAO {
                     int rows = pst.executeUpdate();
                     if (rows != 1) throw new SQLException("Insert failed (rows=" + rows + ").");
                 }
+
+                // Audit log student registration
+                AuditLogger.logAction(
+                    conn,
+                    issuedBy,
+                    "Student",
+                    "Registered student " + cardId + " (Roll: " + roll + ", Name: " + name + ") for " + course + "/" + session
+                );
 
                 conn.commit();
 
@@ -201,26 +210,52 @@ public Student getStudentByCardId(String cardId) {
 }
 
 // 2. Method to update an existing student
-public boolean updateStudent(Student s) {
+public boolean updateStudent(Student s, String performedBy) {
     String sql = "UPDATE TBL_STUDENT SET NAME=?, ROLL=?, PH_NO=?, ADDR=?, " +
                  "COURSE=?, ACAD_SESSION=?, BOOK_LIMIT=?, FEE=?, STATUS=? " +
                  "WHERE CARD_ID=?";
-    try (java.sql.Connection conn = DBConnection.getConnection();
-         java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-        if (existsRollInCourseSession(conn, s.getRoll(), s.getCourse(), s.getSession(), s.getCardId())) {
+    try (java.sql.Connection conn = DBConnection.getConnection()) {
+        if (conn == null) return false;
+        boolean oldAuto = conn.getAutoCommit();
+        conn.setAutoCommit(false);
+        try {
+            if (existsRollInCourseSession(conn, s.getRoll(), s.getCourse(), s.getSession(), s.getCardId())) {
+                return false;
+            }
+            
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, s.getName());
+                ps.setInt(2, s.getRoll());
+                ps.setLong(3, s.getPhone());
+                ps.setString(4, s.getAddress());
+                ps.setString(5, s.getCourse());
+                ps.setString(6, s.getSession());
+                ps.setInt(7, s.getBookLimit());
+                ps.setDouble(8, s.getFee());
+                ps.setString(9, s.getStatus());
+                ps.setString(10, s.getCardId());
+                
+                int rows = ps.executeUpdate();
+                if (rows > 0) {
+                    // Audit log student update
+                    AuditLogger.logAction(
+                        conn,
+                        performedBy,
+                        "Student",
+                        "Updated student " + s.getCardId() + " (" + s.getName() + ")"
+                    );
+                    conn.commit();
+                    return true;
+                }
+            }
+            conn.rollback();
             return false;
+        } catch (Exception e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(oldAuto);
         }
-        ps.setString(1, s.getName());
-        ps.setInt(2, s.getRoll());
-        ps.setLong(3, s.getPhone());
-        ps.setString(4, s.getAddress());
-        ps.setString(5, s.getCourse());
-        ps.setString(6, s.getSession());
-        ps.setInt(7, s.getBookLimit());
-        ps.setDouble(8, s.getFee());
-        ps.setString(9, s.getStatus());
-        ps.setString(10, s.getCardId());
-        return ps.executeUpdate() > 0;
     } catch (Exception e) {
         e.printStackTrace();
         return false;

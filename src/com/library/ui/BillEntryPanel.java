@@ -4,6 +4,7 @@ import com.library.dao.BillDAO;
 import com.library.dao.SellerDAO;
 import com.library.model.BillItem;
 import com.library.model.Seller;
+import com.library.service.CurrentUserContext;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -216,7 +217,7 @@ public class BillEntryPanel extends JPanel {
                 ));
             }
 
-            billDAO.createBill(items);
+            billDAO.createBill(items, CurrentUserContext.getUserId());
             JOptionPane.showMessageDialog(this, "Bill saved successfully.");
             clearForm();
         } catch (Exception e) {

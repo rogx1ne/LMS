@@ -11,6 +11,35 @@ Use this file to record every code, schema, UI, or structural change made to the
 
 ## Entries
 
+### 2026-04-05
+- Area: Build/Packaging
+- Files: `LMS-Setup.jar`, `package-setup.sh`
+- Summary: Rebuilt installer JAR to include all audit logging changes across Circulation, Student, Book, and Procurement modules. All 18 modified Java files recompiled and packaged. JAR is ready for production deployment.
+- Snippet:
+```bash
+./package-setup.sh
+# ✓ All dependencies extracted
+# ✓ JAR created successfully (112M)
+# JAR includes all audit logging implementations
+```
+
+### 2026-04-01
+- Area: Audit logging - Procurement module
+- Files: `src/com/library/dao/SellerDAO.java`, `src/com/library/dao/OrderDAO.java`, `src/com/library/ui/ProcurementController.java`
+- Summary: Completed comprehensive audit logging for Procurement module. Added audit trail to seller operations (addSeller, updateSellerAudited) and order operations (createOrder, updateOrderReplaceDetails). All operations now log who performed the action, what was changed, and when. Applied transaction-safe audit logging pattern consistent with other modules.
+- Snippet:
+```java
+// SellerDAO - new updateSellerAudited method with audit logging
+AuditLogger.logAction(conn, performedBy, "Procurement", "Updated seller " + seller.getSellerId());
+
+// OrderDAO - updated method with performedBy parameter
+AuditLogger.logAction(conn, performedBy, "Procurement", "Updated order " + orderId + " with " + details.size() + " items");
+
+// ProcurementController - all DAO calls now pass CurrentUserContext.getUserId()
+sellerDAO.addSeller(seller, CurrentUserContext.getUserId());
+orderDAO.updateOrderReplaceDetails(orderId, sellerId, orderDate, details, CurrentUserContext.getUserId());
+```
+
 ### 2026-03-31
 - Area: Retrospective sync
 - Files: `PROJECT_LOG.md`
@@ -438,4 +467,79 @@ Main-Class: com.library.setup.SetupWizard
 # - All source code for installation-time compilation
 # - Bundled libraries (Oracle JDBC, iText, POI, FlatLaf, etc.)
 # - SQL initialization scripts (script.sql, dummy.sql)
+```
+
+### 2026-04-05 (Admin Module Enhancement)
+- Area: Admin Module - Import/Export System Enhancement
+- Files: `src/com/library/ui/DataImportExportPanel.java`, `src/com/library/ui/AdminController.java`, `src/com/library/service/ExcelService.java`, `src/com/library/dao/AdminDAO.java`
+- Summary: Enhanced the Admin module's import/export functionality to support both selective (single table) and bulk (all tables) operations. Added radio button mode selectors for Export ("Selective Table" vs "All Tables (ZIP)") and Import ("Selective Table" vs "All Tables (ZIP)"). Selective mode exports/imports single table to/from Excel (.xlsx). All Tables mode exports multiple tables to a ZIP file containing separate Excel files per table, and imports from such ZIP files. Added dynamic UI visibility - table combo is only enabled when either export or import is in selective mode. All operations are fully logged in the audit log with detailed statistics.
+- Snippet:
+```java
+// UI - Radio button groups for mode selection
+private final ButtonGroup exportModeGroup = new ButtonGroup();
+private final JRadioButton rbExportAll = new JRadioButton("All Tables (ZIP)", false);
+private final JRadioButton rbExportSelective = new JRadioButton("Selective Table", true);
+
+// Controller - Mode-based export routing
+private void exportToExcel() {
+    if (dataPanel.getRbExportAll().isSelected()) {
+        exportAllTablesToZip();
+    } else {
+        exportSelectiveTableToExcel();
+    }
+}
+
+// ExcelService - ZIP export with multiple Excel files
+public void exportMultipleTablesToZip(Map<String, List<Map<String, Object>>> tablesData, 
+                                       Path outputZipFile, String dateStamp) throws IOException {
+    try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(outputZipFile))) {
+        for (Map.Entry<String, List<Map<String, Object>>> entry : tablesData.entrySet()) {
+            byte[] excelBytes = createExcelBytes(entry.getKey(), entry.getValue());
+            String excelFileName = entry.getKey() + "_" + dateStamp + ".xlsx";
+            ZipEntry zipEntry = new ZipEntry(excelFileName);
+            zos.putNextEntry(zipEntry);
+            zos.write(excelBytes);
+            zos.closeEntry();
+        }
+    }
+}
+
+// AdminDAO - Bulk fetch and import
+public Map<String, List<Map<String, Object>>> fetchAllTablesData() throws SQLException {
+    Map<String, List<Map<String, Object>>> result = new LinkedHashMap<>();
+    for (String uiTableName : getSupportedTableNames()) {
+        result.put(uiTableName, fetchTableData(uiTableName));
+    }
+    return result;
+}
+```
+
+### 2026-04-05 (Setup Wizard UI Enhancement)
+- Area: Setup Wizard - Text Visibility Improvement
+- Files: `src/com/library/setup/SetupWizard.java`, `src/com/library/setup/DependencyInstaller.java`
+- Summary: Fixed text visibility issues in the setup wizard where text was blending with the background making it hard to read. Added a new dark text color constant (COLOR_TEXT_DARK = RGB 40,40,40) and applied it to all text labels, form labels, text areas, and informational messages throughout the setup wizard. Created helper methods createFormLabel() and createInfoLabel() to ensure consistent dark text styling. All user-facing text elements now have explicit dark foreground colors for maximum readability against light backgrounds.
+- Snippet:
+```java
+// Color constant for dark readable text
+private static final Color COLOR_TEXT_DARK = new Color(40, 40, 40);
+
+// Helper methods for consistent text styling
+private JLabel createFormLabel(String text) {
+    JLabel label = new JLabel(text);
+    label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+    label.setForeground(COLOR_TEXT_DARK);
+    return label;
+}
+
+// Applied to all form labels
+formPanel.add(createFormLabel("Host:"), gbc);
+formPanel.add(createFormLabel("Port:"), gbc);
+formPanel.add(createFormLabel("Username:"), gbc);
+
+// Applied to text areas
+txtLog.setForeground(COLOR_TEXT_DARK);
+txtSummary.setForeground(COLOR_TEXT_DARK);
+
+// Applied to info labels
+lblInfo.setForeground(COLOR_TEXT_DARK);
 ```
