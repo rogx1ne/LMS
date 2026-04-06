@@ -29,13 +29,30 @@ bin/
 ### Environment ###
 .env
 .env.local
+.env.*.loacal
 
 ### Mac OS ###
 .DS_Store
 
 LMS-Setup.jar
-temp-setup.jar
-LMS-Setup.jar
-temp-setup-jar/
+temp-setup.jar/
+
+*.class
+*.jar
+*.war
+
+target/
+vuild/
+temp/
+tmp/
+
+*.log
+logs/
+*.log.gz
+
+Thumbs.db
+*.swp
+*.swo
+*~
 
 whattoupdate.txt
