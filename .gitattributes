@@ -1,2 +1,13 @@
-*html linguistic-detectable=false
-*.jsp linguistic-detectable=false
+*.jsp linguist-language=Java
+
+*.html linguist-vendored
+*.css linguist-vendored
+*.js linguist-vendored
+
+.idea/** linguist-vendored
+temp-setup-jar/** linguist-vendored
+webapp/* linguist-vendored
+assets/* linguist-vendored
+static/* linguist-vendored
+
+*.java linguist-detectable=true
