@@ -31,7 +31,8 @@ find "$SRC_DIR" -name "*.java" > sources_list.txt
 # Compile
 # CHANGED: -cp "$LIB_DIR/*"
 # This wildcard tells Java to use EVERY jar file it finds in the lib folder.
-javac -d "$OUT_DIR" -cp "$LIB_DIR/*" @sources_list.txt
+# --release 8: Compile for Java 8 compatibility (works on systems without JDK 26)
+javac --release 8 -d "$OUT_DIR" -cp "$LIB_DIR/*" @sources_list.txt
 
 # Check if compilation succeeded
 if [ $? -eq 0 ]; then

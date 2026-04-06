@@ -11,6 +11,22 @@ Use this file to record every code, schema, UI, or structural change made to the
 
 ## Entries
 
+### 2026-04-06 (Latest)
+- Area: Build system - JDK 8 compatibility for setup JAR
+- Files: `run.sh`, `package-setup.sh`, `MANIFEST-SETUP.MF`, `LMS-Setup.jar`
+- Summary: Analyzed project and confirmed Java 8+ compatibility (no modern language features like var, records, or sealed classes). Updated build scripts to compile with `--release 8` flag, ensuring LMS-Setup.jar runs on systems with Java 8+ without requiring JDK 26. Updated manifest with Build-JDK and Target-Compatibility metadata. Final JAR bytecode version verified as 0x34 (Java 8 standard).
+- Snippet:
+```bash
+# Updated build commands in run.sh and package-setup.sh:
+javac --release 8 -d bin -cp "lib/*" src/com/library/**/*.java
+
+# Manifest updated with compatibility info:
+Build-JDK: 8
+Target-Compatibility: Java 8+
+
+# Verified bytecode: hexdump shows ca fe ba be 00 00 00 34 (Java 8)
+```
+
 ### 2026-04-05 (Latest)
 - Area: Bug fix - User creation & forgot password
 - Files: `src/com/library/dao/AdminDAO.java`, `src/com/library/dao/UserDAO.java`, `BUG_FIX_REPORT.md` (new)

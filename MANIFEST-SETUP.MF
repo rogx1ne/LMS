@@ -3,3 +3,5 @@ Main-Class: com.library.setup.SetupWizard
 Created-By: LMS Development Team
 Implementation-Title: Library Management System Setup
 Implementation-Version: 1.0
+Build-JDK: 8
+Target-Compatibility: Java 8+

@@ -7,13 +7,13 @@ echo "=========================================="
 
 # Step 1: Ensure everything is compiled
 echo ""
-echo "[1/4] Compiling all sources..."
-javac -d bin -cp "lib/*" src/com/library/**/*.java
+echo "[1/4] Compiling all sources (Java 8 target for max compatibility)..."
+javac --release 8 -d bin -cp "lib/*" src/com/library/**/*.java
 if [ $? -ne 0 ]; then
     echo "✗ Compilation failed"
     exit 1
 fi
-echo "✓ Compilation successful"
+echo "✓ Compilation successful (Java 8 compatible)"
 
 # Step 2: Create temporary directory for JAR contents
 echo ""
