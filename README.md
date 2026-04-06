@@ -2,7 +2,7 @@
 
 A robust, enterprise-grade desktop Library Management System designed for efficiency, accuracy, and comprehensive accountability. Built with a modular, layered architecture to handle high-volume library operations with complete audit trail coverage.
 
-**Status:** ✅ Production Ready | **Version:** 2.0 | **Last Updated:** April 5, 2026
+**Status:** In Pre-Production | **Version:** 0.1 | **Last Updated:** April 5, 2026
 
 ## 🚀 Key Features
 
@@ -197,5 +197,5 @@ For detailed information on specific features or technical implementation:
 ---
 
 **Last Updated:** April 5, 2026  
-**Status:** ✅ Production Ready  
-**Version:** 2.0
+**Status:** Pre-Production  
+**Version:** 0.1
