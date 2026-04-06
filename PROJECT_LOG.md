@@ -12,6 +12,39 @@ Use this file to record every code, schema, UI, or structural change made to the
 ## Entries
 
 ### 2026-04-06 (Latest)
+- Area: Setup Wizard UI & Installation - Button contrast and file copy fixes
+- Files: `src/com/library/setup/SetupWizard.java`, `src/com/library/setup/DependencyInstaller.java`
+- Summary: Fixed critical UI contrast issues preventing button text visibility on Windows & Linux. Added setOpaque(true), setBorderPainted(true), and BasicButtonUI to all buttons in SetupWizard and DependencyInstaller. Enhanced prepareInstallationDirectory() to properly copy source files, scripts, and libraries to installation location. Fixed install log text color (now COLOR_TEXT_DARK on light background). Improved cross-platform button rendering with solid borders. Compilation verified successful.
+- Snippet:
+```java
+// Before (buttons blended with text invisible):
+private void styleButton(JButton btn, Color bg) {
+    btn.setBackground(bg);
+    btn.setForeground(Color.WHITE);
+    btn.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
+}
+
+// After (proper contrast on all platforms):
+private void styleButton(JButton btn, Color bg) {
+    btn.setBackground(bg);
+    btn.setForeground(Color.WHITE);
+    btn.setOpaque(true);
+    btn.setBorderPainted(true);
+    btn.setBorder(BorderFactory.createLineBorder(bg, 2));
+    btn.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+}
+
+// Install log now visible with proper colors:
+installLog.setForeground(COLOR_TEXT_DARK);  // (40,40,40)
+installLog.setBackground(new Color(245, 245, 245));
+
+// Directory preparation now copies source files:
+copyDirectory(srcSourceDir, srcDestDir);  // Copies src/
+copyDirectory(libSourceDir, libDestDir);  // Copies lib/
+copyFile(sqlFile, destFile);              // Copies script.sql, dummy.sql
+```
+
+### 2026-04-06
 - Area: Build system - JDK 8 compatibility for setup JAR
 - Files: `run.sh`, `package-setup.sh`, `MANIFEST-SETUP.MF`, `LMS-Setup.jar`
 - Summary: Analyzed project and confirmed Java 8+ compatibility (no modern language features like var, records, or sealed classes). Updated build scripts to compile with `--release 8` flag, ensuring LMS-Setup.jar runs on systems with Java 8+ without requiring JDK 26. Updated manifest with Build-JDK and Target-Compatibility metadata. Final JAR bytecode version verified as 0x34 (Java 8 standard).

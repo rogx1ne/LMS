@@ -605,6 +605,8 @@ public class SetupWizard extends JFrame {
         installLog = new JTextArea(15, 50);
         installLog.setEditable(false);
         installLog.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        installLog.setForeground(COLOR_TEXT_DARK);
+        installLog.setBackground(new Color(245, 245, 245));
         JScrollPane scrollLog = new JScrollPane(installLog);
         
         JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
@@ -831,8 +833,6 @@ public class SetupWizard extends JFrame {
     }
     
     private void prepareInstallationDirectory() throws Exception {
-        // In a real installer, we would copy files from a bundled JAR
-        // For now, we assume the current directory structure is correct
         logInstall("Installation directory: " + installLocation.getAbsolutePath() + "\n");
         
         // Ensure required directories exist
@@ -840,6 +840,59 @@ public class SetupWizard extends JFrame {
         new File(installLocation, "lib").mkdirs();
         new File(installLocation, "src").mkdirs();
         new File(installLocation, "docs").mkdirs();
+        
+        // Get current working directory (source location)
+        File sourceDir = new File(System.getProperty("user.dir"));
+        
+        // Copy script.sql and dummy.sql if they exist in source
+        File[] sqlFiles = {new File(sourceDir, "script.sql"), new File(sourceDir, "dummy.sql")};
+        for (File sqlFile : sqlFiles) {
+            if (sqlFile.exists()) {
+                File destFile = new File(installLocation, sqlFile.getName());
+                copyFile(sqlFile, destFile);
+                logInstall("Copied " + sqlFile.getName() + "\n");
+            }
+        }
+        
+        // Copy src directory if different from install location
+        if (!sourceDir.equals(installLocation)) {
+            File srcSourceDir = new File(sourceDir, "src");
+            if (srcSourceDir.exists()) {
+                File srcDestDir = new File(installLocation, "src");
+                copyDirectory(srcSourceDir, srcDestDir);
+                logInstall("Copied source files\n");
+            }
+            
+            // Copy lib directory
+            File libSourceDir = new File(sourceDir, "lib");
+            if (libSourceDir.exists()) {
+                File libDestDir = new File(installLocation, "lib");
+                copyDirectory(libSourceDir, libDestDir);
+                logInstall("Copied libraries\n");
+            }
+        }
+    }
+    
+    private void copyFile(File source, File dest) throws Exception {
+        java.nio.file.Files.copy(source.toPath(), dest.toPath(), 
+            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+    }
+    
+    private void copyDirectory(File source, File dest) throws Exception {
+        if (!dest.exists()) {
+            dest.mkdirs();
+        }
+        
+        File[] files = source.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    copyDirectory(file, new File(dest, file.getName()));
+                } else {
+                    copyFile(file, new File(dest, file.getName()));
+                }
+            }
+        }
     }
     
     private void logInstall(String message) {
@@ -867,9 +920,12 @@ public class SetupWizard extends JFrame {
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btn.setBackground(bg);
         btn.setForeground(Color.WHITE);
+        btn.setOpaque(true);
+        btn.setBorderPainted(true);
         btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
+        btn.setBorder(BorderFactory.createLineBorder(bg, 2));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI());
     }
     
     private void handleExit() {

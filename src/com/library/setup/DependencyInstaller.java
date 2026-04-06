@@ -193,6 +193,13 @@ public class DependencyInstaller {
         DependencyInstaller installer = new DependencyInstaller(osType);
         
         JButton btnInstall = new JButton("Auto Install");
+        btnInstall.setBackground(new Color(34, 139, 34));
+        btnInstall.setForeground(Color.WHITE);
+        btnInstall.setOpaque(true);
+        btnInstall.setBorderPainted(true);
+        btnInstall.setFocusPainted(false);
+        btnInstall.setBorder(BorderFactory.createLineBorder(new Color(34, 139, 34), 2));
+        btnInstall.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnInstall.addActionListener(e -> {
             btnInstall.setEnabled(false);
             new Thread(() -> {
@@ -215,6 +222,13 @@ public class DependencyInstaller {
         buttonPanel.add(btnInstall);
         
         JButton btnClose = new JButton("Close");
+        btnClose.setBackground(Color.GRAY);
+        btnClose.setForeground(Color.WHITE);
+        btnClose.setOpaque(true);
+        btnClose.setBorderPainted(true);
+        btnClose.setFocusPainted(false);
+        btnClose.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        btnClose.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnClose.addActionListener(e -> dialog.dispose());
         buttonPanel.add(btnClose);
         
