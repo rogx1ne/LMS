@@ -54,5 +54,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+.idea/
 
 whattoupdate.txt

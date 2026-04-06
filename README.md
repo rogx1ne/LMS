@@ -433,7 +433,7 @@ For more troubleshooting: **`docs/SETUP_QUICK_START.md`**
 
 ## 📝 License & Support
 
-**Project Status:** ✅ Production-Ready (v2.0.2)
+**Project Status:** ✅ Pre-Production (v0.1)
 
 **Last Updated:** April 6, 2026
 
