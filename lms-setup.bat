@@ -66,34 +66,21 @@ if not exist "%SCRIPT_DIR%\lib\ojdbc6.jar" (
     echo   Database connection may fail.
 )
 
-REM Check if Docker or Podman Oracle is running (optional)
-where docker >nul 2>nul
-if not errorlevel 1 (
-    docker ps 2>nul | findstr /i "oracle" >nul
-    if not errorlevel 1 (
-        echo ✓ Oracle container detected ^(Docker^)
-    ) else (
-        echo ⚠ Oracle container not detected in Docker
-        echo   If you need database connection, start Oracle container:
-        echo   docker run -d --name oracle10g -p 1521:1521 wnameless/oracle-xe-11g
-    )
-) else (
-    where podman >nul 2>nul
-    if not errorlevel 1 (
-        podman ps 2>nul | findstr /i "oracle" >nul
-        if not errorlevel 1 (
-            echo ✓ Oracle container is running ^(Podman^)
-        ) else (
-            echo ⚠ Oracle container not detected in Podman
-            echo   If you need database connection, start Oracle with:
-            echo   podman run -d --name oracle10g -p 1521:1521 wnameless/oracle-xe-11g
-        )
-    ) else (
-        echo ⚠ Docker/Podman not detected
-        echo   Make sure Oracle Database is accessible at localhost:1521
-    )
-)
+REM Check for Oracle Database installed locally on Windows
+REM Oracle typically uses service name like "OracleServiceXE" or port 1521
+echo Checking for Oracle Database installation...
 
+REM Check if Oracle TNS Listener is running (port 1521)
+netstat -ano 2>nul | findstr ":1521" >nul
+if not errorlevel 1 (
+    echo ✓ Oracle Database detected (port 1521 is listening)
+) else (
+    echo ⚠ Oracle Database not detected on port 1521
+    echo   Make sure Oracle 10g or later is installed and running.
+    echo   If using Oracle XE: Start "Oracle Database 10g Express Edition" service
+    echo   Check: Services ^(services.msc^) ^> Look for OracleServiceXE or OracleService...
+    echo.
+)
 echo.
 echo Starting LMS Setup Wizard...
 echo ═══════════════════════════════════════════════════════════════

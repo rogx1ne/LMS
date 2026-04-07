@@ -190,6 +190,12 @@ public final class ModuleTheme {
         table.setFont(getFont(Font.PLAIN, 12));
         table.setFillsViewportHeight(true);
 
+        // Center align all cells by default
+        CenteredCellRenderer defaultRenderer = new CenteredCellRenderer();
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(defaultRenderer);
+        }
+
         javax.swing.table.JTableHeader header = table.getTableHeader();
         header.setBackground(TABLE_HEAD);
         header.setForeground(BLUE_DARK);
@@ -384,6 +390,19 @@ public final class ModuleTheme {
     }
 
     /**
+     * Default renderer for all table cells with center alignment.
+     */
+    private static class CenteredCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setVerticalAlignment(SwingConstants.CENTER);
+            return c;
+        }
+    }
+
+    /**
      * Specialized renderer for Status columns.
      */
     private static class StatusCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
@@ -394,6 +413,7 @@ public final class ModuleTheme {
 
             String status = value.toString().toUpperCase();
             setHorizontalAlignment(SwingConstants.CENTER);
+            setVerticalAlignment(SwingConstants.CENTER);
             setFont(ModuleTheme.getFont(Font.BOLD, 11));
 
             if (status.contains("AVAILABLE") || status.contains("ACTIVE") || status.contains("RETURNED") || status.contains("PAID")) {

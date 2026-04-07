@@ -1,6 +1,6 @@
 # Library Management System (LMS)
 
-**Version:** 2.0.2 | **Status:** ✅ Production-Ready | **Date:** 2026-04-06
+**Version:** 0.1 | **Status:** ✅ Pre-Production | **Date:** 2026-04-06
 
 > A professional Java Swing desktop application for managing library operations with comprehensive book tracking, student management, circulation, and reporting.
 
