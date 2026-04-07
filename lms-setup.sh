@@ -36,8 +36,8 @@ JAVA_VERSION=$(java -version 2>&1 | grep -oP '(?<=version ")[^"]*' || echo "unkn
 echo -e "${GREEN}✓ Java detected: $JAVA_VERSION${NC}"
 
 # Check if JAR exists
-if [ ! -f "$SCRIPT_DIR/LMS-Setup-2.0.jar" ]; then
-    echo -e "${RED}✗ LMS-Setup-2.0.jar not found in $SCRIPT_DIR${NC}"
+if [ ! -f "$SCRIPT_DIR/LMS-Setup.jar" ]; then
+    echo -e "${RED}✗ LMS-Setup.jar not found in $SCRIPT_DIR${NC}"
     exit 1
 fi
 echo -e "${GREEN}✓ Setup JAR found${NC}"
@@ -79,7 +79,7 @@ cd "$SCRIPT_DIR"
 # - Oracle timezone fix for JDBC connection
 # - Proper classpath from manifest
 java -Doracle.jdbc.timezoneAsRegion=false \
-     -jar LMS-Setup-2.0.jar
+     -jar LMS-Setup.jar
 
 EXIT_CODE=$?
 

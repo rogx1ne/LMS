@@ -43,8 +43,8 @@ set JAVA_VERSION=%JAVA_VERSION:"=%
 echo ✓ Java detected: %JAVA_VERSION%
 
 REM Check if JAR exists
-if not exist "%SCRIPT_DIR%\LMS-Setup-2.0.jar" (
-    echo ✗ LMS-Setup-2.0.jar not found in %SCRIPT_DIR%
+if not exist "%SCRIPT_DIR%\LMS-Setup.jar" (
+    echo ✗ LMS-Setup.jar not found in %SCRIPT_DIR%
     echo   Please ensure all files are present.
     pause
     exit /b 1
@@ -96,7 +96,7 @@ cd /d "%SCRIPT_DIR%"
 REM Run the setup wizard with:
 REM - Oracle timezone fix for JDBC connection
 REM - Proper classpath from manifest
-java -Doracle.jdbc.timezoneAsRegion=false -jar LMS-Setup-2.0.jar
+java -Doracle.jdbc.timezoneAsRegion=false -jar LMS-Setup.jar
 
 set EXIT_CODE=%ERRORLEVEL%
 
