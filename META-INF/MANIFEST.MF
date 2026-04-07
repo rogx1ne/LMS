@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Main-Class: com.library.setup.LMSSetupWizard
+Created-By: LMS Development Team
+Implementation-Title: Library Management System Setup
+Implementation-Version: 2.0.2
+Build-JDK: 8
+Target-Compatibility: Java 8+
+

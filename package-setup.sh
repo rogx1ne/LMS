@@ -36,7 +36,6 @@ cp -r lib $TEMP_DIR/
 
 # Copy SQL scripts
 cp script.sql $TEMP_DIR/
-cp dummy.sql $TEMP_DIR/
 
 # Copy documentation
 cp -r docs $TEMP_DIR/ 2>/dev/null || echo "No docs directory"

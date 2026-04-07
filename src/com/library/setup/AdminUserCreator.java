@@ -22,7 +22,7 @@ public class AdminUserCreator {
      * Check if username already exists
      */
     public boolean usernameExists(String username) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM TBL_USER WHERE USERNAME = ?";
+        String sql = "SELECT COUNT(*) FROM TBL_CREDENTIALS WHERE NAME = ?";
         PreparedStatement stmt = connection.prepareStatement(sql);
         stmt.setString(1, username);
         ResultSet rs = stmt.executeQuery();
@@ -41,7 +41,7 @@ public class AdminUserCreator {
      * Get next user ID from ID counter
      */
     private String getNextUserId() throws SQLException {
-        String sql = "SELECT COUNTER_VALUE FROM TBL_ID_COUNTER WHERE COUNTER_NAME = 'USER_ID'";
+        String sql = "SELECT NEXT_VAL FROM TBL_ID_COUNTER WHERE COUNTER_KEY = 'USER_ID'";
         PreparedStatement stmt = connection.prepareStatement(sql);
         ResultSet rs = stmt.executeQuery();
         
@@ -54,13 +54,13 @@ public class AdminUserCreator {
         
         // Increment counter
         int nextValue = currentValue + 1;
-        String updateSql = "UPDATE TBL_ID_COUNTER SET COUNTER_VALUE = ? WHERE COUNTER_NAME = 'USER_ID'";
+        String updateSql = "UPDATE TBL_ID_COUNTER SET NEXT_VAL = ? WHERE COUNTER_KEY = 'USER_ID'";
         PreparedStatement updateStmt = connection.prepareStatement(updateSql);
         updateStmt.setInt(1, nextValue);
         updateStmt.executeUpdate();
         updateStmt.close();
         
-        return "U-" + String.format("%04d", nextValue);
+        return String.format("%05d", nextValue);
     }
     
     /**
@@ -90,16 +90,16 @@ public class AdminUserCreator {
         String userId = getNextUserId();
         
         // Insert user
-        String sql = "INSERT INTO TBL_USER (USER_ID, USERNAME, PASSWORD_HASH, ROLE, FULL_NAME, EMAIL, CREATED_AT) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, SYSTIMESTAMP)";
+        String sql = "INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, ROLE, EMAIL, PHNO, STATUS) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')";
         
         PreparedStatement stmt = connection.prepareStatement(sql);
         stmt.setString(1, userId);
         stmt.setString(2, username);
         stmt.setString(3, hashedPassword);
         stmt.setString(4, "ADMIN");
-        stmt.setString(5, fullName);
-        stmt.setString(6, email != null && !email.trim().isEmpty() ? email : null);
+        stmt.setString(5, email != null && !email.trim().isEmpty() ? email : "noemail@lms.local");
+        stmt.setInt(6, 0); // Placeholder phone number
         
         stmt.executeUpdate();
         stmt.close();

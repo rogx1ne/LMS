@@ -216,7 +216,7 @@ public class DatabaseInitializer {
     /**
      * Perform fresh installation
      */
-    public void performFreshInstall(File scriptSql, File dummySql, ProgressCallback callback) throws Exception {
+    public void performFreshInstall(File scriptSql, ProgressCallback callback) throws Exception {
         if (callback != null) {
             callback.onProgress(0, "Starting fresh installation...");
         }
@@ -235,22 +235,8 @@ public class DatabaseInitializer {
             @Override
             public void onProgress(int percent, String message) {
                 if (callback != null) {
-                    int adjustedPercent = 20 + (percent * 50 / 100); // 20-70%
+                    int adjustedPercent = 20 + (percent * 80 / 100); // 20-100%
                     callback.onProgress(adjustedPercent, "Schema: " + message);
-                }
-            }
-        });
-        
-        // Step 3: Execute sample data script
-        if (callback != null) {
-            callback.onProgress(70, "Loading sample data...");
-        }
-        executeScript(dummySql, new ProgressCallback() {
-            @Override
-            public void onProgress(int percent, String message) {
-                if (callback != null) {
-                    int adjustedPercent = 70 + (percent * 30 / 100); // 70-100%
-                    callback.onProgress(adjustedPercent, "Data: " + message);
                 }
             }
         });
