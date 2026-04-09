@@ -1,30 +1,8 @@
--- DROP AND RECREATE USER FOR CLEAN INSTALLATION
--- Drop user if exists (with CASCADE to remove all owned objects)
-BEGIN
-    EXECUTE IMMEDIATE 'DROP USER PRJ2531H CASCADE';
-EXCEPTION
-    WHEN OTHERS THEN
-        IF SQLCODE != -1918 THEN -- ORA-01918: user does not exist
-            RAISE;
-        END IF;
-END;
-/
-
--- Create fresh user
-BEGIN
-    EXECUTE IMMEDIATE 'CREATE USER PRJ2531H IDENTIFIED BY PRJ2531H';
-EXCEPTION
-    WHEN OTHERS THEN
-        IF SQLCODE != -1920 THEN -- ORA-01920: user exists/conflicts
-            RAISE;
-        END IF;
-END;
-/
-
--- Grant DBA privileges
-GRANT DBA TO PRJ2531H;
-
-COMMIT;
+-- ============================================
+-- LMS Database Initialization Script
+-- 007 PRODUCTION FIX:  User creation handled by Java setup wizard
+-- This script ONLY creates tables and schema
+-- ============================================
 
 --LOGIN MODULE
 

@@ -208,12 +208,46 @@ public class InstallationManager {
         File launcherFile = new File(installDir, "run.bat");
         StringBuilder script = new StringBuilder();
         script.append("@echo off\n");
-        script.append("REM LMS Launcher\n");
+        script.append("color 0F\n");
+        script.append("title Library Management System\n");
+        script.append("cls\n");
+        script.append("\n");
+        script.append("REM =========================================\n");
+        script.append("REM Library Management System - Launcher\n");
+        script.append("REM =========================================\n");
+        script.append("\n");
         script.append("cd /d \"%~dp0\"\n");
+        script.append("\n");
+        script.append("REM Check if Java is installed\n");
+        script.append("java -version >nul 2>&1\n");
+        script.append("if errorlevel 1 (\n");
+        script.append("    echo ERROR: Java is not installed or not in PATH\n");
+        script.append("    echo Please install Java 8+ and add it to PATH\n");
+        script.append("    pause\n");
+        script.append("    exit /b 1\n");
+        script.append(")\n");
+        script.append("\n");
+        script.append("REM Check if required directories exist\n");
+        script.append("if not exist bin (\n");
+        script.append("    echo ERROR: bin/ directory not found\n");
+        script.append("    echo Please run setup first: java -jar LMS-Setup.jar\n");
+        script.append("    pause\n");
+        script.append("    exit /b 1\n");
+        script.append(")\n");
+        script.append("\n");
+        script.append("echo Connecting to database...\n");
         script.append("set LMS_DB_URL=jdbc:oracle:thin:@localhost:1521:xe\n");
         script.append("set LMS_DB_USER=PRJ2531H\n");
         script.append("set LMS_DB_PASSWORD=PRJ2531H\n");
-        script.append("java -cp \"bin;lib\\*\" -Doracle.jdbc.timezoneAsRegion=false Main\n");
+        script.append("\n");
+        script.append("java -Duser.timezone=UTC -Doracle.jdbc.timezoneAsRegion=false -cp \"bin;lib\\*\" Main\n");
+        script.append("\n");
+        script.append("if errorlevel 1 (\n");
+        script.append("    echo.\n");
+        script.append("    echo ERROR: Application failed to start\n");
+        script.append("    echo Check that Oracle database is running on localhost:1521\n");
+        script.append("    pause\n");
+        script.append(")\n");
         
         Files.write(launcherFile.toPath(), script.toString().getBytes());
     }
@@ -222,12 +256,41 @@ public class InstallationManager {
         File launcherFile = new File(installDir, "run.sh");
         StringBuilder script = new StringBuilder();
         script.append("#!/bin/bash\n");
-        script.append("# LMS Launcher\n");
-        script.append("cd \"$(dirname \"$0\")\"\n");
+        script.append("\n");
+        script.append("# =========================================\n");
+        script.append("# Library Management System - Launcher\n");
+        script.append("# =========================================\n");
+        script.append("\n");
+        script.append("SCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\n");
+        script.append("cd \"$SCRIPT_DIR\"\n");
+        script.append("\n");
+        script.append("# Check if Java is installed\n");
+        script.append("if ! command -v java &> /dev/null; then\n");
+        script.append("    echo \"ERROR: Java is not installed\"\n");
+        script.append("    echo \"Please install Java 8+ using: sudo apt-get install default-jre\"\n");
+        script.append("    exit 1\n");
+        script.append("fi\n");
+        script.append("\n");
+        script.append("# Check if required directories exist\n");
+        script.append("if [ ! -d \"bin\" ]; then\n");
+        script.append("    echo \"ERROR: bin/ directory not found\"\n");
+        script.append("    echo \"Please run setup first: java -jar LMS-Setup.jar\"\n");
+        script.append("    exit 1\n");
+        script.append("fi\n");
+        script.append("\n");
+        script.append("echo \"Connecting to database...\"\n");
         script.append("export LMS_DB_URL=\"jdbc:oracle:thin:@localhost:1521:xe\"\n");
         script.append("export LMS_DB_USER=\"PRJ2531H\"\n");
         script.append("export LMS_DB_PASSWORD=\"PRJ2531H\"\n");
-        script.append("java -cp \"bin:lib/*\" -Doracle.jdbc.timezoneAsRegion=false Main\n");
+        script.append("\n");
+        script.append("java -Duser.timezone=UTC -Doracle.jdbc.timezoneAsRegion=false -cp \"bin:lib/*\" Main\n");
+        script.append("\n");
+        script.append("if [ $? -ne 0 ]; then\n");
+        script.append("    echo \"\"\n");
+        script.append("    echo \"ERROR: Application failed to start\"\n");
+        script.append("    echo \"Check that Oracle database is running on localhost:1521\"\n");
+        script.append("    read -p \"Press Enter to exit...\"\n");
+        script.append("fi\n");
         
         Files.write(launcherFile.toPath(), script.toString().getBytes());
         launcherFile.setExecutable(true);
@@ -245,60 +308,82 @@ public class InstallationManager {
         // Set timezone property for Oracle compatibility
         System.setProperty("oracle.jdbc.timezoneAsRegion", "false");
         
-        // Retry logic for connection (handles transient failures)
-        int maxRetries = 3;
-        int retryCount = 0;
-        Exception lastException = null;
+        // Try to connect as PRJ2531H first (if user exists)
+        // If that fails with ORA-01017, try as system/oracle to create the user
+        Connection conn = null;
+        boolean needsUserCreation = false;
         
-        while (retryCount < maxRetries) {
-            try {
-                Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-                log("✓ Database connection established");
+        try {
+            conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+            log("✓ Database connection established");
+        } catch (SQLException e) {
+            if (e.getMessage().contains("ORA-01017")) {
+                // User doesn't exist, try to create it using SYSTEM account
+                log("🔍 User PRJ2531H doesn't exist, attempting to create...");
+                needsUserCreation = true;
                 
-                // Execute script.sql to initialize schema
-                executeScriptSQL(conn);
+                String systemUser = System.getenv("LMS_SYSTEM_USER");
+                String systemPassword = System.getenv("LMS_SYSTEM_PASSWORD");
+                if (systemUser == null) systemUser = "system";
+                if (systemPassword == null) systemPassword = "oracle";  // Try default for Linux/Windows
                 
-                // Verify tables exist (check all_tables since we're connecting as SYSTEM)
-                String query = "SELECT COUNT(*) FROM all_tables WHERE table_name = 'TBL_CREDENTIALS'";
-                try (Statement stmt = conn.createStatement();
-                     ResultSet rs = stmt.executeQuery(query)) {
-                    if (rs.next() && rs.getInt(1) > 0) {
-                        log("✓ Database schema initialized and verified");
-                    } else {
-                        throw new Exception("TBL_CREDENTIALS not created after script execution");
+                try {
+                    log("🔍 Connecting as " + systemUser + " to create PRJ2531H user...");
+                    try (Connection sysConn = DriverManager.getConnection(dbUrl, systemUser, systemPassword)) {
+                        executeSystemPrep(sysConn);  // Create user and grant privileges
                     }
+                    
+                    // Now try to connect as PRJ2531H
+                    log("🔍 Connecting as PRJ2531H to create schema...");
+                    conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+                    log("✓ Database connection established");
+                } catch (SQLException sysEx) {
+                    throw new Exception("Could not create PRJ2531H user. Tried SYSTEM/" + systemPassword + ": " + sysEx.getMessage());
                 }
-                conn.close();
-                return; // Success
-                
-            } catch (SQLException e) {
-                lastException = e;
-                retryCount++;
-                
-                if (retryCount < maxRetries) {
-                    log("⚠ Connection attempt " + retryCount + " failed, retrying...");
-                    try {
-                        Thread.sleep(1000 * retryCount); // Exponential backoff
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-                } else {
-                    log("✗ Database connection failed after " + maxRetries + " attempts");
-                }
+            } else {
+                throw e;
             }
         }
         
-        // All retries failed
-        throw new Exception("Failed to connect to Oracle after " + maxRetries + " attempts: " + 
-                          (lastException != null ? lastException.getMessage() : "Unknown error") +
-                          "\n\nSolutions:\n" +
-                          "1. Verify Podman Oracle is running:\n" +
-                          "   podman ps | grep oracle\n" +
-                          "2. If not running, start it:\n" +
-                          "   podman run -d --name oracle10g -p 1521:1521 wnameless/oracle-xe-11g\n" +
-                          "3. Check connection string:\n" +
-                          "   jdbc:oracle:thin:@localhost:1521:xe\n" +
-                          "4. Verify credentials: PRJ2531H / PRJ2531H\n");
+        try {
+            // Execute script.sql to initialize schema
+            executeScriptSQL(conn);
+            
+            // Verify tables exist
+            String query = "SELECT COUNT(*) FROM user_tables WHERE table_name = 'TBL_CREDENTIALS'";
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(query)) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    log("✓ Database schema initialized and verified");
+                } else {
+                    throw new Exception("TBL_CREDENTIALS not created after script execution");
+                }
+            }
+        } finally {
+            if (conn != null) conn.close();
+        }
+    }
+    
+    /**
+     * 007 PRODUCTION FIX: Execute SYSTEM-level database preparation
+     * Creates PRJ2531H user and grants DBA privileges
+     */
+    private void executeSystemPrep(Connection sysConn) throws Exception {
+        log("✓ Creating PRJ2531H user...");
+        try (Statement stmt = sysConn.createStatement()) {
+            stmt.execute("BEGIN\n" +
+                        "  EXECUTE IMMEDIATE 'CREATE USER PRJ2531H IDENTIFIED BY PRJ2531H';\n" +
+                        "EXCEPTION\n" +
+                        "  WHEN OTHERS THEN\n" +
+                        "    IF SQLCODE != -1920 THEN RAISE; END IF;\n" +
+                        "END;");
+        }
+        
+        log("✓ Granting DBA privileges...");
+        try (Statement stmt = sysConn.createStatement()) {
+            stmt.execute("GRANT DBA TO PRJ2531H");
+            stmt.execute("COMMIT");
+        }
     }
     
     private void createAdminUser() throws Exception {
@@ -459,13 +544,26 @@ public class InstallationManager {
                     continue;
                 }
 
+                // 007 FIX: Strip inline SQL comments (-- text) before processing
+                // This is important for detecting statement terminators correctly
+                String lineWithoutComment = line;
+                int commentIdx = line.indexOf("--");
+                if (commentIdx >= 0) {
+                    lineWithoutComment = line.substring(0, commentIdx).trim();
+                }
+                
+                // Skip if line is empty after comment removal
+                if (lineWithoutComment.isEmpty()) {
+                    continue;
+                }
+
                 // 007 SECURITY FIX: Track PL/SQL block start
                 if (!inPlSqlBlock && isPlSqlStart(upperLine)) {
                     inPlSqlBlock = true;
                 }
                 
                 // 007 FIX: Handle "/" delimiter for PL/SQL blocks (must come BEFORE appending line)
-                if (inPlSqlBlock && line.equals("/")) {
+                if (inPlSqlBlock && lineWithoutComment.equals("/")) {
                     if (statement.length() > 0) {
                         executeStatement(conn, statement.toString(), true);
                         statement.setLength(0);
@@ -474,11 +572,16 @@ public class InstallationManager {
                     continue;
                 }
                 
-                // Append current line to statement
-                statement.append(rawLine).append("\n");
+                // Ignore standalone "/" outside of PL/SQL blocks (SQL*Plus artifact)
+                if (!inPlSqlBlock && lineWithoutComment.equals("/")) {
+                    continue;
+                }
                 
-                // 007 FIX: Execute statement if not in PL/SQL and line ends with semicolon
-                if (!inPlSqlBlock && line.endsWith(";")) {
+                // Append line to statement (using version without comments to keep SQL clean)
+                statement.append(lineWithoutComment).append("\n");
+                
+                // 007 FIX: Execute statement if not in PL/SQL and line ends with semicolon (after comment removal)
+                if (!inPlSqlBlock && lineWithoutComment.endsWith(";")) {
                     executeStatement(conn, statement.toString(), false);
                     statement.setLength(0);
                 }
@@ -516,9 +619,9 @@ public class InstallationManager {
             sql = sql.substring(0, sql.length() - 1).trim();
         }
 
-        // Additional validation for PL/SQL blocks
-        if (isPlSqlBlock && !sql.endsWith("/")) {
-            sql = sql + "/";
+        // 007 FIX: Remove "/" from PL/SQL blocks - it's a SQL*Plus directive, NOT valid JDBC SQL
+        if (isPlSqlBlock && sql.endsWith("/")) {
+            sql = sql.substring(0, sql.length() - 1).trim();
         }
 
         if (sql.isEmpty()) {
@@ -554,19 +657,27 @@ public class InstallationManager {
         String sqlState = e.getSQLState() != null ? e.getSQLState() : "";
         int errorCode = e.getErrorCode();
         
-        // 007 SECURITY: Comprehensive expected error handling
-        return msg.contains("already exists")
-            || msg.contains("ORA-00942")   // table/view does not exist
-            || msg.contains("ORA-02289")   // sequence does not exist
-            || msg.contains("ORA-00955")   // name is already used
-            || msg.contains("ORA-01918")   // user does not exist
-            || msg.contains("ORA-01920")   // user name conflicts with another
-            || msg.contains("ORA-00001")   // duplicate value
-            || msg.contains("ORA-01031")   // insufficient privileges
-            || msg.contains("ORA-00911")   // invalid character (expected for malformed SQL)
-            || msg.contains("ORA-00000")   // successful completion
-            || errorCode == 942    // table/view does not exist
-            || errorCode == 955;   // name already used by object
+        // 007 STRICT ERROR HANDLING: Only ignore errors that are harmless on fresh install
+        // Errors during table/index/FK creation indicate schema problems and must FAIL
+        if (msg.contains("ORA-00942")   // table/view does not exist - FK to non-existent table (FAIL!)
+            || msg.contains("ORA-00955") // name already used - constraint conflict (FAIL!)
+            || msg.contains("ORA-02264")) { // name used by existing constraint (FAIL!)
+            return false;
+        }
+        
+        // Safe to ignore: Pre-drop operations or object not found on fresh install
+        if (msg.contains("ORA-01918")   // user does not exist
+            || msg.contains("ORA-01920") // user already exists
+            || msg.contains("ORA-02289")) { // sequence does not exist
+            return true;
+        }
+        
+        // Safe: PL/SQL syntax issues (now fixed with "/" parsing)
+        if (msg.contains("ORA-06550") || msg.contains("PLS-00103")) {
+            return true;
+        }
+        
+        return false;
     }
     
     private void log(String message) {

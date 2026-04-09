@@ -1,0 +1,69 @@
+╔════════════════════════════════════════════════════════════════╗
+║        LIBRARY MANAGEMENT SYSTEM (LMS) - QUICK START           ║
+╚════════════════════════════════════════════════════════════════╝
+
+⚡ FASTEST WAY TO GET STARTED:
+
+1. SETUP (First time only - ~2 minutes):
+   
+   Windows:  java -jar LMS-Setup.jar
+   Linux:    java -jar LMS-Setup.jar
+   
+   → Follow the setup wizard
+   → Enter admin credentials
+   → Setup completes automatically
+
+2. LAUNCH (After setup):
+   
+   Windows:  Double-click run.bat
+   Linux:    Double-click run.sh
+             OR: ./run.sh
+   
+   → Application starts immediately
+   → Log in with admin account
+   → Done!
+
+3. OPTIONAL - Create Desktop Icon:
+   
+   Windows:  Double-click create-shortcut.bat
+   Linux:    Run ./create-shortcut.sh
+   
+   → Icon appears on Desktop
+   → Double-click it anytime to launch
+
+═══════════════════════════════════════════════════════════════
+
+🆘 HAVING PROBLEMS?
+
+Problem: "Java is not installed"
+Solution: Install Java 8+ from oracle.com
+
+Problem: "Database connection failed"
+Solution: Start Oracle database on localhost:1521
+
+Problem: "bin/ directory not found"
+Solution: Run setup again: java -jar LMS-Setup.jar
+
+Problem: Double-click doesn't work (Linux)
+Solution: Open terminal: chmod +x run.sh && ./run.sh
+
+═══════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION:
+
+For Users:      Read APPLICATION_LAUNCH_GUIDE.md
+For Support:    Read LAUNCHER_GUIDE.md
+For Developers: Read ARCHITECTURE.md & README.md
+Full Files:     See FILES_REFERENCE.md
+
+═══════════════════════════════════════════════════════════════
+
+🎯 SUMMARY:
+
+Setup:    1 command line (one-time)
+Launch:   Double-click (every time)
+Support:  Read the guides if needed
+
+That's it! 🚀
+
+═══════════════════════════════════════════════════════════════
