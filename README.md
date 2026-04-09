@@ -1,6 +1,6 @@
 # Library Management System (LMS)
 
-**Version:** 0.1 | **Status:** ✅ Pre-Production | **Date:** 2026-04-06
+**Version:** 0.1 | **Status:** ✅ Pre-Production Ready | **Date:** 2026-04-09
 
 > A professional Java Swing desktop application for managing library operations with comprehensive book tracking, student management, circulation, and reporting.
 
@@ -8,42 +8,41 @@
 
 ## 🚀 Quick Start
 
-### For Users (Installation)
+### For End Users (One-Time Setup)
 
-1. **Get the Setup Package:**
-   - Download: `LMS-Setup-Distribution.zip`
+**⏱️ Total Time: ~4 minutes**
 
-2. **Run Setup Wizard:**
+1. **Extract the Package:**
+   ```
+   Extract LMS-Setup.zip → Creates LMS folder
+   ```
+
+2. **Read Quick Start (2 min):**
+   ```
+   Open: QUICKSTART.txt
+   ```
+
+3. **Run Setup Wizard (2 min, one-time only):**
    ```bash
-   # Extract the ZIP
-   unzip LMS-Setup-Distribution.zip
-   cd LMS-Setup-Distribution
-   
-   # Run setup (any OS)
    java -jar LMS-Setup.jar
    ```
+   - Automated setup with 6 easy steps
+   - Creates admin user with your credentials
+   - Initializes database schema
+   - Generates desktop shortcuts (optional)
 
-3. **Follow 6-Step Wizard:**
-   - Welcome
-   - Choose installation location
-   - Verify Java & Oracle installed
-   - Create admin credentials
-   - Install (automatic file copying & database setup)
-   - Complete!
-
-4. **Launch Application:**
+4. **Launch Application (Every Time):**
    ```bash
-   # Go to installed location
-   cd /home/user/LMS  # or your chosen path
-   
-   # Run application
-   ./run.sh          # Linux/macOS
-   run.bat           # Windows
+   # Windows: Double-click run.bat
+   # Linux/Mac: Double-click run.sh or: ./run.sh
    ```
 
-5. **Login:**
-   - Use admin credentials you created during setup
-   - System is ready for library management!
+5. **Login & Use:**
+   - Username: `ADMIN` (or your chosen ID)
+   - Password: Your setup password
+   - System ready for library management!
+
+**📚 For Detailed Help:** Read `APPLICATION_LAUNCH_GUIDE.md`
 
 ### For Developers (Building from Source)
 
@@ -52,15 +51,14 @@
 git clone <repo-url>
 cd LMS
 
-# Compile all sources
-./run.sh  # Builds and runs (or use manual javac command)
+# Compile sources
+javac -d bin src/com/library/**/*.java
 
 # Run application
-cd LMS\ v0  # Testing environment
-./run-with-env.sh
+java -cp "bin:lib/*" com.library.Main
 
 # Build setup wizard JAR
-./package-setup.sh  # Creates LMS-Setup.jar (112M)
+./package-setup.sh  # Creates LMS-Setup.jar (113 MB)
 ```
 
 ---
@@ -133,41 +131,49 @@ cd LMS\ v0  # Testing environment
 
 ## 📦 What's Included
 
-### Distribution Package (`LMS-Setup-Distribution.zip`)
+### Distribution Package (318 MB)
 ```
-LMS-Setup-Distribution/
-├── LMS-Setup.jar              (112MB setup wizard - fat JAR)
-├── bin/                       (pre-compiled classes)
-├── lib/                       (70MB+ dependencies)
-├── script.sql                 (database schema)
-├── dummy.sql                  (sample data)
-└── docs/                      (user documentation)
-    ├── SETUP_QUICK_START.md
-    ├── WINDOWS_COMPATIBILITY.md
-    ├── PRODUCTION_SETUP_GUIDE.md
-    └── README.txt
+LMS-Setup.zip
+└── LMS/
+    ├── LMS-Setup.jar              (113MB setup wizard)
+    ├── run.bat                    (Windows launcher)
+    ├── run.sh                     (Linux/Mac launcher)
+    ├── create-shortcut.bat        (Windows Desktop icon)
+    ├── create-shortcut.sh         (Linux Desktop icon)
+    ├── QUICKSTART.txt             (⭐ READ THIS FIRST!)
+    ├── APPLICATION_LAUNCH_GUIDE.md (User guide)
+    ├── FILES_REFERENCE.md         (File reference)
+    └── lib/                       (200+ MB dependencies)
 ```
 
-### Source Repository (`/home/abhiadi/mine/clg/LMS`)
+**✨ What Users Get:**
+- ✅ Complete LMS application
+- ✅ One-time setup wizard (fully automated)
+- ✅ Smart launchers (auto-validates Java, directories, database)
+- ✅ Desktop shortcuts (easy access)
+- ✅ Clear documentation (no CLI knowledge needed)
+- ✅ Production-grade setup (all 13 database tables)
+- ✅ Ready to use immediately after setup
+
+### Source Repository
 ```
 LMS/
-├── src/                       (Java source code - 30KB+)
-├── bin/                       (compiled .class files)
-├── lib/                       (70MB+ JAR dependencies)
-├── script.sql                 (database schema)
-├── dummy.sql                  (sample data)
-├── run.sh                     (Unix launcher)
-├── run.bat                    (Windows launcher)
-├── package-setup.sh           (build setup JAR script)
-├── README.md                  (this file)
-├── ARCHITECTURE.md            (system design & layers)
-├── GUIDELINES.md              (development standards)
-├── docs/                      (detailed documentation)
-│   ├── CHANGELOG.md
-│   ├── SETUP_WIZARD_COMPLETE.md
-│   ├── PRODUCTION_SETUP_GUIDE.md
-│   └── ...
-└── LMS\ v0/                   (testing environment)
+├── src/                           (Java source code)
+├── bin/                           (compiled .class files)
+├── lib/                           (70MB+ JAR dependencies)
+├── script.sql                     (database schema - 13 tables)
+├── run.sh / run.bat               (application launchers)
+├── create-shortcut.sh/bat         (desktop icon generators)
+├── package-setup.sh               (build setup JAR script)
+├── LMS-Setup.jar                  (production setup wizard)
+├── README.md                      (this file)
+├── QUICKSTART.txt                 (one-page quick start)
+├── APPLICATION_LAUNCH_GUIDE.md    (user guide)
+├── LAUNCHER_GUIDE.md              (technical reference)
+├── DEPLOYMENT_PACKAGE.md          (distribution options)
+├── ARCHITECTURE.md                (system design)
+├── GUIDELINES.md                  (development standards)
+└── docs/                          (detailed documentation)
 ```
 
 ---
@@ -197,40 +203,52 @@ For detailed architecture: See **`ARCHITECTURE.md`**
 
 ## 📖 Documentation
 
-### Essential Files
-| Document | Purpose |
-|----------|---------|
-| **README.md** (this file) | Overview for new users |
-| **ARCHITECTURE.md** | System design, layers, workflows |
-| **GUIDELINES.md** | Development standards & conventions |
-| **docs/CHANGELOG.md** | Complete project history |
-| **docs/SETUP_WIZARD_COMPLETE.md** | Setup wizard details |
-| **docs/PRODUCTION_SETUP_GUIDE.md** | Production deployment |
-| **docs/SECURITY_AUDIT_REPORT.md** | Security analysis |
-| **docs/WINDOWS_COMPATIBILITY.md** | Windows-specific guide |
+### For End Users
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
+| **QUICKSTART.txt** | Start here! One-page quick reference | 2 min |
+| **APPLICATION_LAUNCH_GUIDE.md** | Detailed user guide with troubleshooting | 5 min |
+| **FILES_REFERENCE.md** | What each file does | 3 min |
+
+### For System Administrators & IT
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
+| **LAUNCHER_GUIDE.md** | Technical reference for launchers | 5 min |
+| **DEPLOYMENT_PACKAGE.md** | Distribution options (3 levels) | 10 min |
+| **GUIDELINES.md** | Installation and deployment standards | 10 min |
+
+### For Developers
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
+| **ARCHITECTURE.md** | System design, layers, workflows | 15 min |
+| **GUIDELINES.md** | Development standards & conventions | 10 min |
+| **docs/CHANGELOG.md** | Complete project history | 10 min |
+| **docs/SECURITY_AUDIT_REPORT.md** | Security analysis & hardening | 15 min |
 
 ### Quick Links
-- 🚀 **Getting Started:** `docs/SETUP_QUICK_START.md`
-- 🔧 **Production Deployment:** `docs/PRODUCTION_SETUP_GUIDE.md`
-- 🔒 **Security:** `docs/SECURITY_AUDIT_REPORT.md`
-- 💻 **Windows Setup:** `docs/WINDOWS_COMPATIBILITY.md`
-- 📦 **Distribution:** `docs/PORTABILITY_GUIDE.md`
-- 🐳 **Container Setup:** `docs/PODMAN_SETUP_GUIDE.md`
-- 👨‍💻 **Development:** `GUIDELINES.md` & `ARCHITECTURE.md`
+- 🚀 **Distributing to Users?** → `DEPLOYMENT_PACKAGE.md`
+- 💻 **Windows Issues?** → `LAUNCHER_GUIDE.md` (Troubleshooting section)
+- 🔧 **Production Deployment?** → `GUIDELINES.md`
+- 🔒 **Security Questions?** → `docs/SECURITY_AUDIT_REPORT.md`
+- 👨‍💻 **Modifying Code?** → `ARCHITECTURE.md` + `GUIDELINES.md`
 
 ---
 
 ## 🗄️ Database Setup
 
-### Automatic (Recommended)
-The setup wizard handles everything:
-1. ✅ Connects to Oracle
-2. ✅ Executes `script.sql` (creates all tables)
-3. ✅ Executes `dummy.sql` (populates sample data)
-4. ✅ Creates admin user with your credentials
-5. ✅ Ready to use!
+### Automatic (Recommended) ✅
+The setup wizard handles everything automatically:
 
-### Manual Setup
+1. ✅ Connects to Oracle automatically
+2. ✅ Executes `script.sql` (creates all 13 tables)
+3. ✅ Creates essential sequences and triggers
+4. ✅ Creates admin user with your credentials
+5. ✅ Validates schema completely
+6. ✅ Ready to use immediately!
+
+**No manual SQL commands needed!**
+
+### Manual Setup (Optional)
 ```bash
 # Connect to Oracle
 sqlplus PRJ2531H/PRJ2531H@XE
@@ -238,30 +256,25 @@ sqlplus PRJ2531H/PRJ2531H@XE
 # Execute schema creation
 @script.sql
 
-# Load sample data (optional)
-@dummy.sql
-
 # Exit
 EXIT;
 ```
 
-### Database Credentials
+### Database Details
 - **URL:** `jdbc:oracle:thin:@localhost:1521:xe`
 - **User:** `PRJ2531H`
 - **Password:** `PRJ2531H`
 - **SID:** `xe` (Express Edition)
+- **Tables:** 13 (automated creation by setup wizard)
 
-### Oracle Container (if using Podman/Docker)
+### Oracle via Container
 ```bash
 # Start Oracle container
 podman run -d --name oracle10g -p 1521:1521 \
-  chameleon82/oracle-xe-10g:latest
+  wnameless/oracle-xe-11g
 
 # Verify running
 podman ps | grep oracle
-
-# Connect
-sqlplus PRJ2531H/PRJ2531H@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SID=xe)))
 ```
 
 ---
@@ -291,35 +304,61 @@ sqlplus PRJ2531H/PRJ2531H@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(P
 
 ## 🔧 Troubleshooting
 
-### "ClassNotFoundException: Main"
-- **Cause:** Compiled classes (bin/) folder empty
-- **Fix:** Run from main project directory or use setup wizard
-- **See:** `docs/SETUP_QUICK_START.md` → Troubleshooting section
+### Setup Wizard Issues
 
-### "No suitable driver found for JDBC"
-- **Cause:** Oracle JDBC library missing or classpath incorrect
-- **Fix:** Ensure `lib/ojdbc6.jar` exists in `lib/` folder
-- **See:** `docs/WINDOWS_COMPATIBILITY.md` → Class Path section
+**"Database connection failed"**
+- Check Oracle is running: `podman ps | grep oracle`
+- Start Oracle container if needed: `podman run -d --name oracle10g -p 1521:1521 wnameless/oracle-xe-11g`
+- Verify credentials: User=PRJ2531H, Pass=PRJ2531H, SID=xe
 
-### "ORA-01882: timezone region not found"
-- **Cause:** Oracle 10g timezone compatibility issue
-- **Fix:** JVM flag `-Doracle.jdbc.timezoneAsRegion=false` added automatically
-- **See:** `run.sh` or `run.bat` launchers
+**"ORA-00911: invalid character"**
+- ✅ **FIXED** - Setup wizard now handles inline SQL comments correctly
 
-### Setup Wizard Won't Start
-- **Check:** Java is installed: `java -version`
-- **Check:** JAR file exists: `ls -la LMS-Setup.jar`
-- **Try:** `java -jar LMS-Setup.jar` from correct directory
-- **See:** `docs/SETUP_QUICK_START.md`
+**"PLS-00103: Encountered the symbol /"**
+- ✅ **FIXED** - Setup wizard now strips "/" before JDBC execution
 
-### Database Connection Failed
-1. **Verify Oracle running:** `podman ps | grep oracle`
-2. **If not running:** Start container with provided command
-3. **Check credentials:** User=PRJ2531H, Pass=PRJ2531H, SID=xe
-4. **Test connection:** Use provided test utility
-5. **See:** `docs/PODMAN_SETUP_GUIDE.md`
+**"Admin user already exists"**
+- Normal on fresh installs - admin user created automatically
+- Skip by clicking next in setup wizard
 
-For more troubleshooting: **`docs/SETUP_QUICK_START.md`**
+### Application Launch Issues
+
+**"ClassNotFoundException"**
+- Ensure `bin/` folder contains compiled classes
+- Run setup wizard from correct directory
+- Check Java classpath: `echo $CLASSPATH`
+
+**"No suitable driver found for JDBC"**
+- Verify `lib/ojdbc6.jar` exists
+- Check all JAR files in `lib/` copied correctly
+- See `LAUNCHER_GUIDE.md` → Troubleshooting
+
+**Application won't start on Windows**
+- Double-click `run.bat` from LMS folder
+- If command prompt flashes and closes:
+  1. Open command prompt manually
+  2. Navigate to LMS folder
+  3. Run: `run.bat`
+  4. Error message will display
+- See `LAUNCHER_GUIDE.md` for Windows-specific help
+
+**Application won't start on Linux**
+- Make script executable: `chmod +x run.sh`
+- Run: `./run.sh`
+- Check Java installation: `java -version`
+- See `LAUNCHER_GUIDE.md` → Linux Troubleshooting
+
+**"ORA-01882: timezone region not found"**
+- ✅ **FIXED** - Launchers now include correct JVM flags
+- Launchers automatically set `-Doracle.jdbc.timezoneAsRegion=false`
+
+### More Help
+
+**Can't find answer?**
+- Read `APPLICATION_LAUNCH_GUIDE.md` (user guide)
+- Read `LAUNCHER_GUIDE.md` (technical reference)
+- Check `ARCHITECTURE.md` (system design)
+- Review `docs/CHANGELOG.md` (what's been fixed)
 
 ---
 
@@ -433,89 +472,192 @@ For more troubleshooting: **`docs/SETUP_QUICK_START.md`**
 
 ## 📝 License & Support
 
-**Project Status:** ✅ Pre-Production (v0.1)
+**Project Status:** ✅ **Pre-Production Ready (v0.1)**
 
-**Last Updated:** April 6, 2026
+**Latest Release:** April 9, 2026
 
-**Support Documentation:**
-- 📖 Full docs in `docs/` folder
-- 🔍 Architecture explained in `ARCHITECTURE.md`
-- 🛠️ Development guide in `GUIDELINES.md`
-- 📊 Complete changelog in `docs/CHANGELOG.md`
+**What's Production Ready:**
+- ✅ Setup wizard with automated database initialization
+- ✅ SQL parser fixes (inline comments, PL/SQL blocks)
+- ✅ Smart launchers with validation (Java, directories, database)
+- ✅ Desktop shortcut generators (Windows & Linux)
+- ✅ All 13 database tables created automatically
+- ✅ Admin user creation automated
+- ✅ Comprehensive error handling
+- ✅ User-friendly documentation
+
+**Support & Documentation:**
+- 📖 User Guide: `APPLICATION_LAUNCH_GUIDE.md`
+- 🚀 Quick Start: `QUICKSTART.txt`
+- 🔧 Launcher Help: `LAUNCHER_GUIDE.md`
+- 📦 Distribution: `DEPLOYMENT_PACKAGE.md`
+- 🏗️ Architecture: `ARCHITECTURE.md`
+- 📊 Complete history: `docs/CHANGELOG.md`
+- 🔒 Security: `docs/SECURITY_AUDIT_REPORT.md`
 
 ---
 
 ## 🎓 Learning Path
 
-**New to LMS?** Follow this sequence:
-1. Read this README.md (✓ You are here)
-2. Run setup wizard (fast: 5 minutes)
-3. Login and explore UI (15 minutes)
-4. Try key workflows (issue/return book, register student)
-5. Read `docs/PRODUCTION_SETUP_GUIDE.md` for advanced topics
+### For End Users (Just Want to Use LMS)
+1. **Extract** LMS-Setup.zip (1 min)
+2. **Read** QUICKSTART.txt (2 min)
+3. **Run** java -jar LMS-Setup.jar (2 min)
+4. **Launch** run.bat or run.sh and start using (ongoing)
+5. **Questions?** Read APPLICATION_LAUNCH_GUIDE.md
 
-**Developer wanting to modify code?** Follow this:
-1. Read `ARCHITECTURE.md` (understand design)
-2. Read `GUIDELINES.md` (coding standards)
-3. Explore `src/` folder (study codebase)
-4. Read `docs/CHANGELOG.md` (understand changes)
-5. Make modifications following guidelines
-6. Test with `LMS v0` testing environment
-7. Build new setup JAR with `./package-setup.sh`
+**Total Setup Time: ~5 minutes**
+
+### For System Administrators (Installing for Others)
+1. **Read** DEPLOYMENT_PACKAGE.md (understand 3 distribution options)
+2. **Read** LAUNCHER_GUIDE.md (understand how launchers work)
+3. **Follow** DEPLOYMENT_PACKAGE.md steps to package distribution
+4. **Test** on Windows machine
+5. **Test** on Linux machine
+6. **Distribute** LMS-Setup.zip to your users
+7. **Reference** LAUNCHER_GUIDE.md for troubleshooting
+
+### For Developers (Modifying Code)
+1. **Read** ARCHITECTURE.md (understand system design)
+2. **Read** GUIDELINES.md (understand coding standards)
+3. **Explore** src/ folder (study existing code)
+4. **Read** docs/CHANGELOG.md (understand recent changes)
+5. **Make** modifications following guidelines
+6. **Test** in local installation
+7. **Build** new JAR: `./package-setup.sh`
+8. **Commit** with clear messages
 
 ---
 
-## 🤝 Contributing
+## 🚀 Ready to Get Started?
 
-To improve LMS:
-1. Make changes in `src/` folder
-2. Follow `GUIDELINES.md` standards
-3. Test in `LMS v0` testing environment
-4. Update `docs/CHANGELOG.md` with changes
-5. Rebuild setup JAR: `./package-setup.sh`
-6. Commit with clear messages
+### For Users
+```bash
+# 1. Extract
+unzip LMS-Setup.zip
+cd LMS
 
----
+# 2. Read quick start (2 minutes)
+cat QUICKSTART.txt
+
+# 3. Run setup (2 minutes, one-time)
+java -jar LMS-Setup.jar
+
+# 4. Launch application
+./run.sh  # or run.bat on Windows
+
+# ✨ Done! Enjoy LMS!
+```
+
+### For Distributors
+```bash
+# See DEPLOYMENT_PACKAGE.md for:
+# - What files to include
+# - 3 distribution options
+# - Step-by-step packaging
+# - Email template for users
+```
+
+### For Developers
+```bash
+# 1. Understand architecture
+cat ARCHITECTURE.md
+
+# 2. Understand standards
+cat GUIDELINES.md
+
+# 3. Start coding following the guidelines
+```
 
 ## ❓ FAQ
 
-**Q: Can I run LMS without Oracle?**
-A: No, Oracle database is required. See setup guide for container option.
+**Q: How long does setup take?**
+A: About 2 minutes! Run `java -jar LMS-Setup.jar` and follow the wizard.
 
-**Q: Can multiple users access LMS simultaneously?**
-A: Yes, but currently designed for 1-10 concurrent users. Larger deployments need connection pooling (future enhancement).
+**Q: Do I need to know the command line?**
+A: No! Everything is automated. Just extract, run setup, click launch. No CLI needed.
 
-**Q: How do I backup my data?**
-A: Export from Admin Panel or use Oracle backup tools. See `docs/PRODUCTION_SETUP_GUIDE.md`.
+**Q: Can I run on Windows?**
+A: Yes! Just double-click `run.bat` after setup.
 
-**Q: Can I access LMS from mobile?**
-A: Currently desktop-only. Mobile app is a future enhancement.
+**Q: Can I run on Linux/Mac?**
+A: Yes! Just run `./run.sh` after setup.
+
+**Q: What database do I need?**
+A: Oracle (10g XE or higher). Setup wizard handles everything.
+
+**Q: Can multiple users access simultaneously?**
+A: Yes, the system is designed for 1-10 concurrent users.
+
+**Q: What if setup fails?**
+A: Read `APPLICATION_LAUNCH_GUIDE.md` or `LAUNCHER_GUIDE.md` → Troubleshooting.
+
+**Q: Can I backup my data?**
+A: Yes, use Oracle backup tools or export from Admin Panel.
+
+**Q: Is LMS secure?**
+A: Yes! Includes password hashing, role-based access, audit logging. See `docs/SECURITY_AUDIT_REPORT.md`.
 
 **Q: What if I forget the admin password?**
-A: Re-run setup wizard to create new admin. Existing data preserved.
+A: Run setup wizard again to create a new admin user.
 
-**Q: Is LMS secure for production?**
-A: Yes! Includes audit logging, role-based access, password hashing. See `docs/SECURITY_AUDIT_REPORT.md`.
+**Q: Can I access from mobile?**
+A: Currently desktop-only. Future enhancement planned.
+
+**Q: What are the system requirements?**
+A: Java 8+ and Oracle database. See System Requirements section above.
 
 ---
 
 ## 📞 Getting Help
 
-1. **Installation issues?** → `docs/SETUP_QUICK_START.md`
-2. **Windows problems?** → `docs/WINDOWS_COMPATIBILITY.md`
-3. **Production setup?** → `docs/PRODUCTION_SETUP_GUIDE.md`
-4. **Development questions?** → `GUIDELINES.md` & `ARCHITECTURE.md`
-5. **Technical architecture?** → `ARCHITECTURE.md`
-6. **Complete history?** → `docs/CHANGELOG.md`
+**Problem?** Follow this order:
+
+1. **Setup/Launch Problems?** → `APPLICATION_LAUNCH_GUIDE.md`
+2. **Windows Issues?** → `LAUNCHER_GUIDE.md` (Windows section)
+3. **Linux/Mac Issues?** → `LAUNCHER_GUIDE.md` (Linux section)
+4. **Installation/Distribution?** → `DEPLOYMENT_PACKAGE.md`
+5. **Architecture Questions?** → `ARCHITECTURE.md`
+6. **Development Questions?** → `GUIDELINES.md`
+7. **Still Stuck?** → Check `docs/CHANGELOG.md` (what's been fixed)
 
 ---
 
 ## 🎉 You're Ready!
 
-**Next Step:**
-1. Extract `LMS-Setup-Distribution.zip`
-2. Run `java -jar LMS-Setup.jar`
-3. Follow the 6-step wizard
-4. Start managing your library!
+### Quick Summary
+✅ **Setup:** Run `java -jar LMS-Setup.jar` (2 min, one-time)
+✅ **Launch:** Double-click `run.bat` or `run.sh`
+✅ **Use:** Login and start managing your library
+✅ **Help:** Read `QUICKSTART.txt` or `APPLICATION_LAUNCH_GUIDE.md`
+
+### Next Steps
+1. **Extract** `LMS-Setup.zip`
+2. **Read** `QUICKSTART.txt` (2 min)
+3. **Run** `java -jar LMS-Setup.jar`
+4. **Launch** the application
+5. **Enjoy!** 📚
+
+---
+
+## ✨ Latest Features (v0.1)
+
+**Fixed & Production Ready:**
+- ✅ SQL parser now handles inline comments correctly
+- ✅ PL/SQL parser now handles "/" correctly  
+- ✅ Launchers auto-validate Java, directories, database
+- ✅ Desktop shortcut creation (one-click access)
+- ✅ Setup wizard completely automated
+- ✅ Admin user created automatically
+- ✅ Comprehensive error messages
+- ✅ Professional user guides included
+- ✅ Ready for end-user distribution
+
+**Next Release Planned:**
+- 🔜 Mobile app support
+- 🔜 Connection pooling for larger deployments
+- 🔜 Enhanced reporting features
+
+---
 
 **Enjoy LMS! 📚**
