@@ -12,7 +12,7 @@ if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
 echo ║                                                              ║
-echo ║       📚 LMS Uninstaller - Version 2.0.1 📚                ║
+echo ║       📚 LMS Uninstaller - Version 0.1 📚                    ║
 echo ║                                                              ║
 echo ╚══════════════════════════════════════════════════════════════╝
 echo.

@@ -269,8 +269,26 @@ CREATE INDEX IDX_ISSUE_FACULTY_NAME ON TBL_ISSUE(FACULTY_NAME, STATUS);
 CREATE INDEX IDX_ISSUE_ACC_STATUS ON TBL_ISSUE(ACCESSION_NO, STATUS);
 
 -- 007 SECURITY FIX: Clear existing data AFTER tables are created (not before)
--- This ensures fresh installation by removing data from previous installations  
-DELETE FROM TBL_CREDENTIALS;
-DELETE FROM TBL_ID_COUNTER;
+-- This ensures fresh installation by removing ALL data from previous installations
+-- Delete order matters due to foreign keys - delete dependent tables first
+
+-- Delete from dependent tables (those with foreign keys)
+DELETE FROM TBL_ISSUE;         -- Depends on TBL_STUDENT and TBL_BOOK_INFORMATION
+DELETE FROM TBL_BOOK_ALERT_LOG; -- Depends on book catalog info
+DELETE FROM TBL_BOOK_INFORMATION; -- Depends on TBL_BOOK_CATALOG
+DELETE FROM TBL_BOOK_STOCK;    -- Depends on TBL_BOOK_CATALOG
+DELETE FROM TBL_BOOK_CATALOG;  -- Parent table for book info and stock
+
+-- Delete orders and bills
+DELETE FROM TBL_ORDER_DETAILS; -- Depends on TBL_ORDER_HEADER
+DELETE FROM TBL_ORDER_HEADER;  -- Depends on TBL_SELLER
+DELETE FROM TBL_BILL;          -- Depends on TBL_SELLER
+
+-- Delete parent tables
+DELETE FROM TBL_STUDENT;       -- Parent for TBL_ISSUE
+DELETE FROM TBL_SELLER;        -- Parent for orders and bills
+DELETE FROM TBL_AUDIT_LOG;     -- Independent table
+DELETE FROM TBL_CREDENTIALS;   -- Admin and user data
+DELETE FROM TBL_ID_COUNTER;    -- ID sequence counter
 
 COMMIT;

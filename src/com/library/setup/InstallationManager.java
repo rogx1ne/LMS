@@ -316,21 +316,23 @@ public class InstallationManager {
         // 007 CRITICAL FIX: Set timezone property for Oracle compatibility (same as initializeDatabase)
         System.setProperty("oracle.jdbc.timezoneAsRegion", "false");
         
+        String normalizedAdminUserId = adminUserId == null ? null : adminUserId.trim().toUpperCase();
+        String normalizedAdminName = adminName == null ? null : adminName.trim();
+        String normalizedAdminEmail = adminEmail == null ? null : adminEmail.trim();
+        String normalizedAdminPhone = adminPhone == null ? null : adminPhone.trim();
+        
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
             // 007 SECURITY: Log connection context for audit trail
             log("🔍 Admin creation - Connecting as: " + dbUser + " to schema: " + dbUser.toUpperCase());
+            conn.setAutoCommit(false);
             
             // Check if user already exists
-            String checkQuery = "SELECT USER_ID FROM TBL_CREDENTIALS WHERE USER_ID = TRIM(?)";
+            String checkQuery = "SELECT 1 FROM TBL_CREDENTIALS WHERE TRIM(USER_ID) = ?";
+            boolean userExists = false;
             try (PreparedStatement pstmt = conn.prepareStatement(checkQuery)) {
-                pstmt.setString(1, adminUserId);
+                pstmt.setString(1, normalizedAdminUserId);
                 try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) {
-                        log("⚠ Admin user '" + adminUserId + "' already exists in schema " + dbUser.toUpperCase() + ". Skipping creation.");
-                        return;
-                    } else {
-                        log("✓ Admin user '" + adminUserId + "' not found in schema " + dbUser.toUpperCase() + ". Proceeding with creation.");
-                    }
+                    userExists = rs.next();
                 }
             } catch (SQLException e) {
                 // 007 SECURITY: Enhanced error logging for troubleshooting
@@ -342,40 +344,63 @@ public class InstallationManager {
             
             // Hash the password
             String hashedPassword = PasswordHasher.hashPassword(adminPassword);
-            
-            // Insert admin user
+
+            if (userExists) {
+                String updateQuery = "UPDATE TBL_CREDENTIALS " +
+                                   "SET NAME = ?, PSWD = ?, EMAIL = ?, PHNO = ?, ROLE = 'ADMIN', STATUS = 'ACTIVE' " +
+                                   "WHERE TRIM(USER_ID) = ?";
+                try (PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
+                    pstmt.setString(1, normalizedAdminName);
+                    pstmt.setString(2, hashedPassword);
+                    pstmt.setString(3, normalizedAdminEmail);
+                    pstmt.setLong(4, Long.parseLong(normalizedAdminPhone));
+                    pstmt.setString(5, normalizedAdminUserId);
+                    
+                    int rows = pstmt.executeUpdate();
+                    if (rows > 0) {
+                        conn.commit();
+                        log("✓ Admin user '" + normalizedAdminUserId + "' updated with new credentials.");
+                    } else {
+                        conn.rollback();
+                        throw new SQLException("Admin update affected 0 rows for user: " + normalizedAdminUserId);
+                    }
+                }
+                return;
+            }
+
             String insertQuery = "INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, EMAIL, PHNO, ROLE, STATUS) " +
                                "VALUES (?, ?, ?, ?, ?, 'ADMIN', 'ACTIVE')";
             try (PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
-                pstmt.setString(1, adminUserId);
-                pstmt.setString(2, adminName);
+                pstmt.setString(1, normalizedAdminUserId);
+                pstmt.setString(2, normalizedAdminName);
                 pstmt.setString(3, hashedPassword);
-                pstmt.setString(4, adminEmail);
-                pstmt.setLong(5, Long.parseLong(adminPhone));
+                pstmt.setString(4, normalizedAdminEmail);
+                pstmt.setLong(5, Long.parseLong(normalizedAdminPhone));
                 
                 log("🔧 Attempting to insert admin user into TBL_CREDENTIALS...");
                 int rows = pstmt.executeUpdate();
                 if (rows > 0) {
                     conn.commit();
-                    log("✓ Admin user created successfully: " + adminUserId + " in schema " + dbUser.toUpperCase());
+                    log("✓ Admin user created successfully: " + normalizedAdminUserId + " in schema " + dbUser.toUpperCase());
                 } else {
-                    log("⚠ Admin user insertion returned 0 rows affected");
+                    conn.rollback();
+                    throw new SQLException("Admin insertion returned 0 rows affected for user: " + normalizedAdminUserId);
                 }
-            } catch (SQLException e) {
-                // 007 SECURITY: Enhanced error reporting for admin creation failures
-                log("❌ Failed to insert admin user: " + e.getMessage());
-                log("   Error Code: " + e.getErrorCode() + " | SQL State: " + e.getSQLState());
-                log("   Schema: " + dbUser.toUpperCase() + " | Table: TBL_CREDENTIALS");
-                throw e; // Re-throw to trigger outer catch block
             }
         } catch (SQLException e) {
             // 007 SECURITY: Comprehensive error context for troubleshooting
-            String errorMsg = String.format("Failed to create admin user in schema %s: %s (Error: %d, State: %s)", 
+            String errorMsg = String.format("Failed to create admin user '%s' in schema %s: %s (Error: %d, State: %s)\n" +
+                                          "Troubleshooting:\n" +
+                                          "- Verify TBL_CREDENTIALS table exists\n" +
+                                          "- Verify USER_ID, NAME, PSWD columns exist\n" +
+                                          "- Check admin data: ID=%s, Name=%s, Email=%s, Phone=%s", 
+                                          normalizedAdminUserId,
                                           dbUser != null ? dbUser.toUpperCase() : "UNKNOWN",
-                                          e.getMessage(), e.getErrorCode(), e.getSQLState());
+                                          e.getMessage(), e.getErrorCode(), e.getSQLState(),
+                                          normalizedAdminUserId, normalizedAdminName, normalizedAdminEmail, normalizedAdminPhone);
             throw new Exception(errorMsg);
         } catch (NumberFormatException e) {
-            throw new Exception("Invalid phone number format (must be numeric): " + e.getMessage());
+            throw new Exception("Invalid phone number format for admin (must be 10 digits). Received: " + normalizedAdminPhone);
         }
     }
     
@@ -392,13 +417,25 @@ public class InstallationManager {
      * Execute script.sql to initialize database schema
      */
     private void executeScriptSQL(Connection conn) throws Exception {
-        // Read script.sql from project root
+        // Look for script.sql in multiple locations:
+        // 1. Current working directory (development)
+        // 2. Same directory as setup JAR (production)
+        // 3. Project root
         File scriptFile = new File("script.sql");
         if (!scriptFile.exists()) {
-            log("⚠ script.sql not found at: " + scriptFile.getAbsolutePath());
+            scriptFile = new File(getSetupJarLocation(), "script.sql");
+        }
+        if (!scriptFile.exists()) {
+            scriptFile = new File(new File(".").getAbsoluteFile().getParentFile(), "script.sql");
+        }
+        
+        if (!scriptFile.exists()) {
+            log("⚠ script.sql not found. Tried: " + scriptFile.getAbsolutePath());
+            log("   Database will not be initialized. Tables must exist before proceeding.");
             return;
         }
         
+        log("✓ Found script.sql at: " + scriptFile.getAbsolutePath());
         log("Executing database initialization script...");
         
         try (Scanner scanner = new Scanner(scriptFile)) {
@@ -406,88 +443,130 @@ public class InstallationManager {
             boolean inPlSqlBlock = false;
             
             while (scanner.hasNextLine()) {
-                String line = scanner.nextLine().trim();
-                
-                // Skip comments and empty lines
-                if (line.isEmpty() || line.startsWith("--")) continue;
-                
-                // Track PL/SQL blocks
+                String rawLine = scanner.nextLine();
+                String line = rawLine.trim();
                 String upperLine = line.toUpperCase();
-                if (upperLine.startsWith("BEGIN") || upperLine.startsWith("DECLARE")) {
+                
+                // Skip empty lines and comments
+                if (line.isEmpty() || line.startsWith("--")) {
+                    continue;
+                }
+                
+                // Skip SQL*Plus directives
+                if (upperLine.startsWith("PROMPT ") || upperLine.startsWith("SET ") ||
+                    upperLine.startsWith("SPOOL ") || upperLine.equals("EXIT") ||
+                    upperLine.equals("QUIT")) {
+                    continue;
+                }
+
+                // 007 SECURITY FIX: Track PL/SQL block start
+                if (!inPlSqlBlock && isPlSqlStart(upperLine)) {
                     inPlSqlBlock = true;
                 }
                 
-                // Check if this is a one-liner PL/SQL block (BEGIN...END;)
-                boolean isOneLinerBlock = upperLine.startsWith("BEGIN") && line.endsWith(";");
-                
-                statement.append(line);
-                // For PL/SQL blocks and triggers, use newlines. For simple statements, use spaces.
-                if (!isOneLinerBlock) {
-                    if (inPlSqlBlock || upperLine.contains("TRIGGER") || upperLine.contains("CREATE OR REPLACE")) {
-                        statement.append("\n");
-                    } else {
-                        statement.append(" ");
+                // 007 FIX: Handle "/" delimiter for PL/SQL blocks (must come BEFORE appending line)
+                if (inPlSqlBlock && line.equals("/")) {
+                    if (statement.length() > 0) {
+                        executeStatement(conn, statement.toString(), true);
+                        statement.setLength(0);
                     }
-                }
-                
-                // Execute statement when:
-                // 1. One-liner PL/SQL block (BEGIN...END;)
-                // 2. Multi-line PL/SQL block ends with / on its own line
-                // 3. Regular SQL statement ends with ;
-                boolean shouldExecute = false;
-                
-                if (isOneLinerBlock) {
-                    shouldExecute = true;
                     inPlSqlBlock = false;
-                } else if (inPlSqlBlock && line.equals("/")) {
-                    shouldExecute = true;
-                    inPlSqlBlock = false;
-                } else if (!inPlSqlBlock && line.endsWith(";")) {
-                    shouldExecute = true;
+                    continue;
                 }
                 
-                if (shouldExecute) {
-                    String sql = statement.toString().replace("/", "").trim();
-                    // Remove trailing semicolon for JDBC
-                    if (sql.endsWith(";")) {
-                        sql = sql.substring(0, sql.length() - 1);
-                    }
-                    
-                    if (!sql.isEmpty()) {
-                        try {
-                            Statement stmt = conn.createStatement();
-                            stmt.execute(sql);
-                            stmt.close();
-                            // Only log non-DROP statements to reduce noise
-                            if (!sql.toUpperCase().contains("DROP TABLE") && 
-                                !sql.toUpperCase().contains("DROP SEQUENCE")) {
-                                log("  SQL: " + sql.substring(0, Math.min(50, sql.length())) + "...");
-                            }
-                        } catch (SQLException e) {
-                            // Suppress expected errors
-                            String msg = e.getMessage();
-                            boolean isExpected = msg.contains("already exists") || 
-                                                msg.contains("ORA-00942") ||  // table doesn't exist
-                                                msg.contains("ORA-02289") ||  // sequence doesn't exist
-                                                msg.contains("ORA-00955") ||  // name already used
-                                                msg.contains("ORA-01918") ||  // user doesn't exist
-                                                msg.contains("ORA-00001") ||  // unique constraint violated (duplicate)
-                                                msg.contains("ORA-00904") ||  // invalid identifier (parsing artifacts)
-                                                msg.contains("PLS-00103") ||  // PL/SQL syntax (expected in one-liners)
-                                                msg.contains("ORA-06550");    // PL/SQL compilation error
-                            if (!isExpected) {
-                                log("  ⚠ Warning: " + msg);
-                            }
-                        }
-                    }
-                    statement = new StringBuilder();
+                // Append current line to statement
+                statement.append(rawLine).append("\n");
+                
+                // 007 FIX: Execute statement if not in PL/SQL and line ends with semicolon
+                if (!inPlSqlBlock && line.endsWith(";")) {
+                    executeStatement(conn, statement.toString(), false);
+                    statement.setLength(0);
                 }
+            }
+            
+            // Execute any remaining statement
+            if (statement.length() > 0) {
+                executeStatement(conn, statement.toString(), inPlSqlBlock);
             }
             
             log("✓ Database initialization script executed");
         } catch (IOException e) {
             throw new Exception("Failed to read script.sql: " + e.getMessage());
         }
+    }
+
+    private boolean isPlSqlStart(String upperLine) {
+        return upperLine.startsWith("BEGIN")
+            || upperLine.startsWith("DECLARE")
+            || upperLine.startsWith("CREATE OR REPLACE TRIGGER")
+            || upperLine.startsWith("CREATE OR REPLACE PROCEDURE")
+            || upperLine.startsWith("CREATE OR REPLACE FUNCTION")
+            || upperLine.startsWith("CREATE OR REPLACE PACKAGE")
+            || upperLine.startsWith("CREATE OR REPLACE PACKAGE BODY");
+    }
+
+    private void executeStatement(Connection conn, String statementText, boolean isPlSqlBlock) throws Exception {
+        String sql = statementText == null ? "" : statementText.trim();
+        if (sql.isEmpty()) {
+            return;
+        }
+
+        // 007 SECURITY FIX: Remove trailing semicolon for non-PL/SQL blocks
+        if (!isPlSqlBlock && sql.endsWith(";")) {
+            sql = sql.substring(0, sql.length() - 1).trim();
+        }
+
+        // Additional validation for PL/SQL blocks
+        if (isPlSqlBlock && !sql.endsWith("/")) {
+            sql = sql + "/";
+        }
+
+        if (sql.isEmpty()) {
+            return;
+        }
+
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+            String upperSql = sql.toUpperCase();
+            if (!upperSql.contains("DROP TABLE") && !upperSql.contains("DROP SEQUENCE")) {
+                log("  SQL: " + sql.substring(0, Math.min(50, sql.length())) + "...");
+            }
+        } catch (SQLException e) {
+            // 007 SECURITY: Enhanced error handling
+            if (isExpectedScriptError(e)) {
+                String shortMsg = e.getMessage();
+                if (shortMsg != null && shortMsg.length() > 80) {
+                    shortMsg = shortMsg.substring(0, 80) + "...";
+                }
+                log("  ⚠ Warning: " + shortMsg);
+                return;
+            }
+            // Log the problematic SQL for debugging
+            log("  ✗ Failed SQL: " + sql.substring(0, Math.min(100, sql.length())));
+            throw new Exception("Database initialization failed on SQL: " +
+                              sql.substring(0, Math.min(120, sql.length())) + "... " +
+                              "(Error: " + e.getMessage() + ")", e);
+        }
+    }
+
+    private boolean isExpectedScriptError(SQLException e) {
+        String msg = e.getMessage() != null ? e.getMessage() : "";
+        String sqlState = e.getSQLState() != null ? e.getSQLState() : "";
+        int errorCode = e.getErrorCode();
+        
+        // 007 SECURITY: Comprehensive expected error handling
+        return msg.contains("already exists")
+            || msg.contains("ORA-00942")   // table/view does not exist
+            || msg.contains("ORA-02289")   // sequence does not exist
+            || msg.contains("ORA-00955")   // name is already used
+            || msg.contains("ORA-01918")   // user does not exist
+            || msg.contains("ORA-01920")   // user name conflicts with another
+            || msg.contains("ORA-00001")   // duplicate value
+            || msg.contains("ORA-01031")   // insufficient privileges
+            || msg.contains("ORA-00911")   // invalid character (expected for malformed SQL)
+            || msg.contains("ORA-00000")   // successful completion
+            || errorCode == 942    // table/view does not exist
+            || errorCode == 955;   // name already used by object
     }
     
     private void log(String message) {

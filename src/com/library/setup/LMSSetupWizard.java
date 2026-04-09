@@ -6,6 +6,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.regex.Pattern;
 
 /**
@@ -46,6 +47,7 @@ public class LMSSetupWizard extends JFrame {
     private String adminPasswordConfirm;
     
     // Form field references for validation
+    private JTextField locationPathField;
     private JTextField adminUserIdField;
     private JTextField adminNameField;
     private JTextField adminEmailField;
@@ -192,13 +194,13 @@ public class LMSSetupWizard extends JFrame {
         gbc.gridx = 0;
         panel.add(pathLabel, gbc);
         
-        JTextField pathField = new JTextField(40);
-        pathField.setText(System.getProperty("user.home") + File.separator + "LMS");
-        pathField.setBackground(Color.WHITE);
-        pathField.setForeground(TEXT_FG);
-        pathField.setCaretColor(TEXT_FG);
+        locationPathField = new JTextField(40);
+        locationPathField.setText(System.getProperty("user.home") + File.separator + "LMS");
+        locationPathField.setBackground(Color.WHITE);
+        locationPathField.setForeground(TEXT_FG);
+        locationPathField.setCaretColor(TEXT_FG);
         gbc.gridx = 1;
-        panel.add(pathField, gbc);
+        panel.add(locationPathField, gbc);
         
         JButton browseButton = new JButton("Browse...");
         styleButton(browseButton, false);
@@ -207,7 +209,7 @@ public class LMSSetupWizard extends JFrame {
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             int result = chooser.showOpenDialog(this);
             if (result == JFileChooser.APPROVE_OPTION) {
-                pathField.setText(chooser.getSelectedFile().getAbsolutePath());
+                locationPathField.setText(chooser.getSelectedFile().getAbsolutePath());
             }
         });
         gbc.gridx = 2;
@@ -458,18 +460,42 @@ public class LMSSetupWizard extends JFrame {
         panel.add(pathLabel, gbc);
         
         gbc.gridy++;
-        JLabel launchLabel = new JLabel("To launch the application:");
+        JLabel launchLabel = new JLabel("What would you like to do now?");
         launchLabel.setForeground(TEXT_FG);
         launchLabel.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(launchLabel, gbc);
         
         gbc.gridy++;
-        String launchCmd = System.getProperty("os.name").toLowerCase().contains("win") ?
-            "run.bat" : "./run-with-env.sh";
-        JLabel cmdLabel = new JLabel("$ " + launchCmd);
-        cmdLabel.setForeground(new Color(100, 100, 150));
-        cmdLabel.setFont(new Font("Courier", Font.PLAIN, 12));
-        panel.add(cmdLabel, gbc);
+        JButton createShortcutButton = new JButton("Create Desktop Shortcut");
+        styleButton(createShortcutButton, true);
+        createShortcutButton.addActionListener(e -> {
+            try {
+                createDesktopShortcut();
+                showInfo("Desktop shortcut created successfully!");
+            } catch (Exception ex) {
+                showError("Failed to create shortcut: " + ex.getMessage());
+            }
+        });
+        panel.add(createShortcutButton, gbc);
+        
+        gbc.gridy++;
+        JButton runNowButton = new JButton("Run Application Now");
+        styleButton(runNowButton, true);
+        runNowButton.addActionListener(e -> {
+            try {
+                launchApplication();
+                System.exit(0);
+            } catch (Exception ex) {
+                showError("Failed to launch application: " + ex.getMessage());
+            }
+        });
+        panel.add(runNowButton, gbc);
+        
+        gbc.gridy++;
+        JButton exitButton = new JButton("Exit Setup");
+        styleButton(exitButton, false);
+        exitButton.addActionListener(e -> System.exit(0));
+        panel.add(exitButton, gbc);
         
         return panel;
     }
@@ -559,17 +585,44 @@ public class LMSSetupWizard extends JFrame {
     private String checkOracleDatabase() {
         try {
             Class.forName("oracle.jdbc.driver.OracleDriver");
-            // Try to get version info
-            java.sql.Connection conn = java.sql.DriverManager.getConnection(
-                "jdbc:oracle:thin:@localhost:1521:xe", "system", "oracle");
-            if (conn != null) {
-                conn.close();
-                return "✓ Oracle detected";
+            
+            // Try multiple Oracle connection configurations
+            String[] connectionAttempts = {
+                // Linux development (Podman)
+                "jdbc:oracle:thin:@localhost:1521:xe|system|oracle",
+                // Windows default
+                "jdbc:oracle:thin:@localhost:1521:orcl|system|manager",
+                // Windows alternative SID
+                "jdbc:oracle:thin:@localhost:1521:xe|system|manager",
+                // Try without credentials (may be auto-authenticated)
+                "jdbc:oracle:thin:@localhost:1521:xe|system|",
+                // Windows with different port
+                "jdbc:oracle:thin:@localhost:1522:orcl|system|manager",
+            };
+            
+            for (String attempt : connectionAttempts) {
+                try {
+                    String[] parts = attempt.split("\\|");
+                    if (parts.length >= 3) {
+                        java.sql.Connection conn = java.sql.DriverManager.getConnection(
+                            parts[0], parts[1], parts[2]);
+                        if (conn != null) {
+                            conn.close();
+                            return "✓ Oracle detected";
+                        }
+                    }
+                } catch (Exception ignore) {
+                    // Try next attempt
+                }
             }
+            
+            // If connections failed, check if driver is loaded (Oracle might be running but with different config)
+            return "⚠ Oracle driver found but cannot connect.\n     Please verify Oracle is running and accessible at localhost:1521";
+        } catch (ClassNotFoundException e) {
+            return "✗ Oracle JDBC driver not found (ojdbc*.jar missing)";
         } catch (Exception e) {
-            // Oracle not accessible
+            return "✗ Oracle check failed: " + e.getMessage();
         }
-        return "✗ Oracle 10g+ required";
     }
     
     private void goToPage(String pageName) {
@@ -585,31 +638,29 @@ public class LMSSetupWizard extends JFrame {
                 break;
             case PAGE_LOCATION:
                 // Get path from location field
-                String path = JOptionPane.showInputDialog(this,
-                    "Enter installation path:",
-                    System.getProperty("user.home") + File.separator + "LMS");
-                if (path != null && !path.trim().isEmpty()) {
-                    File testPath = new File(path.trim());
-                    if (isValidInstallPath(testPath)) {
-                        installLocation = testPath;
-                        goToPage(PAGE_CHECK);
-                    } else {
-                        showError("Invalid installation path:\n" +
-                                 "- Must be writable\n" +
-                                 "- Cannot contain spaces (recommended)");
-                    }
+                String path = locationPathField.getText().trim();
+                if (path == null || path.isEmpty()) {
+                    showError("Please enter an installation path");
+                    return;
+                }
+                File testPath = new File(path);
+                if (isValidInstallPath(testPath)) {
+                    installLocation = testPath;
+                    goToPage(PAGE_CHECK);
+                } else {
+                    showError("Invalid installation path:\n" +
+                             "- Must be writable\n" +
+                             "- Cannot contain spaces (recommended)");
                 }
                 break;
             case PAGE_CHECK:
                 goToPage(PAGE_ADMIN);
                 break;
             case PAGE_ADMIN:
-                // Validate admin details before proceeding
+                // Always read latest values from fields before validation/install.
+                extractAdminFormValues();
                 String[] validation = validateAdminForm();
                 if (validation[0].equals("OK")) {
-                    // Extract values from form
-                    JPanel adminPanel = (JPanel) cardPanel.getComponent(2); // PAGE_ADMIN
-                    extractAdminFormValues(adminPanel);
                     goToPage(PAGE_PROGRESS);
                     performInstallation();
                 } else {
@@ -701,9 +752,25 @@ public class LMSSetupWizard extends JFrame {
         return new String[]{"OK", ""};
     }
     
-    private void extractAdminFormValues(JPanel panel) {
-        // Values are already stored via focus listeners
-        // This method is here for future extensibility
+    private void extractAdminFormValues() {
+        if (adminUserIdField != null) {
+            adminUserId = adminUserIdField.getText().trim();
+        }
+        if (adminNameField != null) {
+            adminName = adminNameField.getText().trim();
+        }
+        if (adminEmailField != null) {
+            adminEmail = adminEmailField.getText().trim();
+        }
+        if (adminPhoneField != null) {
+            adminPhone = adminPhoneField.getText().trim();
+        }
+        if (adminPasswordField != null) {
+            adminPassword = new String(adminPasswordField.getPassword());
+        }
+        if (adminPasswordConfirmField != null) {
+            adminPasswordConfirm = new String(adminPasswordConfirmField.getPassword());
+        }
     }
     
     private void goToPreviousPage() {
@@ -727,6 +794,10 @@ public class LMSSetupWizard extends JFrame {
     
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+    
+    private void showInfo(String message) {
+        JOptionPane.showMessageDialog(this, message, "Information", JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void performInstallation() {
@@ -772,6 +843,66 @@ public class LMSSetupWizard extends JFrame {
                 goToPage(PAGE_ADMIN);
             }
         }).start();
+    }
+    
+    private void createDesktopShortcut() throws Exception {
+        String os = System.getProperty("os.name").toLowerCase();
+        String desktopPath = System.getProperty("user.home") + File.separator + "Desktop";
+        File desktop = new File(desktopPath);
+        
+        if (!desktop.exists()) {
+            desktop.mkdirs();
+        }
+        
+        if (os.contains("win")) {
+            // Windows shortcut (.bat file on desktop)
+            File shortcutFile = new File(desktop, "LMS.bat");
+            StringBuilder content = new StringBuilder();
+            content.append("@echo off\n");
+            content.append("cd /d \"").append(installLocation.getAbsolutePath()).append("\"\n");
+            content.append("start run.bat\n");
+            
+            Files.write(shortcutFile.toPath(), content.toString().getBytes());
+            shortcutFile.setExecutable(true);
+            logProgress("Desktop shortcut created at: " + shortcutFile.getAbsolutePath());
+        } else {
+            // Unix/Linux shortcut (.desktop file)
+            File shortcutFile = new File(desktop, "LMS.desktop");
+            StringBuilder content = new StringBuilder();
+            content.append("[Desktop Entry]\n");
+            content.append("Type=Application\n");
+            content.append("Name=Library Management System\n");
+            content.append("Exec=").append(installLocation.getAbsolutePath()).append("/run.sh\n");
+            content.append("Path=").append(installLocation.getAbsolutePath()).append("\n");
+            content.append("Icon=application-x-executable\n");
+            
+            Files.write(shortcutFile.toPath(), content.toString().getBytes());
+            shortcutFile.setExecutable(true);
+            logProgress("Desktop shortcut created at: " + shortcutFile.getAbsolutePath());
+        }
+    }
+    
+    private void launchApplication() throws Exception {
+        String os = System.getProperty("os.name").toLowerCase();
+        ProcessBuilder pb;
+        
+        if (os.contains("win")) {
+            pb = new ProcessBuilder("cmd.exe", "/c", 
+                new File(installLocation, "run.bat").getAbsolutePath());
+        } else {
+            pb = new ProcessBuilder(
+                new File(installLocation, "run.sh").getAbsolutePath());
+        }
+        
+        pb.directory(installLocation);
+        pb.start();
+        logProgress("Application launched from: " + installLocation.getAbsolutePath());
+    }
+    
+    private void logProgress(String message) {
+        if (progressLogArea != null) {
+            progressLogArea.append(message + "\n");
+        }
     }
     
     public static void main(String[] args) {
