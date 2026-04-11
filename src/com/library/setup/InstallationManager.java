@@ -308,50 +308,41 @@ public class InstallationManager {
         // Set timezone property for Oracle compatibility
         System.setProperty("oracle.jdbc.timezoneAsRegion", "false");
         
-        // Try to connect as PRJ2531H first (if user exists)
-        // If that fails with ORA-01017, try as system/oracle to create the user
-        Connection conn = null;
-        boolean needsUserCreation = false;
+        String systemUser = System.getenv("LMS_SYSTEM_USER");
+        String systemPassword = System.getenv("LMS_SYSTEM_PASSWORD");
+        if (systemUser == null) systemUser = "system";
+        if (systemPassword == null) systemPassword = "oracle";  // Try default for Linux/Windows
+        
+        Connection sysConn = null;
+        Connection prjConn = null;
         
         try {
-            conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-            log("✓ Database connection established");
-        } catch (SQLException e) {
-            if (e.getMessage().contains("ORA-01017")) {
-                // User doesn't exist, try to create it using SYSTEM account
-                log("🔍 User PRJ2531H doesn't exist, attempting to create...");
-                needsUserCreation = true;
+            // Step 1: Connect as SYSTEM to drop/recreate PRJ2531H user
+            log("🔍 Connecting as " + systemUser + " to reset PRJ2531H user...");
+            try {
+                sysConn = DriverManager.getConnection(dbUrl, systemUser, systemPassword);
+                log("✓ SYSTEM connection established");
                 
-                String systemUser = System.getenv("LMS_SYSTEM_USER");
-                String systemPassword = System.getenv("LMS_SYSTEM_PASSWORD");
-                if (systemUser == null) systemUser = "system";
-                if (systemPassword == null) systemPassword = "oracle";  // Try default for Linux/Windows
-                
-                try {
-                    log("🔍 Connecting as " + systemUser + " to create PRJ2531H user...");
-                    try (Connection sysConn = DriverManager.getConnection(dbUrl, systemUser, systemPassword)) {
-                        executeSystemPrep(sysConn);  // Create user and grant privileges
-                    }
-                    
-                    // Now try to connect as PRJ2531H
-                    log("🔍 Connecting as PRJ2531H to create schema...");
-                    conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-                    log("✓ Database connection established");
-                } catch (SQLException sysEx) {
-                    throw new Exception("Could not create PRJ2531H user. Tried SYSTEM/" + systemPassword + ": " + sysEx.getMessage());
-                }
-            } else {
-                throw e;
+                // Drop and recreate user (idempotent - safe if user doesn't exist)
+                executeSystemPrep(sysConn);
+                log("✓ PRJ2531H user reset complete");
+            } catch (SQLException sysEx) {
+                throw new Exception("Could not connect as SYSTEM to reset PRJ2531H user. Tried " + systemUser + "/" + systemPassword + ": " + sysEx.getMessage());
+            } finally {
+                if (sysConn != null) sysConn.close();
             }
-        }
-        
-        try {
+            
+            // Step 2: Connect as PRJ2531H (fresh user) to create schema
+            log("🔍 Connecting as PRJ2531H to create schema...");
+            prjConn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+            log("✓ Database connection established");
+            
             // Execute script.sql to initialize schema
-            executeScriptSQL(conn);
+            executeScriptSQL(prjConn);
             
             // Verify tables exist
             String query = "SELECT COUNT(*) FROM user_tables WHERE table_name = 'TBL_CREDENTIALS'";
-            try (Statement stmt = conn.createStatement();
+            try (Statement stmt = prjConn.createStatement();
                  ResultSet rs = stmt.executeQuery(query)) {
                 if (rs.next() && rs.getInt(1) > 0) {
                     log("✓ Database schema initialized and verified");
@@ -360,7 +351,7 @@ public class InstallationManager {
                 }
             }
         } finally {
-            if (conn != null) conn.close();
+            if (prjConn != null) prjConn.close();
         }
     }
     
@@ -369,16 +360,37 @@ public class InstallationManager {
      * Creates PRJ2531H user and grants DBA privileges
      */
     private void executeSystemPrep(Connection sysConn) throws Exception {
-        log("✓ Creating PRJ2531H user...");
+        // Kill any active PRJ2531H sessions
+        log("✓ Cleaning up active PRJ2531H sessions...");
         try (Statement stmt = sysConn.createStatement()) {
             stmt.execute("BEGIN\n" +
-                        "  EXECUTE IMMEDIATE 'CREATE USER PRJ2531H IDENTIFIED BY PRJ2531H';\n" +
-                        "EXCEPTION\n" +
-                        "  WHEN OTHERS THEN\n" +
-                        "    IF SQLCODE != -1920 THEN RAISE; END IF;\n" +
+                        "  FOR sess IN (SELECT sid, serial# FROM v$session WHERE username = 'PRJ2531H') LOOP\n" +
+                        "    BEGIN\n" +
+                        "      EXECUTE IMMEDIATE 'ALTER SYSTEM KILL SESSION ''' || sess.sid || ',' || sess.serial# || ''' IMMEDIATE';\n" +
+                        "    EXCEPTION WHEN OTHERS THEN NULL;\n" +
+                        "    END;\n" +
+                        "  END LOOP;\n" +
+                        "EXCEPTION WHEN OTHERS THEN NULL;\n" +
                         "END;");
         }
         
+        // Drop existing PRJ2531H user if it exists
+        log("✓ Dropping existing PRJ2531H user (if present)...");
+        try (Statement stmt = sysConn.createStatement()) {
+            stmt.execute("BEGIN\n" +
+                        "  EXECUTE IMMEDIATE 'DROP USER PRJ2531H CASCADE';\n" +
+                        "EXCEPTION\n" +
+                        "  WHEN OTHERS THEN NULL;\n" +
+                        "END;");
+        }
+        
+        // Create fresh PRJ2531H user
+        log("✓ Creating fresh PRJ2531H user...");
+        try (Statement stmt = sysConn.createStatement()) {
+            stmt.execute("CREATE USER PRJ2531H IDENTIFIED BY PRJ2531H");
+        }
+        
+        // Grant DBA privileges
         log("✓ Granting DBA privileges...");
         try (Statement stmt = sysConn.createStatement()) {
             stmt.execute("GRANT DBA TO PRJ2531H");
