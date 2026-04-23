@@ -62,15 +62,17 @@ public class StudentPdfService {
     }
 
     public void generateLibraryCardPdf(Student s, Path outPath) throws Exception {
-        // Library card is small, we might skip the full banner/header here or use a mini version.
-        // But for consistency as requested, we'll try to fit it or keep the card format special.
-        // User asked for "every pdf generated in this project its format should be the same".
-        // However, a Library Card is usually a specific size (ID card).
-        // I will keep the ID card format but add the banner if it fits, 
-        // OR better, keep ID card as is because it's a "Card" not a "Report".
-        // But the user said "EVERY pdf". I will add it to Receipt and History first.
+        generateLibraryCardPdf(s, new java.util.ArrayList<>(), outPath);
+    }
+
+    public void generateLibraryCardPdf(Student s, List<BorrowRecord> history, Path outPath) throws Exception {
+        // Library card with optional issue/return history
+        boolean hasHistory = history != null && !history.isEmpty();
         
-        Document doc = new Document(new com.itextpdf.text.Rectangle(420, 260), 18, 18, 18, 18);
+        com.itextpdf.text.Rectangle pageSize = hasHistory ? PageSize.A4 : new com.itextpdf.text.Rectangle(420, 260);
+        float[] margins = hasHistory ? new float[]{36, 36, 36, 36} : new float[]{18, 18, 18, 18};
+        
+        Document doc = new Document(pageSize, margins[0], margins[1], margins[2], margins[3]);
         PdfWriter.getInstance(doc, new FileOutputStream(outPath.toFile()));
         doc.open();
 
@@ -111,6 +113,34 @@ public class StudentPdfService {
         addRow(body, "Book Limit", String.valueOf(s.getBookLimit()));
         addRow(body, "Issue Date", formatDate(s.getIssueDate()));
         doc.add(body);
+
+        if (hasHistory) {
+            doc.add(new Paragraph(" "));
+            doc.add(new Paragraph("Book Issue and Return History", new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD)));
+            doc.add(new Paragraph(" "));
+            
+            PdfPTable historyTable = new PdfPTable(7);
+            historyTable.setWidthPercentage(100);
+            historyTable.setHeaderRows(1);
+            addHeader(historyTable, "Access No");
+            addHeader(historyTable, "Title");
+            addHeader(historyTable, "Author");
+            addHeader(historyTable, "Issued");
+            addHeader(historyTable, "Due");
+            addHeader(historyTable, "Returned");
+            addHeader(historyTable, "Fine");
+
+            for (BorrowRecord r : history) {
+                historyTable.addCell(cell(r.getAccessNo()));
+                historyTable.addCell(cell(r.getBookTitle()));
+                historyTable.addCell(cell(r.getAuthorName()));
+                historyTable.addCell(cell(formatDate(r.getIssueDate())));
+                historyTable.addCell(cell(formatDate(r.getDueDate())));
+                historyTable.addCell(cell(formatDate(r.getReturnDate())));
+                historyTable.addCell(cell(r.getFineAmount() == null ? "" : String.valueOf(r.getFineAmount())));
+            }
+            doc.add(historyTable);
+        }
 
         doc.close();
     }
@@ -168,8 +198,11 @@ public class StudentPdfService {
         PdfPCell c1 = new PdfPCell(new Phrase(k, H));
         c1.setBackgroundColor(new BaseColor(245, 248, 250));
         c1.setPadding(6);
+        c1.setVerticalAlignment(Element.ALIGN_MIDDLE);
         PdfPCell c2 = new PdfPCell(new Phrase(v == null ? "" : v, N));
         c2.setPadding(6);
+        c2.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c2.setVerticalAlignment(Element.ALIGN_MIDDLE);
         table.addCell(c1);
         table.addCell(c2);
     }
@@ -178,12 +211,16 @@ public class StudentPdfService {
         PdfPCell c = new PdfPCell(new Phrase(text, H));
         c.setBackgroundColor(new BaseColor(220, 230, 240));
         c.setPadding(6);
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
         table.addCell(c);
     }
 
     private static PdfPCell cell(String text) {
         PdfPCell c = new PdfPCell(new Phrase(text == null ? "" : text, S));
         c.setPadding(5);
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
         return c;
     }
 

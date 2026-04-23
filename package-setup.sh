@@ -43,6 +43,10 @@ cp -r docs $TEMP_DIR/ 2>/dev/null || echo "No docs directory"
 # Copy README
 cp README.md $TEMP_DIR/ 2>/dev/null || echo "No README.md"
 
+# Copy application icon files
+cp icon.png $TEMP_DIR/ 2>/dev/null
+cp icon.ico $TEMP_DIR/ 2>/dev/null
+
 echo "✓ Contents prepared"
 
 # Step 3: Extract library JARs into temp directory (fat JAR approach)

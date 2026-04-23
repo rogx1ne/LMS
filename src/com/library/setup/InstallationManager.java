@@ -308,28 +308,47 @@ public class InstallationManager {
         // Set timezone property for Oracle compatibility
         System.setProperty("oracle.jdbc.timezoneAsRegion", "false");
         
-        String systemUser = System.getenv("LMS_SYSTEM_USER");
-        String systemPassword = System.getenv("LMS_SYSTEM_PASSWORD");
-        if (systemUser == null) systemUser = "system";
-        if (systemPassword == null) systemPassword = "oracle";  // Try default for Linux/Windows
-        
         Connection sysConn = null;
         Connection prjConn = null;
         
         try {
-            // Step 1: Connect as SYSTEM to drop/recreate PRJ2531H user
-            log("🔍 Connecting as " + systemUser + " to reset PRJ2531H user...");
-            try {
-                sysConn = DriverManager.getConnection(dbUrl, systemUser, systemPassword);
-                log("✓ SYSTEM connection established");
+            // PROFESSIONAL APPROACH: Try OS authentication first (Windows/Linux ORA_DBA group)
+            log("🔍 Attempting OS authentication (SYSDBA)...");
+            sysConn = tryOSAuthentication(dbUrl);
+            
+            if (sysConn != null) {
+                log("✓ Connected as SYSDBA using OS authentication (no credentials needed)");
                 
-                // Drop and recreate user (idempotent - safe if user doesn't exist)
+                // Drop and recreate user
                 executeSystemPrep(sysConn);
                 log("✓ PRJ2531H user reset complete");
-            } catch (SQLException sysEx) {
-                throw new Exception("Could not connect as SYSTEM to reset PRJ2531H user. Tried " + systemUser + "/" + systemPassword + ": " + sysEx.getMessage());
-            } finally {
-                if (sysConn != null) sysConn.close();
+                
+                sysConn.close();
+                sysConn = null;
+            } else {
+                // Fallback: Try with environment variables or defaults
+                log("ℹ OS authentication not available, using database credentials");
+                
+                String systemUser = System.getenv("LMS_SYSTEM_USER");
+                String systemPassword = System.getenv("LMS_SYSTEM_PASSWORD");
+                if (systemUser == null) systemUser = "system";
+                if (systemPassword == null) systemPassword = "manager";
+                
+                log("🔍 Connecting as " + systemUser + " to reset PRJ2531H user...");
+                try {
+                    sysConn = DriverManager.getConnection(dbUrl, systemUser, systemPassword);
+                    log("✓ SYSTEM connection established");
+                    
+                    executeSystemPrep(sysConn);
+                    log("✓ PRJ2531H user reset complete");
+                } catch (SQLException sysEx) {
+                    String errorCode = sysEx.getErrorCode() > 0 ? 
+                        " (ORA-" + String.format("%05d", sysEx.getErrorCode()) + ")" : "";
+                    String solutionMsg = buildCredentialErrorMessage(systemUser, dbUrl, errorCode, sysEx.getMessage());
+                    throw new Exception(solutionMsg);
+                } finally {
+                    if (sysConn != null) sysConn.close();
+                }
             }
             
             // Step 2: Connect as PRJ2531H (fresh user) to create schema
@@ -353,6 +372,112 @@ public class InstallationManager {
         } finally {
             if (prjConn != null) prjConn.close();
         }
+    }
+    
+    /**
+     * Try to connect as SYSDBA using OS authentication (OCI driver)
+     * Works on Windows with ORA_DBA group or Linux with ora_dba group
+     * Returns null if OS authentication not available (will fallback to credentials)
+     */
+    private Connection tryOSAuthentication(String dbUrl) {
+        try {
+            // Extract SID from thin connection string and convert to OCI format
+            String ociUrl = convertToOCIFormat(dbUrl);
+            
+            log("  Trying OCI driver with OS authentication: " + ociUrl);
+            
+            // Use timeout wrapper to prevent hanging on Windows
+            // (Windows can hang indefinitely when trying to load OCI libraries)
+            final Connection[] connHolder = new Connection[1];
+            final Throwable[] exHolder = new Throwable[1];
+            
+            Thread osAuthThread = new Thread(() -> {
+                try {
+                    connHolder[0] = DriverManager.getConnection(ociUrl, "/", "as sysdba");
+                } catch (Throwable e) {
+                    exHolder[0] = e;
+                }
+            });
+            
+            osAuthThread.setDaemon(true);
+            osAuthThread.start();
+            
+            // Wait max 10 seconds for OS auth to complete
+            try {
+                osAuthThread.join(10000);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+            
+            // Check if thread is still alive (hung)
+            if (osAuthThread.isAlive()) {
+                log("  ℹ OS authentication timed out (no response after 10 seconds)");
+                return null; // Fallback to credentials
+            }
+            
+            // Check if we got a connection
+            if (connHolder[0] != null) {
+                return connHolder[0];
+            }
+            
+            // Check if there was an exception
+            if (exHolder[0] != null) {
+                Throwable e = exHolder[0];
+                String reason = (e instanceof Exception) ? ((Exception)e).getMessage() : e.toString();
+                
+                if (reason != null && reason.contains("ORA-01031")) {
+                    log("  ℹ OS authentication not available: User not in ORA_DBA/ora_dba group");
+                } else if (reason != null && reason.contains("No suitable driver")) {
+                    log("  ℹ OCI driver not installed (Oracle client required for OS auth)");
+                } else if (e instanceof LinkageError || e.getClass().getName().contains("UnsatisfiedLinkError")) {
+                    log("  ℹ OCI native libraries not available (Oracle client installation incomplete)");
+                } else {
+                    log("  ℹ OS authentication unavailable: " + reason);
+                }
+            }
+            
+        } catch (Exception e) {
+            // Catch any unexpected exceptions in the wrapper itself
+            log("  ℹ OS authentication unavailable: " + e.getClass().getSimpleName());
+        }
+        
+        return null; // Fallback to credentials
+    }
+    
+    /**
+     * Convert thin connection string to OCI format
+     * From: jdbc:oracle:thin:@localhost:1521:xe
+     * To:   jdbc:oracle:oci:@xe
+     */
+    private String convertToOCIFormat(String thinUrl) {
+        try {
+            // Extract SID from thin URL
+            if (thinUrl.contains("@")) {
+                String afterAt = thinUrl.substring(thinUrl.indexOf("@") + 1);
+                
+                // Handle both : and / separators
+                String sid;
+                if (afterAt.contains(":")) {
+                    String[] parts = afterAt.split(":");
+                    if (parts.length >= 3) {
+                        sid = parts[2];
+                    } else {
+                        sid = "xe"; // Default
+                    }
+                } else if (afterAt.contains("/")) {
+                    sid = afterAt.split("/")[1];
+                } else {
+                    sid = afterAt;
+                }
+                
+                return "jdbc:oracle:oci:@" + sid;
+            }
+        } catch (Exception e) {
+            log("  Warning: Could not convert to OCI format: " + e.getMessage());
+        }
+        
+        // Fallback
+        return "jdbc:oracle:oci:@xe";
     }
     
     /**
@@ -697,5 +822,50 @@ public class InstallationManager {
         if (listener != null) {
             listener.onProgress(message);
         }
+    }
+    
+    /**
+     * Build helpful error message with troubleshooting steps
+     */
+    private String buildCredentialErrorMessage(String systemUser, String dbUrl, String errorCode, String originalError) {
+        StringBuilder msg = new StringBuilder();
+        msg.append("Could not connect as SYSTEM to reset PRJ2531H user").append(errorCode).append("\n\n");
+        msg.append("Database URL: ").append(dbUrl).append("\n");
+        msg.append("Attempted user: ").append(systemUser).append("\n\n");
+        
+        msg.append("═══════════════════════════════════════════════════════════\n");
+        msg.append("SOLUTIONS:\n");
+        msg.append("═══════════════════════════════════════════════════════════\n\n");
+        
+        msg.append("Option 1: Provide correct SYSTEM credentials\n");
+        msg.append("─────────────────────────────────────────────\n");
+        msg.append("Before running setup again:\n\n");
+        msg.append("  On Linux/Mac:\n");
+        msg.append("    export LMS_SYSTEM_USER='system'\n");
+        msg.append("    export LMS_SYSTEM_PASSWORD='your_password'\n");
+        msg.append("    export LMS_DB_URL='jdbc:oracle:thin:@localhost:1521:xe'\n");
+        msg.append("    ./setup-wizard.sh\n\n");
+        msg.append("  On Windows:\n");
+        msg.append("    1. Edit .env.setup with your SYSTEM credentials\n");
+        msg.append("    2. Run lms-setup-env.bat\n\n");
+        
+        msg.append("Option 2: Use .env.setup configuration file\n");
+        msg.append("──────────────────────────────────────────────\n");
+        msg.append("    1. Copy .env.setup.example to .env.setup\n");
+        msg.append("    2. Edit .env.setup with your Oracle SYSTEM credentials\n");
+        msg.append("    3. Run setup wizard again\n\n");
+        
+        msg.append("Option 3: Contact your Oracle DBA\n");
+        msg.append("─────────────────────────────────────\n");
+        msg.append("If you don't know the SYSTEM password:\n");
+        msg.append("    - Ask your database administrator for the password\n");
+        msg.append("    - Or request they create PRJ2531H user with DBA privileges\n\n");
+        
+        msg.append("═══════════════════════════════════════════════════════════\n");
+        msg.append("TECHNICAL DETAILS:\n");
+        msg.append("═══════════════════════════════════════════════════════════\n");
+        msg.append("Cause: ").append(originalError);
+        
+        return msg.toString();
     }
 }

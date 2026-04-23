@@ -1,0 +1,8 @@
+in the pdf generation insert page no at th bottom and the "report gerenrated on" section below the header banner should be in the whole left
+
+have all the data in the table record shown in the middle align of the table cell and it should be implemented across all the section module
+
+change the name of shown "seller" to "supplier"
+
+in the student library card also insert the report of all the books that particular student has issued and return
+

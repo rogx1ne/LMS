@@ -30,6 +30,7 @@ bin/
 .env
 .env.local
 .env.*.loacal
+.env.setup
 
 ### Mac OS ###
 .DS_Store

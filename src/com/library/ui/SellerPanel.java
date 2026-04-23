@@ -16,8 +16,8 @@ public class SellerPanel extends JPanel {
     private final JTextField txtContactMail = new JTextField();
     private final JTextArea txtAddress = new JTextArea(3, 20);
 
-    private final JButton btnAdd = new JButton("Add Seller");
-    private final JButton btnUpdate = new JButton("Update Seller");
+    private final JButton btnAdd = new JButton("Add Supplier");
+    private final JButton btnUpdate = new JButton("Update Supplier");
     private final JButton btnClear = new JButton("Clear");
     private final JButton btnPdf = new JButton("Download PDF");
 
@@ -55,7 +55,7 @@ public class SellerPanel extends JPanel {
 
         JScrollPane scroll = new JScrollPane(ModuleTheme.createEmptyStateLayer(
             table,
-            () -> hasActiveFilters() ? "Record Not Found" : "No Sellers available."
+            () -> hasActiveFilters() ? "Record Not Found" : "No Suppliers available."
         ));
         scroll.getViewport().setBackground(ModuleTheme.TABLE_BG);
 
@@ -74,7 +74,7 @@ public class SellerPanel extends JPanel {
     private JPanel buildFormPanel() {
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(ModuleTheme.WHITE);
-        form.setBorder(ModuleTheme.sectionBorder("Add / Update Seller"));
+        form.setBorder(ModuleTheme.sectionBorder("Add / Update Supplier"));
 
         styleInputs();
 

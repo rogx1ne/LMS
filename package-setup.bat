@@ -43,6 +43,10 @@ if exist docs xcopy /E /I docs %TEMP_DIR%\docs
 REM Copy README if exists
 if exist README.md copy README.md %TEMP_DIR%\
 
+REM Copy application icon files
+if exist icon.png copy icon.png %TEMP_DIR%\
+if exist icon.ico copy icon.ico %TEMP_DIR%\
+
 echo + Contents prepared
 
 REM Step 3: Extract library JARs (fat JAR)

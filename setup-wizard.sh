@@ -20,6 +20,28 @@ echo -e "${GREEN}║   LMS Setup Wizard                     ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
 echo ""
 
+# Load environment from .env.setup if it exists
+if [ -f ".env.setup" ]; then
+    echo -e "${YELLOW}→ Loading database credentials from .env.setup${NC}"
+    export $(cat .env.setup | grep -v '^#' | xargs)
+    echo -e "${GREEN}✓ Environment variables loaded${NC}"
+elif [ -f ".env.setup.example" ]; then
+    echo -e "${YELLOW}⚠ Found .env.setup.example but not .env.setup${NC}"
+    echo -e "${YELLOW}→ Setup requires Oracle SYSTEM credentials${NC}"
+    echo ""
+    echo "To proceed, do the following:"
+    echo "  1. cp .env.setup.example .env.setup"
+    echo "  2. Edit .env.setup with your Oracle SYSTEM credentials"
+    echo "  3. Run this script again"
+    echo ""
+    read -p "Press Enter to open .env.setup.example for editing, or Ctrl+C to cancel..."
+    ${EDITOR:-nano} .env.setup.example
+    exit 1
+else
+    echo -e "${YELLOW}ℹ Using default or environment variables for database connection${NC}"
+fi
+echo ""
+
 # Check if Java is installed
 if ! command -v java &> /dev/null; then
     echo -e "${RED}✗ Error: Java is not installed${NC}"

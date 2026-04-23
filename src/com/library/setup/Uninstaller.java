@@ -215,7 +215,7 @@ public class Uninstaller extends JFrame {
         // Load database configuration (would normally read from config file)
         String url = "jdbc:oracle:thin:@localhost:1521:xe";
         String username = "system";
-        String password = "oracle";
+        String password = "manager";
         
         // This is a placeholder - in reality, you'd read connection details from a config file
         log("\n  ⚠ Database removal requires manual configuration\n");

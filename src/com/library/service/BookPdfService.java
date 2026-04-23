@@ -42,6 +42,7 @@ public class BookPdfService {
         for (int c = 0; c < table.getColumnCount(); c++) {
             PdfPCell h = new PdfPCell(new Phrase(table.getColumnName(c), head));
             h.setHorizontalAlignment(Element.ALIGN_CENTER);
+            h.setVerticalAlignment(Element.ALIGN_MIDDLE);
             h.setPadding(5);
             h.setBackgroundColor(com.itextpdf.text.BaseColor.LIGHT_GRAY);
             pdfTable.addCell(h);
@@ -52,6 +53,8 @@ public class BookPdfService {
                 Object value = table.getValueAt(r, c);
                 PdfPCell cell = new PdfPCell(new Phrase(value == null ? "" : String.valueOf(value), normal));
                 cell.setPadding(4);
+                cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
                 pdfTable.addCell(cell);
             }
         }

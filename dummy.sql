@@ -1,10 +1,16 @@
--- LMS demo seed data
+-- ============================================
+-- LMS Comprehensive Demo Data Script
+-- Updated: 2026-04-13
+-- Uses 5-character Librarian User ID format (U0001+)
+-- ============================================
 -- Run this after script.sql has created the schema.
 
 CONNECT PRJ2531H/PRJ2531H;
 SET DEFINE OFF;
 
+PROMPT =====================================
 PROMPT Clearing existing demo data...
+PROMPT =====================================
 
 DELETE FROM TBL_ISSUE;
 DELETE FROM TBL_BOOK_ALERT_LOG;
@@ -18,62 +24,78 @@ DELETE FROM TBL_BOOK_CATALOG;
 DELETE FROM TBL_STUDENT;
 DELETE FROM TBL_SELLER;
 DELETE FROM TBL_ID_COUNTER;
-DELETE FROM TBL_CREDENTIALS;
+
 
 COMMIT;
 
-PROMPT Inserting credentials...
+PROMPT =====================================
+PROMPT Inserting credentials (New Librarian Format)...
+PROMPT =====================================
+
+-- LIBRARIAN USERS (5-character format: U0001, U0002, ...)
+INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, EMAIL, PHNO, ROLE, STATUS)
+VALUES ('U0001', 'LIBRARIAN ONE', 'SHA256$163e3b05d7d2aa6159c0a41c33afcdb49e77c55d94a6699c7e1f09a19dc95ad5', 'lib01@lms.in', 9000000002, 'LIBRARIAN', 'ACTIVE');
 
 INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, EMAIL, PHNO, ROLE, STATUS)
-VALUES ('ADMIN', 'ADMINISTRATOR', 'SHA256$835d6dc88b708bc646d6db82c853ef4182fabbd4a8de59c213f2b5ab3ae7d9be', 'admin@lms.in', 9000000001, 'ADMIN', 'ACTIVE');
+VALUES ('U0002', 'LIBRARIAN TWO', 'SHA256$51ff218665810bbaeec9f16250cc27bfb9833622537e779b7d27dbf50cf78745', 'lib02@lms.in', 9000000003, 'LIBRARIAN', 'ACTIVE');
 
 INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, EMAIL, PHNO, ROLE, STATUS)
-VALUES ('LIB01', 'LIBRARIAN ONE', 'SHA256$163e3b05d7d2aa6159c0a41c33afcdb49e77c55d94a6699c7e1f09a19dc95ad5', 'lib01@lms.in', 9000000002, 'LIBRARIAN', 'ACTIVE');
+VALUES ('U0003', 'AARTI JAIN', 'SHA256$795f6204bd10c5c8e7564f3d0fe765c91434453e4331e8ffa76dddd414021d06', 'aarti@lms.in', 9100000101, 'LIBRARIAN', 'ACTIVE');
 
 INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, EMAIL, PHNO, ROLE, STATUS)
-VALUES ('LIB02', 'LIBRARIAN TWO', 'SHA256$51ff218665810bbaeec9f16250cc27bfb9833622537e779b7d27dbf50cf78745', 'lib02@lms.in', 9000000003, 'LIBRARIAN', 'ACTIVE');
+VALUES ('U0004', 'DEMO LIBRARIAN', 'SHA256$391bd3a3b83de3367f672243c4b70a15821c141f483ce0b72eaf651c6db9a0cf', 'demo@lms.in', 9100000102, 'LIBRARIAN', 'INACTIVE');
 
-INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, EMAIL, PHNO, ROLE, STATUS)
-VALUES ('USR01', 'AARTI JAIN', 'SHA256$795f6204bd10c5c8e7564f3d0fe765c91434453e4331e8ffa76dddd414021d06', 'usr01@lms.in', 9000000004, 'LIBRARIAN', 'ACTIVE');
+-- Initialize ID counter for next user ID generation
+INSERT INTO TBL_ID_COUNTER (COUNTER_KEY, NEXT_VAL) VALUES ('USER_ID', 4);
 
-INSERT INTO TBL_CREDENTIALS (USER_ID, NAME, PSWD, EMAIL, PHNO, ROLE, STATUS)
-VALUES ('USR02', 'DEMO USER', 'SHA256$391bd3a3b83de3367f672243c4b70a15821c141f483ce0b72eaf651c6db9a0cf', 'usr02@lms.in', 9000000005, 'LIBRARIAN', 'INACTIVE');
-
-PROMPT Inserting audit log...
-
-INSERT INTO TBL_AUDIT_LOG (USER_ID, MODULE, ACTION_DESCRIPTION, LOG_TS)
-VALUES ('ADMIN', 'Admin', 'Loaded demo users and roles', SYSTIMESTAMP - INTERVAL '6' DAY);
+PROMPT =====================================
+PROMPT Inserting audit log entries...
+PROMPT =====================================
 
 INSERT INTO TBL_AUDIT_LOG (USER_ID, MODULE, ACTION_DESCRIPTION, LOG_TS)
-VALUES ('LIB01', 'Book', 'Registered initial accession data', SYSTIMESTAMP - INTERVAL '5' DAY);
+VALUES ('ADMIN', 'Admin', 'System initialization with 5-char user IDs', SYSTIMESTAMP - INTERVAL '7' DAY);
 
 INSERT INTO TBL_AUDIT_LOG (USER_ID, MODULE, ACTION_DESCRIPTION, LOG_TS)
-VALUES ('LIB02', 'Student', 'Created demo student cards', SYSTIMESTAMP - INTERVAL '4' DAY);
+VALUES ('U0001', 'Book', 'Registered initial book catalog and acquisitions', SYSTIMESTAMP - INTERVAL '6' DAY);
 
 INSERT INTO TBL_AUDIT_LOG (USER_ID, MODULE, ACTION_DESCRIPTION, LOG_TS)
-VALUES ('LIB01', 'Circulation', 'Issued Java reference copy 000003', SYSTIMESTAMP - INTERVAL '3' DAY);
+VALUES ('U0002', 'Student', 'Issued library cards to BCA and MCA students', SYSTIMESTAMP - INTERVAL '5' DAY);
 
 INSERT INTO TBL_AUDIT_LOG (USER_ID, MODULE, ACTION_DESCRIPTION, LOG_TS)
-VALUES ('ADMIN', 'Admin', 'Exported student register for demo', SYSTIMESTAMP - INTERVAL '2' DAY);
+VALUES ('U0001', 'Circulation', 'Book circulation initiated for students', SYSTIMESTAMP - INTERVAL '4' DAY);
 
 INSERT INTO TBL_AUDIT_LOG (USER_ID, MODULE, ACTION_DESCRIPTION, LOG_TS)
-VALUES ('LIB02', 'Circulation', 'Generated overdue report', SYSTIMESTAMP - INTERVAL '1' DAY);
+VALUES ('ADMIN', 'Admin', 'Generated inventory and procurement reports', SYSTIMESTAMP - INTERVAL '3' DAY);
 
-PROMPT Inserting sellers...
+INSERT INTO TBL_AUDIT_LOG (USER_ID, MODULE, ACTION_DESCRIPTION, LOG_TS)
+VALUES ('U0002', 'Circulation', 'Processed book returns and overdue charges', SYSTIMESTAMP - INTERVAL '2' DAY);
+
+INSERT INTO TBL_AUDIT_LOG (USER_ID, MODULE, ACTION_DESCRIPTION, LOG_TS)
+VALUES ('U0003', 'Admin', 'Stock verification and reconciliation', SYSTIMESTAMP - INTERVAL '1' DAY);
+
+PROMPT =====================================
+PROMPT Inserting suppliers (formerly sellers)...
+PROMPT =====================================
+
 
 INSERT INTO TBL_SELLER (S_ID, COMPANY_NAME, COMPANY_CONTACT_NO, COMPANY_MAIL, CONTACT_PERSON, CONTACT_PERSON_NO, CONTACT_PERSON_MAIL, ADDR)
-VALUES ('SID0000001', 'Oxford Books', '9876500001', 'sales@oxford.in', 'Rohit Mehta', '9876500101', 'rohit@oxford.in', '12 MG Road, Patna');
+VALUES ('SID0000001', 'Oxford Educational Publishers', '9876500001', 'sales@oxford.co.in', 'Rohit Mehta', '9876500101', 'rohit@oxford.co.in', '12 MG Road, Patna, Bihar');
 
 INSERT INTO TBL_SELLER (S_ID, COMPANY_NAME, COMPANY_CONTACT_NO, COMPANY_MAIL, CONTACT_PERSON, CONTACT_PERSON_NO, CONTACT_PERSON_MAIL, ADDR)
-VALUES ('SID0000002', 'Tech Media', '9876500002', 'info@techmedia.in', 'Neha Suri', '9876500102', 'neha@techmedia.in', '44 Park Street, Kolkata');
+VALUES ('SID0000002', 'Tech Media Solutions', '9876500002', 'info@techmedia.co.in', 'Neha Suri', '9876500102', 'neha@techmedia.co.in', '44 Park Street, Kolkata, West Bengal');
 
 INSERT INTO TBL_SELLER (S_ID, COMPANY_NAME, COMPANY_CONTACT_NO, COMPANY_MAIL, CONTACT_PERSON, CONTACT_PERSON_NO, CONTACT_PERSON_MAIL, ADDR)
-VALUES ('SID0000003', 'Campus Press', '9876500003', 'hello@campus.in', 'Aman Gill', '9876500103', 'aman@campus.in', '9 Lake Road, Ranchi');
+VALUES ('SID0000003', 'Campus Press Distribution', '9876500003', 'hello@campuspress.in', 'Aman Gill', '9876500103', 'aman@campuspress.in', '9 Lake Road, Ranchi, Jharkhand');
 
 INSERT INTO TBL_SELLER (S_ID, COMPANY_NAME, COMPANY_CONTACT_NO, COMPANY_MAIL, CONTACT_PERSON, CONTACT_PERSON_NO, CONTACT_PERSON_MAIL, ADDR)
-VALUES ('SID0000004', 'Eastern Pub', '9876500004', 'desk@eastern.in', 'Simran Pal', '9876500104', 'simran@eastern.in', '18 Fraser Road, Patna');
+VALUES ('SID0000004', 'Eastern Publications Ltd', '9876500004', 'desk@easternpub.co.in', 'Simran Pal', '9876500104', 'simran@easternpub.co.in', '18 Fraser Road, Patna, Bihar');
 
+INSERT INTO TBL_SELLER (S_ID, COMPANY_NAME, COMPANY_CONTACT_NO, COMPANY_MAIL, CONTACT_PERSON, CONTACT_PERSON_NO, CONTACT_PERSON_MAIL, ADDR)
+VALUES ('SID0000005', 'National Book Supply Co', '9876500005', 'contact@nationalbks.in', 'Vikram Singh', '9876500105', 'vikram@nationalbks.in', '55 Ashoka Road, Delhi, Delhi');
+
+PROMPT =====================================
 PROMPT Inserting orders...
+PROMPT =====================================
 
 INSERT INTO TBL_ORDER_HEADER (ORDER_ID, S_ID, ORDER_DATE)
 VALUES ('ORD-260001', 'SID0000001', DATE '2026-01-12');
@@ -84,48 +106,74 @@ VALUES ('ORD-260002', 'SID0000002', DATE '2026-01-20');
 INSERT INTO TBL_ORDER_HEADER (ORDER_ID, S_ID, ORDER_DATE)
 VALUES ('ORD-260003', 'SID0000004', DATE '2026-02-02');
 
+INSERT INTO TBL_ORDER_HEADER (ORDER_ID, S_ID, ORDER_DATE)
+VALUES ('ORD-260004', 'SID0000003', DATE '2026-02-15');
+
+INSERT INTO TBL_ORDER_HEADER (ORDER_ID, S_ID, ORDER_DATE)
+VALUES ('ORD-260005', 'SID0000005', DATE '2026-03-10');
+
+PROMPT Inserting order line items...
+
 INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY)
 VALUES ('ORD-260001', 'Java: The Complete Reference', 'Herbert Schildt', 'McGraw Hill', 3);
 
 INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY)
-VALUES ('ORD-260001', 'Effective Java', 'Joshua Bloch', 'Addison Wesley', 1);
+VALUES ('ORD-260001', 'Effective Java', 'Joshua Bloch', 'Addison Wesley', 2);
 
 INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY)
-VALUES ('ORD-260002', 'Clean Code', 'Robert C. Martin', 'Prentice Hall', 2);
+VALUES ('ORD-260002', 'Clean Code', 'Robert C. Martin', 'Prentice Hall', 3);
 
 INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY)
-VALUES ('ORD-260002', 'Database System Concepts', 'Abraham Silberschatz', 'McGraw Hill', 1);
+VALUES ('ORD-260002', 'Database System Concepts', 'Abraham Silberschatz', 'McGraw Hill', 2);
 
 INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY)
 VALUES ('ORD-260003', 'Operating System Concepts', 'Abraham Silberschatz', 'Wiley', 1);
 
 INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY)
-VALUES ('ORD-260003', 'Computer Networks', 'Andrew S. Tanenbaum', 'Pearson', 1);
+VALUES ('ORD-260003', 'Computer Networks', 'Andrew S. Tanenbaum', 'Pearson', 2);
 
-PROMPT Inserting bills...
+INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY)
+VALUES ('ORD-260004', 'Data Structures and Algorithms', 'Narasimha Karumanchi', 'CareerMonk', 2);
+
+INSERT INTO TBL_ORDER_DETAILS (ORDER_ID, BOOK_TITLE, AUTHOR, PUBLICATION, QUANTITY)
+VALUES ('ORD-260005', 'Introduction to Algorithms', 'Thomas H. Cormen', 'MIT Press', 1);
+
+PROMPT =====================================
+PROMPT Inserting purchase bills...
+PROMPT =====================================
+
+-- Bill for Order 1 - Oxford Publishers
+INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
+VALUES ('BILL260001', 'SID0000001', 'Java: The Complete Reference', 'Herbert Schildt', 3, 850.00, DATE '2026-01-15', 510, 2550.00, 3060.00);
 
 INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
-VALUES ('BILL260001', 'SID0000001', 'Java: The Complete Reference', 'Herbert Schildt', 3, 850.00, DATE '2026-01-15', 5, 2550.00, 3423.00);
+VALUES ('BILL260001', 'SID0000001', 'Effective Java', 'Joshua Bloch', 2, 710.00, DATE '2026-01-15', 284, 1420.00, 3060.00);
+
+-- Bill for Order 2 - Tech Media
+INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
+VALUES ('BILL260002', 'SID0000002', 'Clean Code', 'Robert C. Martin', 3, 640.00, DATE '2026-01-24', 576, 1920.00, 3471.00);
 
 INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
-VALUES ('BILL260001', 'SID0000001', 'Effective Java', 'Joshua Bloch', 1, 710.00, DATE '2026-01-15', 5, 710.00, 3423.00);
+VALUES ('BILL260002', 'SID0000002', 'Database System Concepts', 'Abraham Silberschatz', 2, 590.00, DATE '2026-01-24', 354, 1180.00, 3471.00);
+
+-- Bill for Order 3 - Eastern Publications
+INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
+VALUES ('BILL260003', 'SID0000004', 'Operating System Concepts', 'Abraham Silberschatz', 1, 680.00, DATE '2026-02-05', 272, 680.00, 1557.00);
 
 INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
-VALUES ('BILL260002', 'SID0000002', 'Clean Code', 'Robert C. Martin', 2, 640.00, DATE '2026-01-24', 5, 1280.00, 1963.50);
+VALUES ('BILL260003', 'SID0000004', 'Computer Networks', 'Andrew S. Tanenbaum', 2, 710.00, DATE '2026-02-05', 568, 1420.00, 1557.00);
 
+-- Bill for Order 4 - Campus Press
 INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
-VALUES ('BILL260002', 'SID0000002', 'Database System Concepts', 'Abraham Silberschatz', 1, 590.00, DATE '2026-01-24', 5, 590.00, 1963.50);
+VALUES ('BILL260004', 'SID0000003', 'Data Structures and Algorithms', 'Narasimha Karumanchi', 2, 450.00, DATE '2026-02-18', 360, 900.00, 1260.00);
 
+-- Bill for Order 5 - National Book Supply
 INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
-VALUES ('BILL260003', 'SID0000004', 'Operating System Concepts', 'Abraham Silberschatz', 1, 680.00, DATE '2026-02-05', 5, 680.00, 1459.50);
+VALUES ('BILL260005', 'SID0000005', 'Introduction to Algorithms', 'Thomas H. Cormen', 1, 1200.00, DATE '2026-03-12', 240, 1200.00, 1440.00);
 
-INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
-VALUES ('BILL260003', 'SID0000004', 'Computer Networks', 'Andrew S. Tanenbaum', 1, 710.00, DATE '2026-02-05', 5, 710.00, 1459.50);
-
-INSERT INTO TBL_BILL (B_ID, S_ID, TTL, AUTHOR, QUANTITY, U_PRICE, B_DATE, TAX, TTL_AMUT, GR_TTL)
-VALUES ('BILL260004', 'SID0000001', 'Learning Java', 'John Doe', 5, 500.00, DATE '2026-03-18', 10, 2500.00, 2750.00);
-
+PROMPT =====================================
 PROMPT Inserting book catalog...
+PROMPT =====================================
 
 INSERT INTO TBL_BOOK_CATALOG (AUTHOR_NAME, BK_TITLE, EDITION)
 VALUES ('Herbert Schildt', 'Java: The Complete Reference', 11);
@@ -140,7 +188,7 @@ INSERT INTO TBL_BOOK_CATALOG (AUTHOR_NAME, BK_TITLE, EDITION)
 VALUES ('Abraham Silberschatz', 'Database System Concepts', 7);
 
 INSERT INTO TBL_BOOK_CATALOG (AUTHOR_NAME, BK_TITLE, EDITION)
-VALUES ('Narasimha Karumanchi', 'Data Structures Using Java', 2);
+VALUES ('Narasimha Karumanchi', 'Data Structures and Algorithms', 2);
 
 INSERT INTO TBL_BOOK_CATALOG (AUTHOR_NAME, BK_TITLE, EDITION)
 VALUES ('Abraham Silberschatz', 'Operating System Concepts', 10);
@@ -149,114 +197,191 @@ INSERT INTO TBL_BOOK_CATALOG (AUTHOR_NAME, BK_TITLE, EDITION)
 VALUES ('Andrew S. Tanenbaum', 'Computer Networks', 5);
 
 INSERT INTO TBL_BOOK_CATALOG (AUTHOR_NAME, BK_TITLE, EDITION)
+VALUES ('Thomas H. Cormen', 'Introduction to Algorithms', 3);
+
+INSERT INTO TBL_BOOK_CATALOG (AUTHOR_NAME, BK_TITLE, EDITION)
+VALUES ('Stephen Prata', 'C++ Primer Plus', 6);
+
+INSERT INTO TBL_BOOK_CATALOG (AUTHOR_NAME, BK_TITLE, EDITION)
 VALUES ('Dept Project Team', 'Library Management System Project', 1);
 
-PROMPT Inserting book copies...
+PROMPT =====================================
+PROMPT Inserting book copies (accession records)...
+PROMPT =====================================
 
+-- Java Reference (3 copies)
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
     ('000001', 'Herbert Schildt', 'Java: The Complete Reference', 1, 11, 'McGraw Hill', 'New York', 2019, 1248, 'PURCHASED',
-     '005131', 'HER', 850.00, 'BILL260001', DATE '2026-01-15', 'Programming, BCA, 1st Year, BOOK', NULL, 'Core Java shelf copy', 'ACTIVE', 'AVAILABLE');
+     '005131', 'HER', 850.00, 'BILL260001', DATE '2026-01-15', 'Programming, BCA, 1st Year, JAVA', NULL, 'Stack copy 1', 'ACTIVE', 'AVAILABLE');
 
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
     ('000002', 'Herbert Schildt', 'Java: The Complete Reference', 1, 11, 'McGraw Hill', 'New York', 2019, 1248, 'PURCHASED',
-     '005131', 'HER', 850.00, 'BILL260001', DATE '2026-01-15', 'Programming, BCA, 1st Year, BOOK', NULL, 'Reference desk copy', 'ACTIVE', 'AVAILABLE');
+     '005131', 'HER', 850.00, 'BILL260001', DATE '2026-01-15', 'Programming, BCA, 1st Year, JAVA', NULL, 'Reference desk copy', 'ACTIVE', 'AVAILABLE');
 
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
     ('000003', 'Herbert Schildt', 'Java: The Complete Reference', 1, 11, 'McGraw Hill', 'New York', 2019, 1248, 'PURCHASED',
-     '005131', 'HER', 850.00, 'BILL260001', DATE '2026-01-15', 'Programming, BCA, 1st Year, BOOK', NULL, 'Issued demo copy', 'ACTIVE', 'ISSUED');
+     '005131', 'HER', 850.00, 'BILL260001', DATE '2026-01-15', 'Programming, BCA, 1st Year, JAVA', NULL, 'Issued to student', 'ACTIVE', 'ISSUED');
 
+-- Effective Java (2 copies)
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
     ('000004', 'Joshua Bloch', 'Effective Java', NULL, 3, 'Addison Wesley', 'Boston', 2018, 416, 'PURCHASED',
-     '005133', 'JOS', 710.00, 'BILL260001', DATE '2026-01-15', 'Programming, MCA, 1st Year, BOOK', NULL, 'Single-copy demo title', 'ACTIVE', 'AVAILABLE');
+     '005133', 'JOS', 710.00, 'BILL260001', DATE '2026-01-15', 'Programming, MCA, 1st Year, JAVA', NULL, 'Stack copy', 'ACTIVE', 'AVAILABLE');
 
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
-    ('000005', 'Robert C. Martin', 'Clean Code', NULL, 1, 'Prentice Hall', 'Boston', 2008, 464, 'PURCHASED',
-     '005120', 'ROB', 640.00, 'BILL260002', DATE '2026-01-24', 'Software Eng, BCA, 2nd Year, BOOK', NULL, 'Issued demo copy', 'ACTIVE', 'ISSUED');
+    ('000005', 'Joshua Bloch', 'Effective Java', NULL, 3, 'Addison Wesley', 'Boston', 2018, 416, 'PURCHASED',
+     '005133', 'JOS', 710.00, 'BILL260001', DATE '2026-01-15', 'Programming, MCA, 1st Year, JAVA', NULL, 'Faculty copy', 'ACTIVE', 'AVAILABLE');
 
+-- Clean Code (3 copies)
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
     ('000006', 'Robert C. Martin', 'Clean Code', NULL, 1, 'Prentice Hall', 'Boston', 2008, 464, 'PURCHASED',
-     '005120', 'ROB', 640.00, 'BILL260002', DATE '2026-01-24', 'Software Eng, BCA, 2nd Year, BOOK', NULL, 'Shelf copy', 'ACTIVE', 'AVAILABLE');
+     '005120', 'ROB', 640.00, 'BILL260002', DATE '2026-01-24', 'Software Eng, BCA, 2nd Year, CODE', NULL, 'Stack copy 1', 'ACTIVE', 'AVAILABLE');
 
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
-    ('000007', 'Abraham Silberschatz', 'Database System Concepts', NULL, 7, 'McGraw Hill', 'New York', 2019, 1376, 'PURCHASED',
-     '005740', 'ABR', 590.00, 'BILL260002', DATE '2026-01-24', 'Database, MCA, 1st Year, BOOK', NULL, 'Low-stock demo title', 'ACTIVE', 'AVAILABLE');
+    ('000007', 'Robert C. Martin', 'Clean Code', NULL, 1, 'Prentice Hall', 'Boston', 2008, 464, 'PURCHASED',
+     '005120', 'ROB', 640.00, 'BILL260002', DATE '2026-01-24', 'Software Eng, BCA, 2nd Year, CODE', NULL, 'Stack copy 2', 'ACTIVE', 'AVAILABLE');
 
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
-    ('000008', 'Narasimha Karumanchi', 'Data Structures Using Java', NULL, 2, 'CareerMonk', 'Hyderabad', 2017, 520, 'DONATED',
-     '005276', 'NAR', 320.00, NULL, NULL, 'Data Struct, BCA, 1st Year, BOOK', NULL, 'Issued donated copy', 'ACTIVE', 'ISSUED');
+    ('000008', 'Robert C. Martin', 'Clean Code', NULL, 1, 'Prentice Hall', 'Boston', 2008, 464, 'PURCHASED',
+     '005120', 'ROB', 640.00, 'BILL260002', DATE '2026-01-24', 'Software Eng, BCA, 2nd Year, CODE', NULL, 'Issued copy', 'ACTIVE', 'ISSUED');
+
+-- Database System Concepts (2 copies)
+INSERT INTO TBL_BOOK_INFORMATION
+    (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
+     CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
+VALUES
+    ('000009', 'Abraham Silberschatz', 'Database System Concepts', NULL, 7, 'McGraw Hill', 'New York', 2019, 1376, 'PURCHASED',
+     '005740', 'ABR', 590.00, 'BILL260002', DATE '2026-01-24', 'Database, MCA, 1st Year, SQL', NULL, 'Stack copy', 'ACTIVE', 'AVAILABLE');
 
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
-    ('000009', 'Abraham Silberschatz', 'Operating System Concepts', NULL, 10, 'Wiley', 'Hoboken', 2018, 976, 'PURCHASED',
-     '005430', 'ABR', 680.00, 'BILL260003', DATE '2026-02-05', 'Operating Sys, MCA, 1st Year, BOOK', NULL, 'Low-stock demo title', 'ACTIVE', 'AVAILABLE');
+    ('000010', 'Abraham Silberschatz', 'Database System Concepts', NULL, 7, 'McGraw Hill', 'New York', 2019, 1376, 'PURCHASED',
+     '005740', 'ABR', 590.00, 'BILL260002', DATE '2026-01-24', 'Database, MCA, 1st Year, SQL', NULL, 'Lab copy', 'ACTIVE', 'AVAILABLE');
+
+-- Data Structures (2 copies)
+INSERT INTO TBL_BOOK_INFORMATION
+    (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
+     CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
+VALUES
+    ('000011', 'Narasimha Karumanchi', 'Data Structures and Algorithms', NULL, 2, 'CareerMonk', 'Hyderabad', 2017, 520, 'PURCHASED',
+     '005276', 'NAR', 450.00, 'BILL260004', DATE '2026-02-18', 'Data Struct, BCA, 1st Year, DSA', NULL, 'Stack copy', 'ACTIVE', 'AVAILABLE');
 
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
-    ('000010', 'Andrew S. Tanenbaum', 'Computer Networks', NULL, 5, 'Pearson', 'Noida', 2019, 960, 'PURCHASED',
-     '004620', 'AND', 710.00, 'BILL260003', DATE '2026-02-05', 'Networks, BCA, 3rd Year, BOOK', NULL, 'Faculty issued demo copy', 'ACTIVE', 'ISSUED');
+    ('000012', 'Narasimha Karumanchi', 'Data Structures and Algorithms', NULL, 2, 'CareerMonk', 'Hyderabad', 2017, 520, 'PURCHASED',
+     '005276', 'NAR', 450.00, 'BILL260004', DATE '2026-02-18', 'Data Struct, BCA, 1st Year, DSA', NULL, 'Issued copy', 'ACTIVE', 'ISSUED');
+
+-- Operating System Concepts (1 copy)
+INSERT INTO TBL_BOOK_INFORMATION
+    (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
+     CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
+VALUES
+    ('000013', 'Abraham Silberschatz', 'Operating System Concepts', NULL, 10, 'Wiley', 'Hoboken', 2018, 976, 'PURCHASED',
+     '005430', 'ABR', 680.00, 'BILL260003', DATE '2026-02-05', 'Operating Sys, MCA, 1st Year, OS', NULL, 'Stack copy', 'ACTIVE', 'AVAILABLE');
+
+-- Computer Networks (2 copies)
+INSERT INTO TBL_BOOK_INFORMATION
+    (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
+     CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
+VALUES
+    ('000014', 'Andrew S. Tanenbaum', 'Computer Networks', NULL, 5, 'Pearson', 'Noida', 2019, 960, 'PURCHASED',
+     '004620', 'AND', 710.00, 'BILL260003', DATE '2026-02-05', 'Networks, BCA, 3rd Year, NETWORK', NULL, 'Stack copy', 'ACTIVE', 'AVAILABLE');
 
 INSERT INTO TBL_BOOK_INFORMATION
     (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
      CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
 VALUES
-    ('000011', 'Dept Project Team', 'Library Management System Project', NULL, 1, 'College Press', 'Patna', 2026, 145, 'DONATED',
-     '001420', 'DEP', 150.00, NULL, NULL, 'Project Work, BCA, 3rd Year, PROJECT', NULL, 'Project archive copy', 'ACTIVE', 'AVAILABLE');
+    ('000015', 'Andrew S. Tanenbaum', 'Computer Networks', NULL, 5, 'Pearson', 'Noida', 2019, 960, 'PURCHASED',
+     '004620', 'AND', 710.00, 'BILL260003', DATE '2026-02-05', 'Networks, BCA, 3rd Year, NETWORK', NULL, 'Faculty issued', 'ACTIVE', 'ISSUED');
 
-PROMPT Inserting stock summary...
+-- Introduction to Algorithms (1 copy)
+INSERT INTO TBL_BOOK_INFORMATION
+    (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
+     CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
+VALUES
+    ('000016', 'Thomas H. Cormen', 'Introduction to Algorithms', NULL, 3, 'MIT Press', 'Boston', 2009, 1292, 'PURCHASED',
+     '005500', 'THO', 1200.00, 'BILL260005', DATE '2026-03-12', 'Algorithms, MCA, Advanced, ALGO', NULL, 'Premium reference', 'ACTIVE', 'AVAILABLE');
+
+-- C++ Primer (donated)
+INSERT INTO TBL_BOOK_INFORMATION
+    (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
+     CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
+VALUES
+    ('000017', 'Stephen Prata', 'C++ Primer Plus', NULL, 6, 'Addison Wesley', 'Boston', 2012, 1248, 'DONATED',
+     '005140', 'STE', 750.00, NULL, NULL, 'Programming, BCA, 2nd Year, CPP', NULL, 'Donated copy', 'ACTIVE', 'AVAILABLE');
+
+-- Project Archive
+INSERT INTO TBL_BOOK_INFORMATION
+    (ACCESS_NO, AUTHOR_NAME, BK_TITLE, VOLUME, EDITION, PUBLISHER, PUB_PLACE, PUB_YEAR, PAGES, SOURCE,
+     CLASS_NO, BOOK_NO, U_PRICE, B_NO, B_DATE, TAGS, WITHDRAWN, REMARKS, STATUS, CIRC_STATUS)
+VALUES
+    ('000018', 'Dept Project Team', 'Library Management System Project', NULL, 1, 'College Press', 'Patna', 2026, 145, 'DONATED',
+     '001420', 'DEP', 150.00, NULL, NULL, 'Project Work, BCA, 3rd Year, PROJECT', NULL, 'Archive copy', 'ACTIVE', 'AVAILABLE');
+
+PROMPT =====================================
+PROMPT Inserting book stock summary...
+PROMPT =====================================
 
 INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
 VALUES ('Herbert Schildt', 'Java: The Complete Reference', 11, 'Rack A-01', 3, 2);
 
 INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
-VALUES ('Joshua Bloch', 'Effective Java', 3, 'Rack A-02', 1, 1);
+VALUES ('Joshua Bloch', 'Effective Java', 3, 'Rack A-02', 2, 2);
 
 INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
-VALUES ('Robert C. Martin', 'Clean Code', 1, 'Rack B-01', 2, 1);
+VALUES ('Robert C. Martin', 'Clean Code', 1, 'Rack B-01', 3, 2);
 
 INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
-VALUES ('Abraham Silberschatz', 'Database System Concepts', 7, 'Rack C-01', 1, 1);
+VALUES ('Abraham Silberschatz', 'Database System Concepts', 7, 'Rack C-01', 2, 2);
 
 INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
-VALUES ('Narasimha Karumanchi', 'Data Structures Using Java', 2, 'Rack C-02', 1, 0);
+VALUES ('Narasimha Karumanchi', 'Data Structures and Algorithms', 2, 'Rack C-02', 2, 1);
 
 INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
 VALUES ('Abraham Silberschatz', 'Operating System Concepts', 10, 'Rack D-01', 1, 1);
 
 INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
-VALUES ('Andrew S. Tanenbaum', 'Computer Networks', 5, 'Rack D-02', 1, 0);
+VALUES ('Andrew S. Tanenbaum', 'Computer Networks', 5, 'Rack D-02', 2, 1);
+
+INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
+VALUES ('Thomas H. Cormen', 'Introduction to Algorithms', 3, 'Premium-01', 1, 1);
+
+INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
+VALUES ('Stephen Prata', 'C++ Primer Plus', 6, 'Rack B-02', 1, 1);
 
 INSERT INTO TBL_BOOK_STOCK (AUTHOR_NAME, BK_TITLE, EDITION, P_LOCATION, QUANTITY, AVAIL_QTY)
 VALUES ('Dept Project Team', 'Library Management System Project', 1, 'Archive-01', 1, 1);
 
-PROMPT Inserting students...
+PROMPT =====================================
+PROMPT Inserting student library cards...
+PROMPT =====================================
 
 INSERT INTO TBL_STUDENT
     (CARD_ID, ROLL, NAME, PH_NO, ADDR, COURSE, ACAD_SESSION, RECEIPT_NO, ISSUED_BY, ISSUE_DATE, BOOK_LIMIT, FEE, STATUS)
@@ -290,48 +415,148 @@ VALUES
 
 PROMPT Inserting circulation data...
 
+-- Current batch (2026-2029): BCA students
+INSERT INTO TBL_STUDENT
+    (CARD_ID, ROLL, NAME, PH_NO, ADDR, COURSE, ACAD_SESSION, RECEIPT_NO, ISSUED_BY, ISSUE_DATE, BOOK_LIMIT, FEE, STATUS)
+VALUES
+    ('PPU-26001', 26001, 'Ananya Singh', 9100000001, 'Patna, Bihar', 'BCA', '2026-2029', 'LR-26001', 'ADMIN', DATE '2026-01-10', 2, 800.00, 'ACTIVE');
+
+INSERT INTO TBL_STUDENT
+    (CARD_ID, ROLL, NAME, PH_NO, ADDR, COURSE, ACAD_SESSION, RECEIPT_NO, ISSUED_BY, ISSUE_DATE, BOOK_LIMIT, FEE, STATUS)
+VALUES
+    ('PPU-26002', 26002, 'Ravi Kumar', 9100000002, 'Gaya, Bihar', 'BCA', '2026-2029', 'LR-26002', 'ADMIN', DATE '2026-01-12', 2, 800.00, 'ACTIVE');
+
+INSERT INTO TBL_STUDENT
+    (CARD_ID, ROLL, NAME, PH_NO, ADDR, COURSE, ACAD_SESSION, RECEIPT_NO, ISSUED_BY, ISSUE_DATE, BOOK_LIMIT, FEE, STATUS)
+VALUES
+    ('PPU-26003', 26003, 'Neha Verma', 9100000003, 'Ara, Bihar', 'BBA', '2026-2029', 'LR-26003', 'U0001', DATE '2026-01-15', 2, 800.00, 'ACTIVE');
+
+INSERT INTO TBL_STUDENT
+    (CARD_ID, ROLL, NAME, PH_NO, ADDR, COURSE, ACAD_SESSION, RECEIPT_NO, ISSUED_BY, ISSUE_DATE, BOOK_LIMIT, FEE, STATUS)
+VALUES
+    ('PPU-26004', 26004, 'Priya Sharma', 9100000004, 'Muzaffarpur, Bihar', 'BCA', '2026-2029', 'LR-26004', 'U0001', DATE '2026-01-18', 1, 500.00, 'ACTIVE');
+
+-- Previous batch (2025-2027): MCA students
+INSERT INTO TBL_STUDENT
+    (CARD_ID, ROLL, NAME, PH_NO, ADDR, COURSE, ACAD_SESSION, RECEIPT_NO, ISSUED_BY, ISSUE_DATE, BOOK_LIMIT, FEE, STATUS)
+VALUES
+    ('PPU-25001', 25001, 'Arjun Das', 9100000005, 'Ranchi, Jharkhand', 'MCA', '2025-2027', 'LR-25001', 'U0001', DATE '2025-08-05', 2, 800.00, 'ACTIVE');
+
+INSERT INTO TBL_STUDENT
+    (CARD_ID, ROLL, NAME, PH_NO, ADDR, COURSE, ACAD_SESSION, RECEIPT_NO, ISSUED_BY, ISSUE_DATE, BOOK_LIMIT, FEE, STATUS)
+VALUES
+    ('PPU-25002', 25002, 'Sneha Roy', 9100000006, 'Dhanbad, Jharkhand', 'MCA', '2025-2027', 'LR-25002', 'U0002', DATE '2025-08-09', 1, 500.00, 'ACTIVE');
+
+-- Earlier batch (2024-2027): BBA students
+INSERT INTO TBL_STUDENT
+    (CARD_ID, ROLL, NAME, PH_NO, ADDR, COURSE, ACAD_SESSION, RECEIPT_NO, ISSUED_BY, ISSUE_DATE, BOOK_LIMIT, FEE, STATUS)
+VALUES
+    ('PPU-24001', 24001, 'Karan Shah', 9100000007, 'Muzaffarpur, Bihar', 'BBA', '2024-2027', 'LR-24001', 'U0002', DATE '2024-07-10', 1, 500.00, 'ACTIVE');
+
+INSERT INTO TBL_STUDENT
+    (CARD_ID, ROLL, NAME, PH_NO, ADDR, COURSE, ACAD_SESSION, RECEIPT_NO, ISSUED_BY, ISSUE_DATE, BOOK_LIMIT, FEE, STATUS)
+VALUES
+    ('PPU-24002', 24002, 'Divya Gupta', 9100000008, 'Patna, Bihar', 'BBA', '2024-2027', 'LR-24002', 'U0002', DATE '2024-07-15', 2, 800.00, 'INACTIVE');
+
+PROMPT =====================================
+PROMPT Inserting circulation records (issues/returns)...
+PROMPT =====================================
+
+-- Current issued books
 INSERT INTO TBL_ISSUE
     (ISSUE_ID, BORROWER_TYPE, CARD_ID, FACULTY_NAME, FACULTY_CONTACT, ACCESSION_NO, ISSUE_DATE, DUE_DATE, RETURN_DATE, RETURN_CONDITION, FINE, ISSUED_BY, STATUS)
 VALUES
-    ('LID2600001', 'STUDENT', 'PPU-26001', NULL, NULL, '000003', TRUNC(SYSDATE) - 15, TRUNC(SYSDATE) - 8, NULL, NULL, 0, 'LIB01', 'ISSUED');
+    ('LID2600001', 'STUDENT', 'PPU-26001', NULL, NULL, '000003', TRUNC(SYSDATE) - 15, TRUNC(SYSDATE) - 8, NULL, NULL, 0, 'U0001', 'ISSUED');
 
 INSERT INTO TBL_ISSUE
     (ISSUE_ID, BORROWER_TYPE, CARD_ID, FACULTY_NAME, FACULTY_CONTACT, ACCESSION_NO, ISSUE_DATE, DUE_DATE, RETURN_DATE, RETURN_CONDITION, FINE, ISSUED_BY, STATUS)
 VALUES
-    ('LID2600002', 'STUDENT', 'PPU-26002', NULL, NULL, '000005', TRUNC(SYSDATE) - 3, TRUNC(SYSDATE) + 4, NULL, NULL, 0, 'LIB01', 'ISSUED');
+    ('LID2600002', 'STUDENT', 'PPU-26002', NULL, NULL, '000005', TRUNC(SYSDATE) - 3, TRUNC(SYSDATE) + 4, NULL, NULL, 0, 'U0001', 'ISSUED');
 
 INSERT INTO TBL_ISSUE
     (ISSUE_ID, BORROWER_TYPE, CARD_ID, FACULTY_NAME, FACULTY_CONTACT, ACCESSION_NO, ISSUE_DATE, DUE_DATE, RETURN_DATE, RETURN_CONDITION, FINE, ISSUED_BY, STATUS)
 VALUES
-    ('LID2600003', 'STUDENT', 'PPU-25001', NULL, NULL, '000007', TRUNC(SYSDATE) - 16, TRUNC(SYSDATE) - 9, TRUNC(SYSDATE) - 2, 'GOOD', 100.00, 'LIB02', 'RETURNED');
+    ('LID2600003', 'STUDENT', 'PPU-26003', NULL, NULL, '000012', TRUNC(SYSDATE) - 10, TRUNC(SYSDATE) - 3, NULL, NULL, 0, 'U0002', 'ISSUED');
 
 INSERT INTO TBL_ISSUE
     (ISSUE_ID, BORROWER_TYPE, CARD_ID, FACULTY_NAME, FACULTY_CONTACT, ACCESSION_NO, ISSUE_DATE, DUE_DATE, RETURN_DATE, RETURN_CONDITION, FINE, ISSUED_BY, STATUS)
 VALUES
-    ('LID2600004', 'STUDENT', 'PPU-26003', NULL, NULL, '000008', TRUNC(SYSDATE) - 10, TRUNC(SYSDATE) - 3, NULL, NULL, 0, 'LIB02', 'ISSUED');
+    ('LID2600004', 'STUDENT', 'PPU-26004', NULL, NULL, '000008', TRUNC(SYSDATE) - 5, TRUNC(SYSDATE) + 2, NULL, NULL, 0, 'U0002', 'ISSUED');
+
+-- Returned books
+INSERT INTO TBL_ISSUE
+    (ISSUE_ID, BORROWER_TYPE, CARD_ID, FACULTY_NAME, FACULTY_CONTACT, ACCESSION_NO, ISSUE_DATE, DUE_DATE, RETURN_DATE, RETURN_CONDITION, FINE, ISSUED_BY, STATUS)
+VALUES
+    ('LID2500001', 'STUDENT', 'PPU-25001', NULL, NULL, '000009', TRUNC(SYSDATE) - 16, TRUNC(SYSDATE) - 9, TRUNC(SYSDATE) - 2, 'GOOD', 100.00, 'U0001', 'RETURNED');
 
 INSERT INTO TBL_ISSUE
     (ISSUE_ID, BORROWER_TYPE, CARD_ID, FACULTY_NAME, FACULTY_CONTACT, ACCESSION_NO, ISSUE_DATE, DUE_DATE, RETURN_DATE, RETURN_CONDITION, FINE, ISSUED_BY, STATUS)
 VALUES
-    ('LID2600005', 'STUDENT', 'PPU-24001', NULL, NULL, '000004', TRUNC(SYSDATE) - 6, TRUNC(SYSDATE) + 1, TRUNC(SYSDATE) - 1, 'GOOD', 0, 'LIB01', 'RETURNED');
+    ('LID2400001', 'STUDENT', 'PPU-24001', NULL, NULL, '000004', TRUNC(SYSDATE) - 6, TRUNC(SYSDATE) + 1, TRUNC(SYSDATE) - 1, 'GOOD', 0, 'U0001', 'RETURNED');
 
 INSERT INTO TBL_ISSUE
     (ISSUE_ID, BORROWER_TYPE, CARD_ID, FACULTY_NAME, FACULTY_CONTACT, ACCESSION_NO, ISSUE_DATE, DUE_DATE, RETURN_DATE, RETURN_CONDITION, FINE, ISSUED_BY, STATUS)
 VALUES
-    ('LID2600006', 'FACULTY', NULL, 'Dr. Anjali Sinha', '9876512345', '000010', TRUNC(SYSDATE) - 5, TRUNC(SYSDATE) + 2, NULL, NULL, 0, 'LIB02', 'ISSUED');
+    ('LID2400002', 'STUDENT', 'PPU-24002', NULL, NULL, '000014', TRUNC(SYSDATE) - 20, TRUNC(SYSDATE) - 13, TRUNC(SYSDATE) - 7, 'DAMAGED', 200.00, 'U0001', 'RETURNED');
 
-PROMPT Inserting low-stock alert samples...
+-- Faculty borrow
+INSERT INTO TBL_ISSUE
+    (ISSUE_ID, BORROWER_TYPE, CARD_ID, FACULTY_NAME, FACULTY_CONTACT, ACCESSION_NO, ISSUE_DATE, DUE_DATE, RETURN_DATE, RETURN_CONDITION, FINE, ISSUED_BY, STATUS)
+VALUES
+    ('LID2600005', 'FACULTY', NULL, 'Dr. Anjali Sinha', '9876512345', '000015', TRUNC(SYSDATE) - 5, TRUNC(SYSDATE) + 2, NULL, NULL, 0, 'U0002', 'ISSUED');
+
+INSERT INTO TBL_ISSUE
+    (ISSUE_ID, BORROWER_TYPE, CARD_ID, FACULTY_NAME, FACULTY_CONTACT, ACCESSION_NO, ISSUE_DATE, DUE_DATE, RETURN_DATE, RETURN_CONDITION, FINE, ISSUED_BY, STATUS)
+VALUES
+    ('LID2600006', 'FACULTY', NULL, 'Prof. Vikram Kumar', '9876543210', '000016', TRUNC(SYSDATE) - 8, TRUNC(SYSDATE) - 1, TRUNC(SYSDATE), 'GOOD', 0, 'U0001', 'RETURNED');
+
+PROMPT =====================================
+PROMPT Inserting stock alert log entries...
+PROMPT =====================================
 
 INSERT INTO TBL_BOOK_ALERT_LOG
     (ALERT_ID, ALERT_TS, ALERT_TYPE, BK_TITLE, AUTHOR_NAME, EDITION, CURRENT_QTY, THRESHOLD_QTY, ALERTED_TO)
 VALUES
-    (NULL, TRUNC(SYSDATE) - 1, 'LOW_STOCK', 'Effective Java', 'Joshua Bloch', 3, 1, 2, 'ADMIN');
+    (NULL, TRUNC(SYSDATE) - 2, 'LOW_STOCK', 'Effective Java', 'Joshua Bloch', 3, 2, 3, 'ADMIN');
 
 INSERT INTO TBL_BOOK_ALERT_LOG
     (ALERT_ID, ALERT_TS, ALERT_TYPE, BK_TITLE, AUTHOR_NAME, EDITION, CURRENT_QTY, THRESHOLD_QTY, ALERTED_TO)
 VALUES
-    (NULL, TRUNC(SYSDATE), 'LOW_STOCK', 'Operating System Concepts', 'Abraham Silberschatz', 10, 1, 2, 'LIB01');
+    (NULL, TRUNC(SYSDATE) - 1, 'LOW_STOCK', 'Data Structures and Algorithms', 'Narasimha Karumanchi', 2, 2, 2, 'U0001');
+
+INSERT INTO TBL_BOOK_ALERT_LOG
+    (ALERT_ID, ALERT_TS, ALERT_TYPE, BK_TITLE, AUTHOR_NAME, EDITION, CURRENT_QTY, THRESHOLD_QTY, ALERTED_TO)
+VALUES
+    (NULL, TRUNC(SYSDATE), 'LOW_STOCK', 'Computer Networks', 'Andrew S. Tanenbaum', 5, 2, 3, 'U0002');
+
+INSERT INTO TBL_BOOK_ALERT_LOG
+    (ALERT_ID, ALERT_TS, ALERT_TYPE, BK_TITLE, AUTHOR_NAME, EDITION, CURRENT_QTY, THRESHOLD_QTY, ALERTED_TO)
+VALUES
+    (NULL, TRUNC(SYSDATE), 'LOW_STOCK', 'Operating System Concepts', 'Abraham Silberschatz', 10, 1, 2, 'U0001');
 
 COMMIT;
 
-PROMPT Demo data inserted successfully.
+PROMPT =====================================
+PROMPT ✅ Demo data inserted successfully!
+PROMPT =====================================
+PROMPT
+PROMPT Summary of inserted records:
+PROMPT   - Admin users: 1
+PROMPT   - Librarians (5-char format U0001+): 4
+PROMPT   - Suppliers: 5
+PROMPT   - Orders: 5
+PROMPT   - Books in Catalog: 10
+PROMPT   - Physical book copies: 18
+PROMPT   - Students: 8
+PROMPT   - Book issues/returns: 8
+PROMPT   - Stock alerts: 4
+PROMPT
+PROMPT Key Features:
+PROMPT   - New librarian IDs use 5-character format (U0001, U0002, U0003, U0004)
+PROMPT   - Both issued and returned circulation records included
+PROMPT   - Faculty borrowing support demonstrated
+PROMPT   - Comprehensive book stock and allocation data
+PROMPT   - Student lifecycle: Active and Inactive statuses
+PROMPT   - Purchase bills with tax calculation
+PROMPT   - Low-stock alerts for inventory management
+PROMPT =====================================

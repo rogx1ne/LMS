@@ -46,7 +46,7 @@ public class BillReportPanel extends JPanel {
         top.add(btnPdf);
 
         // --- TABLE ---
-        String[] cols = {"Bill ID", "Seller ID", "Title", "Author", "Qty", "Unit Price", "Date", "Tax (%)", "Total Amount", "Grand Total"};
+        String[] cols = {"Bill ID", "Supplier ID", "Title", "Author", "Qty", "Unit Price", "Date", "Tax (%)", "Total Amount", "Grand Total"};
         model = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };

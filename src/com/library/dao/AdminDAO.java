@@ -52,21 +52,21 @@ public class AdminDAO {
 
     public String nextUserId(Connection conn) throws SQLException {
         String sql = "SELECT NVL(MAX(TO_NUMBER(SUBSTR(TRIM(USER_ID), 2))), 0) AS MAX_ID " +
-                     "FROM TBL_CREDENTIALS WHERE REGEXP_LIKE(TRIM(USER_ID), '^U[0-9]{3}$')";
+                     "FROM TBL_CREDENTIALS WHERE REGEXP_LIKE(TRIM(USER_ID), '^U[0-9]{4}$')";
         try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             rs.next();
             int next = rs.getInt("MAX_ID") + 1;
-            return String.format("U%03d", next);
+            return String.format("U%04d", next);
         }
     }
 
     public String peekNextUserId() {
         try (Connection conn = DBConnection.getConnection()) {
-            if (conn == null) return "U001";
+            if (conn == null) return "U0001";
             return nextUserId(conn);
         } catch (SQLException e) {
-            return "U001";
+            return "U0001";
         }
     }
 

@@ -7,6 +7,9 @@ import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
+import com.itextpdf.text.pdf.PdfPageEventHelper;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.BaseFont;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -18,6 +21,30 @@ import java.util.*;
 import java.util.List;
 
 public class PdfReportService {
+
+    public static class PageNumberer extends PdfPageEventHelper {
+        @Override
+        public void onEndPage(PdfWriter writer, Document document) {
+            try {
+                PdfContentByte cb = writer.getDirectContent();
+                cb.saveState();
+                
+                String text = "Page " + writer.getPageNumber();
+                float pageWidth = document.getPageSize().getWidth();
+                float pageHeight = document.getPageSize().getHeight();
+                
+                BaseFont bf = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, false);
+                cb.beginText();
+                cb.setFontAndSize(bf, 9);
+                cb.showTextAligned(Element.ALIGN_CENTER, text, pageWidth / 2, 20, 0);
+                cb.endText();
+                
+                cb.restoreState();
+            } catch (Exception e) {
+                System.err.println("Error adding page number: " + e.getMessage());
+            }
+        }
+    }
 
     public void exportToPdf(Component parent, JTable table, String reportTitle, String defaultFileNamePrefix) {
         // 1. Show field selection dialog
@@ -48,7 +75,8 @@ public class PdfReportService {
                 new Document(PageSize.A4);
 
             try {
-                PdfWriter.getInstance(doc, new FileOutputStream(fc.getSelectedFile()));
+                PdfWriter writer = PdfWriter.getInstance(doc, new FileOutputStream(fc.getSelectedFile()));
+                writer.setPageEvent(new PageNumberer());
                 doc.open();
 
                 // --- ADD BANNER IMAGE ---
@@ -73,6 +101,8 @@ public class PdfReportService {
                     PdfPCell cell = new PdfPCell(new Phrase(col, new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD)));
                     cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
                     cell.setPadding(5);
+                    cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
                     pdfTable.addCell(cell);
                 }
 
@@ -83,6 +113,8 @@ public class PdfReportService {
                         Object val = table.getModel().getValueAt(modelRow, colIndex);
                         PdfPCell cell = new PdfPCell(new Phrase(val != null ? val.toString() : "", new Font(Font.FontFamily.HELVETICA, 9)));
                         cell.setPadding(4);
+                        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
                         pdfTable.addCell(cell);
                     }
                 }
@@ -207,37 +239,23 @@ public class PdfReportService {
     }
 
     public static Element createPDFHeader() {
-        PdfPTable headerTable = new PdfPTable(3);
+        PdfPTable headerTable = new PdfPTable(1);
         headerTable.setWidthPercentage(100);
-        headerTable.setSpacingAfter(3);
+        headerTable.setSpacingAfter(10);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
         Date now = new Date();
 
-        PdfPCell c1 = new PdfPCell(new Phrase(""));
-        c1.setBorder(0);
-        headerTable.addCell(c1);
-
-        PdfPCell c2 = new PdfPCell(new Phrase(""));
-        c2.setBorder(0);
-        headerTable.addCell(c2);
-
-        PdfPCell c3 = new PdfPCell();
-        c3.setBorder(0);
-        c3.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        PdfPCell leftCell = new PdfPCell();
+        leftCell.setBorder(0);
+        leftCell.setHorizontalAlignment(Element.ALIGN_LEFT);
         Phrase p = new Phrase();
         p.add(new Chunk("Report Generated On:\n", new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD)));
         p.add(new Chunk(dateFormat.format(now) + " | " + timeFormat.format(now), new Font(Font.FontFamily.HELVETICA, 10)));
-        c3.addElement(p);
-        headerTable.addCell(c3);
+        leftCell.addElement(p);
+        headerTable.addCell(leftCell);
 
-        PdfPTable container = new PdfPTable(1);
-        PdfPCell containerCell = new PdfPCell(headerTable);
-        containerCell.setBorder(0);
-        containerCell.setPadding(0);
-        container.addCell(containerCell);
-
-        return container;
+        return headerTable;
     }
 }

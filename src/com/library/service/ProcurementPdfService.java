@@ -45,6 +45,7 @@ public class ProcurementPdfService {
         for (int c = 0; c < table.getColumnCount(); c++) {
             PdfPCell h = new PdfPCell(new Phrase(table.getColumnName(c), head));
             h.setHorizontalAlignment(Element.ALIGN_CENTER);
+            h.setVerticalAlignment(Element.ALIGN_MIDDLE);
             h.setPadding(5);
             h.setBackgroundColor(com.itextpdf.text.BaseColor.LIGHT_GRAY);
             pdfTable.addCell(h);
@@ -55,6 +56,8 @@ public class ProcurementPdfService {
                 Object value = table.getValueAt(r, c);
                 PdfPCell cell = new PdfPCell(new Phrase(value == null ? "" : String.valueOf(value), normal));
                 cell.setPadding(4);
+                cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
                 pdfTable.addCell(cell);
             }
         }
@@ -83,7 +86,7 @@ public class ProcurementPdfService {
 
         doc.add(new Paragraph("Order ID: " + header.getOrderId(), head));
         doc.add(new Paragraph("Order Date: " + header.getOrderDate(), normal));
-        doc.add(new Paragraph("Seller ID: " + seller.getSellerId(), normal));
+        doc.add(new Paragraph("Supplier ID: " + seller.getSellerId(), normal));
         doc.add(new Paragraph("Company: " + seller.getCompanyName(), normal));
         doc.add(new Paragraph("Company Mail: " + seller.getCompanyMail(), normal));
         doc.add(new Paragraph("Contact Person: " + seller.getContactPerson() + " (" + seller.getContactPersonMail() + ")", normal));
@@ -101,11 +104,30 @@ public class ProcurementPdfService {
 
         int i = 1;
         for (OrderDetail d : details) {
-            table.addCell(new Phrase(String.valueOf(i++), normal));
-            table.addCell(new Phrase(d.getBookTitle(), normal));
-            table.addCell(new Phrase(d.getAuthor(), normal));
-            table.addCell(new Phrase(d.getPublication(), normal));
-            table.addCell(new Phrase(String.valueOf(d.getQuantity()), normal));
+            PdfPCell c1 = new PdfPCell(new Phrase(String.valueOf(i++), normal));
+            c1.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c1.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            table.addCell(c1);
+            
+            PdfPCell c2 = new PdfPCell(new Phrase(d.getBookTitle(), normal));
+            c2.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c2.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            table.addCell(c2);
+            
+            PdfPCell c3 = new PdfPCell(new Phrase(d.getAuthor(), normal));
+            c3.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c3.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            table.addCell(c3);
+            
+            PdfPCell c4 = new PdfPCell(new Phrase(d.getPublication(), normal));
+            c4.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c4.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            table.addCell(c4);
+            
+            PdfPCell c5 = new PdfPCell(new Phrase(String.valueOf(d.getQuantity()), normal));
+            c5.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c5.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            table.addCell(c5);
         }
 
         doc.add(table);
@@ -116,6 +138,7 @@ public class ProcurementPdfService {
     private void addHead(PdfPTable table, String text, Font font) {
         PdfPCell cell = new PdfPCell(new Phrase(text, font));
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setPadding(5);
         table.addCell(cell);
     }

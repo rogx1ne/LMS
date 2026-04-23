@@ -92,23 +92,23 @@ public class UserDAO {
         }
     }
 
-    // NEW: Generate the next ID automatically (e.g., U001 -> U002)
+    // NEW: Generate the next ID automatically (e.g., U0001 -> U0002)
     public String generateNextUserId() {
         String query = "SELECT NVL(MAX(TO_NUMBER(SUBSTR(TRIM(USER_ID), 2))), 0) AS MAX_ID " +
-                       "FROM TBL_CREDENTIALS WHERE REGEXP_LIKE(TRIM(USER_ID), '^U[0-9]{3}$')";
+                       "FROM TBL_CREDENTIALS WHERE REGEXP_LIKE(TRIM(USER_ID), '^U[0-9]{4}$')";
         try (Connection conn = DBConnection.getConnection()) {
-            if (conn == null) return "U001";
+            if (conn == null) return "U0001";
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(query)) {
                 if (rs.next()) {
                     int id = rs.getInt("MAX_ID") + 1;
-                    return String.format("U%03d", id);
+                    return String.format("U%04d", id);
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return "U001";
+        return "U0001";
     }
 
     public boolean resetPassword(String userId, String email, long phone, String newPassword) {
