@@ -21,6 +21,14 @@ if [ ! -d "bin" ]; then
     exit 1
 fi
 
+# Recompile application classes with current Java version for compatibility
+echo "Compiling application for current Java version..."
+javac -encoding UTF-8 -d bin --release 8 -cp "bin:lib/*" src/com/library/Main.java 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "Compilation failed. Please ensure Java 8+ is installed."
+    exit 1
+fi
+
 echo "Connecting to database..."
 export LMS_DB_URL="jdbc:oracle:thin:@localhost:1521:xe"
 export LMS_DB_USER="PRJ2531H"
